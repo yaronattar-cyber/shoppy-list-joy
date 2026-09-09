@@ -1,8 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AddScreen } from "@/components/shopping/AddScreen";
 import { ListScreen } from "@/components/shopping/ListScreen";
+import { Onboarding } from "@/components/shopping/Onboarding";
 import { useShoppingList } from "@/hooks/useShoppingList";
+import { useSpeech } from "@/hooks/useSpeech";
+import { loadUserName, saveUserName } from "@/lib/user-name";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -11,12 +14,12 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "אפליקציית רשימת קניות בעברית: הוספה מהירה, סימון פריטים שהושלמו, עריכה ומחיקה. הרשימה נשמרת במכשיר שלכם.",
+          "אפליקציית רשימת קניות בעברית: הוספה מהירה בקטגוריות, הוספה בדיבור, סימון פריטים שהושלמו, עריכה ומחיקה. הרשימה נשמרת במכשיר שלכם.",
       },
       { property: "og:title", content: "רשימת קניות חכמה" },
       {
         property: "og:description",
-        content: "הוסיפו פריטים בשנייה, סמנו מה שנקנה, והרשימה נשמרת אצלכם במכשיר.",
+        content: "הוסיפו פריטים בדיבור או בלחיצה, סמנו מה שנקנה, והרשימה נשמרת אצלכם במכשיר.",
       },
     ],
   }),
@@ -27,22 +30,57 @@ type Screen = "add" | "list" | "closed";
 
 function Index() {
   const [screen, setScreen] = useState<Screen>("add");
-  const list = useShoppingList();
+  const [userName, setUserName] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
+  const list = useShoppingList(userName ?? undefined);
+  const { speak } = useSpeech();
 
-  // "יציאה מאפליקציה" — סוגר את התצוגה ומאפס את המסך
+  // טעינת שם המשתמש אחרי הרכבה (onboarding מוצג רק אם אין שם)
+  useEffect(() => {
+    setUserName(loadUserName());
+    setReady(true);
+  }, []);
+
+  // הקראת הכותרת האישית בכניסה למסך הראשי — פעם אחת
+  useEffect(() => {
+    if (!userName || screen !== "add") return;
+    const id = setTimeout(
+      () => speak(`שלום ${userName}, מה חסר לך היום?`, { once: true }),
+      400,
+    );
+    return () => clearTimeout(id);
+  }, [userName, screen, speak]);
+
   const exitApp = () => {
     setScreen("closed");
     if (typeof window !== "undefined") window.close();
   };
 
+  if (!ready) return <main className="min-h-screen bg-background" />;
+
+  if (!userName) {
+    return (
+      <main className="min-h-screen bg-background">
+        <Onboarding
+          onSave={(name) => {
+            saveUserName(name);
+            setUserName(name);
+          }}
+        />
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-background">
       {screen === "add" && (
         <AddScreen
+          userName={userName}
           count={list.items.length}
           onAdd={list.addItem}
           onGoShopping={() => setScreen("list")}
           onExit={exitApp}
+          onSpeak={(text) => speak(text)}
         />
       )}
 

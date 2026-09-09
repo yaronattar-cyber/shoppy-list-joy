@@ -7,7 +7,7 @@ import {
 } from "@/lib/shopping-list";
 
 // לוגיקת הרשימה במקום אחד: קריאה/שמירה מקומית + פעולות על פריטים.
-export function useShoppingList() {
+export function useShoppingList(userName?: string) {
   const [items, setItems] = useState<ShoppingItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
 
@@ -21,12 +21,15 @@ export function useShoppingList() {
     if (hydrated) saveItems(items);
   }, [items, hydrated]);
 
-  const addItem = useCallback((name: string) => {
-    const clean = name.trim();
-    if (!clean) return false;
-    setItems((prev) => [createItem(clean), ...prev]);
-    return true;
-  }, []);
+  const addItem = useCallback(
+    (name: string) => {
+      const clean = name.trim();
+      if (!clean) return false;
+      setItems((prev) => [createItem(clean, userName), ...prev]);
+      return true;
+    },
+    [userName],
+  );
 
   const toggleItem = useCallback((id: string) => {
     setItems((prev) =>
