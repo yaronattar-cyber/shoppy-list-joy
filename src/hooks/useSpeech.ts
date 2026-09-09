@@ -19,7 +19,7 @@ export function useSpeech() {
       const female = hebrew.find((v) =>
         /female|woman|carmit|shira|noa|נשי|כרמית/i.test(v.name),
       );
-      voiceRef.current = female ?? hebrew[0];
+      voiceRef.current = female ?? hebrew[0] ?? null;
     };
 
     pickVoice();

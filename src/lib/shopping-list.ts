@@ -6,8 +6,8 @@ export type ShoppingItem = {
   name: string;
   done: boolean;
   createdAt: number;
-  createdAtLabel?: string; // DD/MM/YYYY HH:mm
-  addedBy?: string;
+  createdAtLabel?: string | undefined; // DD/MM/YYYY HH:mm
+  addedBy?: string | undefined;
   // שדות עתידיים להשוואת מחירים: price?, store?, barcode?
 };
 
