@@ -81,14 +81,22 @@ export function ListScreen({ items, onToggle, onRename, onRemove, onBack }: Prop
                 className="min-w-0 flex-1 rounded-xl border border-input bg-background px-3 py-2 text-base outline-none focus:ring-2 focus:ring-ring"
               />
             ) : (
-              <span
-                className={`min-w-0 flex-1 truncate text-base font-semibold transition-all duration-300 ${
-                  item.done
-                    ? "text-muted-foreground line-through opacity-60"
-                    : "text-foreground"
-                }`}
-              >
-                {item.name}
+              <span className="min-w-0 flex-1">
+                <span
+                  className={`block truncate text-base font-semibold transition-all duration-300 ${
+                    item.done
+                      ? "text-muted-foreground line-through opacity-60"
+                      : "text-foreground"
+                  }`}
+                >
+                  {item.name}
+                </span>
+                {(item.addedBy || item.createdAtLabel) && (
+                  <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                    {item.addedBy ? `נוצר ע״י ${item.addedBy}` : "נוצר"}
+                    {item.createdAtLabel ? ` ב־${item.createdAtLabel}` : ""}
+                  </span>
+                )}
               </span>
             )}
 
