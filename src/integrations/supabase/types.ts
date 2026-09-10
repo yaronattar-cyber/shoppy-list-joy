@@ -14,7 +14,83 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      families: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          name?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      items: {
+        Row: {
+          added_by: string
+          archived: boolean
+          completed: boolean
+          created_at: string
+          family_id: string
+          id: string
+          name: string
+        }
+        Insert: {
+          added_by?: string
+          archived?: boolean
+          completed?: boolean
+          created_at?: string
+          family_id: string
+          id?: string
+          name: string
+        }
+        Update: {
+          added_by?: string
+          archived?: boolean
+          completed?: boolean
+          created_at?: string
+          family_id?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "items_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          display_name: string
+          family_id: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          display_name?: string
+          family_id?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          display_name?: string
+          family_id?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
