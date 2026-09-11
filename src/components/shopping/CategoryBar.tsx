@@ -2,18 +2,18 @@ import { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CATEGORIES, type Category } from "@/lib/categories";
 
-type Props = { onAdd: (name: string) => boolean };
+type Props = { onAdd: (name: string) => string | null };
 
-// שורת קטגוריות אופקית נגללת — אייקונים בלבד עם aria-label/tooltip
+// שורת קטגוריות אופקית נגללת — סטייל קומיקס: קו שחור עבה, צבע חזק, צל
 export function CategoryBar({ onAdd }: Props) {
   const [openId, setOpenId] = useState<string | null>(null);
 
   return (
-    <div className="-mx-5 mt-7 overflow-x-auto px-5 pb-2">
-      <div className="flex w-max flex-nowrap gap-3">
+    <div className="-mx-5 mt-7 overflow-x-auto px-5 pb-3">
+      <div className="flex w-max flex-nowrap gap-4">
         {CATEGORIES.map((cat) =>
           cat.direct ? (
-            <IconButton key={cat.id} cat={cat} onClick={() => onAdd(cat.label)} />
+            <ComicButton key={cat.id} cat={cat} onClick={() => onAdd(cat.label)} />
           ) : (
             <Popover
               key={cat.id}
@@ -21,12 +21,17 @@ export function CategoryBar({ onAdd }: Props) {
               onOpenChange={(o) => setOpenId(o ? cat.id : null)}
             >
               <PopoverTrigger asChild>
-                <IconButton cat={cat} />
+                <ComicButton cat={cat} />
               </PopoverTrigger>
-              <PopoverContent align="center" className="w-64 p-3" dir="rtl">
+              <PopoverContent
+                align="center"
+                dir="rtl"
+                className="w-72 rounded-2xl border-[3px] border-foreground p-3 shadow-[6px_6px_0_0_var(--color-foreground)]"
+              >
                 <CategoryMenu
                   cat={cat}
                   onPick={(name) => {
+                    // סגירה אוטומטית של תפריט המשנה מיד לאחר בחירה
                     if (onAdd(name)) setOpenId(null);
                   }}
                 />
@@ -39,7 +44,7 @@ export function CategoryBar({ onAdd }: Props) {
   );
 }
 
-function IconButton({
+function ComicButton({
   cat,
   onClick,
   ...rest
@@ -52,9 +57,9 @@ function IconButton({
       aria-label={cat.label}
       title={cat.label}
       {...rest}
-      className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl border border-border bg-card text-foreground shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:text-primary active:scale-95"
+      className={`grid h-20 w-20 shrink-0 place-items-center rounded-3xl border-[3px] border-foreground text-foreground shadow-[5px_5px_0_0_var(--color-foreground)] transition-all duration-150 hover:-translate-y-0.5 active:translate-x-[3px] active:translate-y-[3px] active:shadow-none ${cat.color}`}
     >
-      <Icon className="h-7 w-7" aria-hidden />
+      <Icon className="h-9 w-9" strokeWidth={2.5} aria-hidden />
     </button>
   );
 }
@@ -70,14 +75,14 @@ function CategoryMenu({
 
   return (
     <div>
-      <p className="mb-2 text-sm font-bold text-foreground">{cat.label}</p>
+      <p className="mb-2 text-base font-black text-foreground">{cat.label}</p>
       <div className="flex flex-col gap-1.5">
         {cat.options?.map((opt) => (
           <button
             key={opt}
             type="button"
             onClick={() => onPick(opt)}
-            className="rounded-xl px-3 py-2 text-right text-base font-medium text-foreground transition-colors hover:bg-secondary"
+            className="rounded-xl border-2 border-transparent px-3 py-2 text-right text-base font-bold text-foreground transition-colors hover:border-foreground hover:bg-secondary"
           >
             {opt}
           </button>
@@ -98,11 +103,11 @@ function CategoryMenu({
             onChange={(e) => setCustom(e.target.value)}
             placeholder={cat.customPlaceholder ?? "פריט מותאם..."}
             aria-label={`פריט מותאם בקטגוריית ${cat.label}`}
-            className="min-w-0 rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            className="min-w-0 rounded-xl border-2 border-foreground bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
           <button
             type="submit"
-            className="rounded-xl bg-primary px-3 py-2 text-sm font-bold text-primary-foreground active:scale-95"
+            className="rounded-xl border-2 border-foreground bg-primary px-3 py-2 text-sm font-black text-primary-foreground active:scale-95"
           >
             הוסף
           </button>
