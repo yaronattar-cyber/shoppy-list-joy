@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { basketTotals, formatPrice } from "@/lib/prices";
+import { formatQuantity } from "@/lib/quantity";
 import type { ShoppingItem } from "@/lib/shopping-list";
 
 type Props = {
@@ -55,6 +56,11 @@ export function ShopScreen({ items, onToggle, onBack }: Props) {
               <span className={`text-lg font-bold ${item.completed ? "text-muted-foreground line-through" : "text-foreground"}`}>
                 {item.name}
               </span>
+              {formatQuantity(item.quantity, item.unit) && (
+                <span className="ms-auto rounded-lg bg-secondary px-2.5 py-1 text-sm font-black text-foreground">
+                  {formatQuantity(item.quantity, item.unit)}
+                </span>
+              )}
             </button>
           </li>
         ))}

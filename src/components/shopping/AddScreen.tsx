@@ -110,7 +110,7 @@ export function AddScreen({
         <input
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          placeholder="לדוגמה: אבוקדו"
+          placeholder="לדוגמה: 3 אבוקדו"
           aria-label="שם הפריט"
           autoComplete="off"
           className="min-w-0 rounded-2xl border-[3px] border-foreground bg-card px-4 py-3 text-base text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring"

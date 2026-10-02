@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { UNITS, stepFor } from "@/lib/quantity";
 import { formatDateTime, parsePastedList, type ShoppingItem } from "@/lib/shopping-list";
 
 type Props = {
@@ -7,6 +8,7 @@ type Props = {
   onAddMany: (names: string[]) => Promise<number>;
   onToggle: (id: string) => void;
   onRename: (id: string, name: string) => void;
+  onQuantity: (id: string, quantity: number, unit?: string) => void;
   onRemove: (id: string) => void;
   onMarkAll: (completed: boolean) => void;
   onArchive: () => void;
@@ -50,7 +52,7 @@ export function ListScreen(p: Props) {
         <input
           value={quick}
           onChange={(e) => setQuick(e.target.value)}
-          placeholder="הוספה מהירה..."
+          placeholder="הוספה מהירה, למשל: 2 ק״ג עגבניות"
           aria-label="הוספה מהירה"
           className="min-w-0 flex-1 rounded-2xl border-[3px] border-foreground bg-card px-4 py-2.5 text-base outline-none focus:ring-2 focus:ring-ring"
         />
@@ -78,7 +80,7 @@ export function ListScreen(p: Props) {
         {p.items.map((item) => (
           <li
             key={item.id}
-            className="animate-in fade-in slide-in-from-bottom-1 flex items-center gap-3 rounded-2xl border-2 border-foreground bg-card p-3.5 duration-300"
+            className="animate-in fade-in slide-in-from-bottom-1 flex flex-wrap items-center gap-3 rounded-2xl border-2 border-foreground bg-card p-3.5 duration-300"
           >
             <button
               type="button"
@@ -114,6 +116,38 @@ export function ListScreen(p: Props) {
                 </span>
               </span>
             )}
+            <div className="flex shrink-0 items-center gap-1" aria-label="כמות">
+              <button
+                type="button"
+                aria-label="הפחתת כמות"
+                disabled={item.quantity <= stepFor(item.unit)}
+                onClick={() => p.onQuantity(item.id, +(item.quantity - stepFor(item.unit)).toFixed(2))}
+                className="grid h-8 w-8 place-items-center rounded-lg border-2 border-foreground text-lg font-black disabled:opacity-30"
+              >
+                −
+              </button>
+              <span className="min-w-8 text-center text-sm font-black text-foreground">
+                {item.quantity === 0.5 ? "½" : Number(item.quantity.toFixed(2))}
+              </span>
+              <button
+                type="button"
+                aria-label="הוספת כמות"
+                onClick={() => p.onQuantity(item.id, +(item.quantity + stepFor(item.unit)).toFixed(2))}
+                className="grid h-8 w-8 place-items-center rounded-lg border-2 border-foreground text-lg font-black"
+              >
+                +
+              </button>
+              <select
+                value={item.unit}
+                aria-label="יחידה"
+                onChange={(e) => p.onQuantity(item.id, item.quantity, e.target.value)}
+                className="h-8 rounded-lg border-2 border-foreground bg-background px-1 text-xs font-bold"
+              >
+                {UNITS.map((u) => (
+                  <option key={u} value={u}>{u || "—"}</option>
+                ))}
+              </select>
+            </div>
             <button
               type="button"
               onClick={() => {

@@ -8,6 +8,13 @@
       "when": 1789035900910,
       "tag": "0000_create_family_shopping",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790933809834,
+      "tag": "0001_item_quantity_unit",
+      "breakpoints": true
     }
   ]
 }
