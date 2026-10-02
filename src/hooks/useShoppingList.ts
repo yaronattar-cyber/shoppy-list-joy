@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveName } from "@/lib/categories";
+import { formatQuantity, parseQuantity } from "@/lib/quantity";
 import type { ShoppingItem } from "@/lib/shopping-list";
 
 type Row = {
@@ -8,6 +9,8 @@ type Row = {
   family_id: string;
   name: string;
   completed: boolean;
+  quantity: number;
+  unit: string;
   archived: boolean;
   added_by: string;
   created_at: string;
@@ -18,6 +21,8 @@ const toItem = (row: Row): ShoppingItem => ({
   familyId: row.family_id,
   name: row.name,
   completed: row.completed,
+  quantity: Number(row.quantity) || 1,
+  unit: row.unit ?? "",
   archived: row.archived,
   addedBy: row.added_by,
   createdAt: row.created_at,
@@ -75,16 +80,18 @@ export function useShoppingList(familyId: string | null, userName?: string) {
 
   const addItem = useCallback(
     (rawName: string) => {
-      const name = resolveName(rawName);
+      const parsed = parseQuantity(rawName);
+      const name = resolveName(parsed.name);
       if (!name || !familyId) return null;
       void supabase
         .from("items")
-        .insert({ family_id: familyId, name, added_by: userName?.trim() || "אנונימי" })
+        .insert({ family_id: familyId, name, quantity: parsed.quantity, unit: parsed.unit, added_by: userName?.trim() || "אנונימי" })
         .then(({ error }) => {
           if (error) console.error("add item", error);
           void refresh();
         });
-      return name;
+      const q = formatQuantity(parsed.quantity, parsed.unit);
+      return q ? `${q} ${name}` : name;
     },
     [familyId, userName, refresh],
   );
@@ -93,11 +100,14 @@ export function useShoppingList(familyId: string | null, userName?: string) {
     async (names: string[]) => {
       if (!familyId) return 0;
       const payload = names
-        .map((n) => resolveName(n))
-        .filter(Boolean)
-        .map((name) => ({
+        .map((n) => parseQuantity(n))
+        .map((p) => ({ ...p, name: resolveName(p.name) }))
+        .filter((p) => p.name)
+        .map((p) => ({
           family_id: familyId,
-          name,
+          name: p.name,
+          quantity: p.quantity,
+          unit: p.unit,
           added_by: userName?.trim() || "אנונימי",
         }));
       if (!payload.length) return 0;
@@ -110,7 +120,7 @@ export function useShoppingList(familyId: string | null, userName?: string) {
   );
 
   const update = useCallback(
-    async (id: string, patch: Partial<Pick<Row, "name" | "completed" | "archived">>) => {
+    async (id: string, patch: Partial<Pick<Row, "name" | "completed" | "archived" | "quantity" | "unit">>) => {
       const { error } = await supabase.from("items").update(patch).eq("id", id);
       if (error) console.error("update item", error);
       await refresh();
@@ -132,6 +142,16 @@ export function useShoppingList(familyId: string | null, userName?: string) {
       const clean = name.trim();
       if (!clean) return;
       void update(id, { name: clean });
+    },
+    [update],
+  );
+
+  // שינוי כמות/יחידה מהיר
+  const setQuantity = useCallback(
+    (id: string, quantity: number, unit?: string) => {
+      if (!(quantity > 0)) return;
+      setRows((r) => r.map((i) => (i.id === id ? { ...i, quantity, unit: unit ?? i.unit } : i)));
+      void update(id, unit === undefined ? { quantity } : { quantity, unit });
     },
     [update],
   );
@@ -181,6 +201,7 @@ export function useShoppingList(familyId: string | null, userName?: string) {
     addMany,
     toggleItem,
     renameItem,
+    setQuantity,
     removeItem,
     markAll,
     archiveCompleted,

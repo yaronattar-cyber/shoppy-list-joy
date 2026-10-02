@@ -5,6 +5,8 @@ export type ShoppingItem = {
   id: string;
   name: string;
   completed: boolean;
+  quantity: number;
+  unit: string;
   archived: boolean;
   addedBy: string;
   createdAt: string; // ISO
