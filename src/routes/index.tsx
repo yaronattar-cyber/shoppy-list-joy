@@ -115,6 +115,7 @@ function Index() {
           onAddMany={list.addMany}
           onToggle={list.toggleItem}
           onRename={list.renameItem}
+          onQuantity={list.setQuantity}
           onRemove={(id) => void list.removeItem(id)}
           onMarkAll={(c) => void list.markAll(c)}
           onArchive={() => void list.archiveCompleted()}
