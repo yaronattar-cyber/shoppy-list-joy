@@ -2,110 +2,139 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AddScreen } from "@/components/shopping/AddScreen";
 import { ListScreen } from "@/components/shopping/ListScreen";
+import { ShopScreen } from "@/components/shopping/ShopScreen";
+import { FamilyScreen } from "@/components/shopping/FamilyScreen";
 import { Onboarding } from "@/components/shopping/Onboarding";
+import { useFamily } from "@/hooks/useFamily";
 import { useShoppingList } from "@/hooks/useShoppingList";
 import { useSpeech } from "@/hooks/useSpeech";
-import { loadUserName, saveUserName } from "@/lib/user-name";
+import { useSwipe } from "@/hooks/useSwipe";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "רשימת קניות חכמה — ניהול קניות פשוט בעברית" },
+      { title: "רשימת קניות חכמה — רשימה משפחתית משותפת" },
       {
         name: "description",
         content:
-          "אפליקציית רשימת קניות בעברית: הוספה מהירה בקטגוריות, הוספה בדיבור, סימון פריטים שהושלמו, עריכה ומחיקה. הרשימה נשמרת במכשיר שלכם.",
+          "רשימת קניות משפחתית בעברית: הוספה בדיבור, סנכרון בין מכשירים, השוואת מחירי סל בין רשתות והזמנה בוואטסאפ.",
       },
-      { property: "og:title", content: "רשימת קניות חכמה" },
+      { property: "og:title", content: "רשימת קניות חכמה למשפחה" },
       {
         property: "og:description",
-        content: "הוסיפו פריטים בדיבור או בלחיצה, סמנו מה שנקנה, והרשימה נשמרת אצלכם במכשיר.",
+        content: "רשימה משותפת לכל המשפחה, עם דיבור, סנכרון בזמן אמת והסל הזול ביותר.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Index,
 });
 
-type Screen = "add" | "list" | "closed";
+// סדר המסכים — משמש להחלקה
+const ORDER = ["home", "list", "shop"] as const;
+type Screen = (typeof ORDER)[number] | "family";
 
 function Index() {
-  const [screen, setScreen] = useState<Screen>("add");
-  const [userName, setUserName] = useState<string | null>(null);
-  const [ready, setReady] = useState(false);
-  const list = useShoppingList(userName ?? undefined);
+  const [screen, setScreen] = useState<Screen>("home");
+  const family = useFamily();
+  const list = useShoppingList(family.familyId, family.userName ?? undefined);
   const { speak } = useSpeech();
 
-  // טעינת שם המשתמש אחרי הרכבה (onboarding מוצג רק אם אין שם)
-  useEffect(() => {
-    setUserName(loadUserName());
-    setReady(true);
-  }, []);
+  // RTL: החלקה שמאלה = המסך הבא
+  const step = (dir: 1 | -1) => {
+    const i = ORDER.indexOf(screen as (typeof ORDER)[number]);
+    const next = ORDER[i === -1 ? 0 : Math.min(ORDER.length - 1, Math.max(0, i + dir))];
+    if (next) setScreen(next);
+  };
+  const swipe = useSwipe({ onLeft: () => step(1), onRight: () => step(-1) });
 
-  // הקראת הכותרת האישית בכניסה למסך הראשי — פעם אחת
   useEffect(() => {
-    if (!userName || screen !== "add") return;
+    if (family.joinedFromLink) setScreen("family");
+  }, [family.joinedFromLink]);
+
+  useEffect(() => {
+    if (!family.userName || screen !== "home") return;
     const id = setTimeout(
-      () => speak(`שלום ${userName}, מה חסר לך היום?`, { once: true }),
+      () => speak(`שלום ${family.userName}, מה חסר לך היום?`, { once: true }),
       400,
     );
     return () => clearTimeout(id);
-  }, [userName, screen, speak]);
+  }, [family.userName, screen, speak]);
 
-  const exitApp = () => {
-    setScreen("closed");
-    if (typeof window !== "undefined") window.close();
-  };
+  if (!family.ready || !family.familyId) return <main className="min-h-screen bg-background" />;
 
-  if (!ready) return <main className="min-h-screen bg-background" />;
-
-  if (!userName) {
+  if (!family.userName) {
     return (
       <main className="min-h-screen bg-background">
-        <Onboarding
-          onSave={(name) => {
-            saveUserName(name);
-            setUserName(name);
-          }}
-        />
+        <Onboarding onSave={family.chooseName} />
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-background">
-      {screen === "add" && (
+    <main className="min-h-screen bg-background" {...swipe}>
+      <nav className="sticky top-0 z-40 flex justify-center gap-1 border-b-2 border-foreground bg-background/95 p-2 backdrop-blur">
+        {(
+          [
+            ["home", "בית"],
+            ["list", "רשימה"],
+            ["shop", "קניות"],
+            ["family", "משפחה"],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setScreen(id)}
+            aria-current={screen === id ? "page" : undefined}
+            className={`rounded-xl px-4 py-2 text-sm font-black ${
+              screen === id ? "bg-foreground text-background" : "text-foreground hover:bg-secondary"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+
+      {screen === "home" && (
         <AddScreen
-          userName={userName}
+          userName={family.userName}
           count={list.items.length}
+          history={list.history}
           onAdd={list.addItem}
           onGoShopping={() => setScreen("list")}
-          onExit={exitApp}
+          onOpenFamily={() => setScreen("family")}
           onSpeak={(text) => speak(text)}
         />
       )}
-
       {screen === "list" && (
         <ListScreen
           items={list.items}
+          onAdd={list.addItem}
+          onAddMany={list.addMany}
           onToggle={list.toggleItem}
           onRename={list.renameItem}
-          onRemove={list.removeItem}
-          onBack={() => setScreen("add")}
+          onRemove={(id) => void list.removeItem(id)}
+          onMarkAll={(c) => void list.markAll(c)}
+          onArchive={() => void list.archiveCompleted()}
+          onBack={() => setScreen("home")}
+          onShop={() => setScreen("shop")}
         />
       )}
-
-      {screen === "closed" && (
-        <div className="animate-in fade-in flex min-h-screen flex-col items-center justify-center gap-5 px-6 text-center duration-300">
-          <h1 className="text-2xl font-black text-foreground">להתראות! 👋</h1>
-          <p className="text-muted-foreground">הרשימה שלכם נשמרה במכשיר.</p>
-          <button
-            type="button"
-            onClick={() => setScreen("add")}
-            className="rounded-2xl bg-primary px-6 py-3 font-bold text-primary-foreground transition-transform hover:brightness-110 active:scale-95"
-          >
-            חזרה לאפליקציה
-          </button>
-        </div>
+      {screen === "shop" && (
+        <ShopScreen items={list.items} onToggle={list.toggleItem} onBack={() => setScreen("list")} />
+      )}
+      {screen === "family" && (
+        <FamilyScreen
+          familyId={family.familyId}
+          userName={family.userName}
+          joinedFromLink={family.joinedFromLink}
+          onRename={family.chooseName}
+          onJoin={family.joinFamily}
+          onCreate={family.createFamily}
+          onBack={() => setScreen("home")}
+        />
       )}
     </main>
   );
