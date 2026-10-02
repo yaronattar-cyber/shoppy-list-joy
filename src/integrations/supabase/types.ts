@@ -41,6 +41,8 @@ export type Database = {
           family_id: string
           id: string
           name: string
+          quantity: number
+          unit: string
         }
         Insert: {
           added_by?: string
@@ -50,6 +52,8 @@ export type Database = {
           family_id: string
           id?: string
           name: string
+          quantity?: number
+          unit?: string
         }
         Update: {
           added_by?: string
@@ -59,6 +63,8 @@ export type Database = {
           family_id?: string
           id?: string
           name?: string
+          quantity?: number
+          unit?: string
         }
         Relationships: [
           {

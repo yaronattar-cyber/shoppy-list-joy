@@ -1,0 +1,1 @@
+ALTER TABLE public.items ADD COLUMN quantity numeric NOT NULL DEFAULT 1, ADD COLUMN unit text NOT NULL DEFAULT '';
