@@ -14,6 +14,7 @@ export type ShoppingItem = {
   addedBy: string;
   createdAt: string; // ISO
   familyId: string;
+  storeId?: string | null; // חנות שהפריט שייך אליה
 };
 
 // DD/MM/YYYY HH:mm

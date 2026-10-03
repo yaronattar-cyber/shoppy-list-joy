@@ -18,6 +18,7 @@ type Row = {
   archived: boolean;
   added_by: string;
   created_at: string;
+  store_id: string | null;
 };
 
 type Patch = Partial<Omit<Row, "id" | "family_id" | "created_at" | "added_by">>;
@@ -35,6 +36,7 @@ const toItem = (row: Row): ShoppingItem => ({
   archived: row.archived,
   addedBy: row.added_by,
   createdAt: row.created_at,
+  storeId: row.store_id ?? null,
 });
 
 // המרת שדות DB לשדות פריט מקומי
@@ -103,7 +105,7 @@ async function sendOp(op: Op) {
 }
 
 // רשימת הקניות של המשפחה — ענן + מטמון מקומי, עובדת גם ללא קליטה
-export function useShoppingList(familyId: string | null, userName?: string) {
+export function useShoppingList(familyId: string | null, userName?: string, storeId: string | null = null) {
   const [rows, setRows] = useState<ShoppingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [productHistory, setProductHistory] = useState<HistoryEntry[]>([]);
@@ -256,7 +258,8 @@ export function useShoppingList(familyId: string | null, userName?: string) {
     };
   }, [familyId, refresh, flush]);
 
-  const items = useMemo(() => rows.filter((i) => !i.archived), [rows]);
+  // רשימה פעילה של החנות הנבחרת בלבד (null = רשימה כללית)
+  const items = useMemo(() => rows.filter((i) => !i.archived && (i.storeId ?? null) === storeId), [rows, storeId]);
   const inventory = useMemo(() => rows.filter((i) => i.archived), [rows]);
 
   const history = useMemo(() => [...new Set(rows.map((i) => i.name))], [rows]);
@@ -275,8 +278,9 @@ export function useShoppingList(familyId: string | null, userName?: string) {
       archived: false,
       added_by: userName?.trim() || "אנונימי",
       created_at: new Date().toISOString(),
+      store_id: storeId,
     }),
-    [familyId, userName],
+    [familyId, userName, storeId],
   );
 
   const addItem = useCallback(
@@ -375,17 +379,17 @@ export function useShoppingList(familyId: string | null, userName?: string) {
   // „סמן הכל” — לפי מזהים כדי לעבוד גם ללא קליטה
   const markAll = useCallback(
     async (completed: boolean) => {
-      const ids = rows.filter((i) => !i.archived).map((i) => i.id);
+      const ids = items.map((i) => i.id);
       if (ids.length) enqueue({ type: "update", ids, patch: { completed, out_of_stock: false } });
     },
-    [rows, enqueue],
+    [items, enqueue],
   );
 
   // העברת פריטים שנקנו למלאי
   const archiveCompleted = useCallback(async () => {
-    const ids = rows.filter((i) => i.completed && !i.archived).map((i) => i.id);
+    const ids = items.filter((i) => i.completed).map((i) => i.id);
     if (ids.length) enqueue({ type: "update", ids, patch: { archived: true } });
-  }, [rows, enqueue]);
+  }, [items, enqueue]);
 
   const restoreFromInventory = useCallback(
     async (ids: string[]) => {

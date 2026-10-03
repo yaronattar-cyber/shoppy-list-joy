@@ -81,3 +81,12 @@ export function formatPrice(value: number): string {
 export function formatDistance(meters: number): string {
   return meters < 1000 ? `${meters} מ׳` : `${(meters / 1000).toFixed(1)} ק״מ`;
 }
+
+// אומדן סל לחנות מותאמת לפי שם: רשת מוכרת → מקדם שלה, אחרת מחיר בסיס.
+// נקודת חיבור עתידית: מחירים שנשלפו מכתובת האתר של החנות.
+export function estimateForStore(lines: BasketLine[], storeName: string): number {
+  const known = STORES.find((s) => storeName.includes(s));
+  const factor = known ? STORE_FACTOR[known] : 1;
+  const active = lines.filter((l) => !l.completed && !l.outOfStock);
+  return Math.round(active.reduce((sum, l) => sum + basePrice(l.name) * factor * (l.quantity && l.quantity > 0 ? l.quantity : 1), 0) * 10) / 10;
+}
