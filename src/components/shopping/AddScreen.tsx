@@ -31,6 +31,7 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
   const [value, setValue] = useState("");
   const [popup, setPopup] = useState<string | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [scanDraft, setScanDraft] = useState<string | null>(null); // שלב אישור אחרי סריקה
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
