@@ -12,11 +12,12 @@ type Props = {
   onClose: () => void;
   onSave: (id: string, details: { name: string; quantity: number; unit: string; notes: string; category: string; storeId?: string | null }) => void;
   onDelete: (id: string) => void;
+  onOutOfStock?: (id: string) => void;
 };
 
 const field = "h-11 w-full rounded-md border border-input bg-card px-3 text-base text-foreground outline-none focus:ring-2 focus:ring-ring";
 
-export function ItemEditDrawer({ item, stores = [], onClose, onSave, onDelete }: Props) {
+export function ItemEditDrawer({ item, stores = [], onClose, onSave, onDelete, onOutOfStock }: Props) {
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [unit, setUnit] = useState("");
@@ -76,6 +77,13 @@ export function ItemEditDrawer({ item, stores = [], onClose, onSave, onDelete }:
             </select>
           </label>
         </div>
+        {item && onOutOfStock && !item.completed && (
+          <div className="px-4">
+            <Button type="button" variant="outline" className="w-full border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => { onOutOfStock(item.id); onClose(); }}>
+              {item.outOfStock ? "ביטול „חסר במלאי”" : "סימון „חסר במלאי”"}
+            </Button>
+          </div>
+        )}
         <DrawerFooter className="grid grid-cols-[auto_minmax(0,1fr)] gap-3">
           <Button type="button" variant="ghost" className="text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => { if (item) onDelete(item.id); onClose(); }}><Trash2 />מחיקה</Button>
           <DrawerClose asChild>
