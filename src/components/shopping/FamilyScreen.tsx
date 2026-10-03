@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { inviteLink, whatsappInvite } from "@/lib/family";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type Props = {
   familyId: string;
@@ -11,10 +13,9 @@ type Props = {
   onBack: () => void;
 };
 
-const box = "rounded-3xl border-[3px] border-foreground bg-card p-5";
+const box = "rounded-lg border border-border bg-card p-5 shadow-sm";
 const input =
-  "min-w-0 flex-1 rounded-2xl border-2 border-foreground bg-background px-4 py-2.5 text-base outline-none focus:ring-2 focus:ring-ring";
-const btn = "rounded-2xl border-[3px] border-foreground px-4 py-2.5 text-sm font-black";
+  "min-w-0 flex-1 rounded-md border border-input bg-background px-4 py-2.5 text-base outline-none focus:ring-2 focus:ring-ring";
 
 // מסך 4 — ניהול המשפחה
 export function FamilyScreen(p: Props) {
@@ -23,8 +24,8 @@ export function FamilyScreen(p: Props) {
   const [copied, setCopied] = useState(false);
 
   return (
-    <section className="mx-auto w-full max-w-xl space-y-5 px-5 pb-16 pt-10">
-      <h1 className="text-3xl font-black text-foreground">המשפחה שלי</h1>
+    <section className="mx-auto w-full max-w-xl space-y-5 px-4 pb-28 pt-5 sm:px-6">
+      <h1 className="text-2xl font-bold text-foreground">המשפחה שלי</h1>
       {p.joinedFromLink && (
         <p className="rounded-2xl bg-accent p-3 text-sm font-bold text-accent-foreground">
           הצטרפתם לקבוצה {p.familyId} דרך קישור הזמנה 🎉
@@ -33,26 +34,26 @@ export function FamilyScreen(p: Props) {
 
       <div className={box}>
         <p className="text-sm text-muted-foreground">קוד הקבוצה</p>
-        <p className="mt-1 font-mono text-3xl font-black tracking-widest text-foreground" dir="ltr">{p.familyId}</p>
+        <p className="mt-1 font-mono text-3xl font-bold text-foreground" dir="ltr">{p.familyId}</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <a
             href={whatsappInvite(p.familyId, p.userName)}
             target="_blank"
             rel="noreferrer"
-            className={`${btn} bg-primary text-primary-foreground`}
+            className={cn(buttonVariants(), "h-10")}
           >
             הזמנה בוואטסאפ
           </a>
-          <button
+          <Button
             type="button"
             onClick={async () => {
               await navigator.clipboard?.writeText(inviteLink(p.familyId));
               setCopied(true);
             }}
-            className={`${btn} bg-card text-foreground`}
+            variant="outline"
           >
             {copied ? "הועתק ✓" : "העתקת קישור"}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -63,10 +64,10 @@ export function FamilyScreen(p: Props) {
           if (name.trim()) p.onRename(name);
         }}
       >
-        <label className="text-sm font-bold text-foreground" htmlFor="fam-name">השם שלי</label>
+        <label className="text-sm font-semibold text-foreground" htmlFor="fam-name">השם שלי</label>
         <div className="mt-2 flex gap-2">
           <input id="fam-name" value={name} onChange={(e) => setName(e.target.value)} className={input} />
-          <button type="submit" className={`${btn} bg-card text-foreground`}>שמירה</button>
+          <Button type="submit" variant="outline">שמירה</Button>
         </div>
       </form>
 
@@ -78,7 +79,7 @@ export function FamilyScreen(p: Props) {
           setCode("");
         }}
       >
-        <label className="text-sm font-bold text-foreground" htmlFor="fam-code">הצטרפות לקבוצה קיימת</label>
+        <label className="text-sm font-semibold text-foreground" htmlFor="fam-code">הצטרפות לקבוצה קיימת</label>
         <div className="mt-2 flex gap-2">
           <input
             id="fam-code"
@@ -88,20 +89,21 @@ export function FamilyScreen(p: Props) {
             dir="ltr"
             className={input}
           />
-          <button type="submit" className={`${btn} bg-primary text-primary-foreground`}>הצטרפות</button>
+          <Button type="submit">הצטרפות</Button>
         </div>
-        <button
+        <Button
           type="button"
           onClick={() => void p.onCreate()}
-          className="mt-4 text-sm font-bold text-muted-foreground underline"
+          variant="link"
+          className="mt-3 px-0 text-sm text-muted-foreground"
         >
           או יצירת קבוצה חדשה
-        </button>
+        </Button>
       </form>
 
-      <button type="button" onClick={p.onBack} className={`${btn} w-full bg-card text-foreground`}>
+      <Button type="button" onClick={p.onBack} variant="outline" className="w-full">
         חזרה לבית
-      </button>
+      </Button>
     </section>
   );
 }

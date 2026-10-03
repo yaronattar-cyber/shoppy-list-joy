@@ -1,16 +1,17 @@
 import { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 import { CATEGORIES, type Category } from "@/lib/categories";
 
 type Props = { onAdd: (name: string) => string | null };
 
-// שורת קטגוריות אופקית נגללת — סטייל קומיקס: קו שחור עבה, צבע חזק, צל
+// שורת קטגוריות קומפקטית ונגללת
 export function CategoryBar({ onAdd }: Props) {
   const [openId, setOpenId] = useState<string | null>(null);
 
   return (
-    <div className="-mx-5 mt-7 overflow-x-auto px-5 pb-3">
-      <div className="flex w-max flex-nowrap gap-4">
+    <div className="-mx-4 mt-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none]">
+      <div className="flex w-max flex-nowrap gap-2">
         {CATEGORIES.map((cat) =>
           cat.direct ? (
             <ComicButton key={cat.id} cat={cat} onClick={() => onAdd(cat.label)} />
@@ -26,7 +27,7 @@ export function CategoryBar({ onAdd }: Props) {
               <PopoverContent
                 align="center"
                 dir="rtl"
-                className="w-72 rounded-2xl border-[3px] border-foreground p-3 shadow-[6px_6px_0_0_var(--color-foreground)]"
+                className="w-72 rounded-lg border-border bg-card p-3 shadow-lg"
               >
                 <CategoryMenu
                   cat={cat}
@@ -51,16 +52,18 @@ function ComicButton({
 }: { cat: Category; onClick?: () => void } & React.ComponentProps<"button">) {
   const { Icon } = cat;
   return (
-    <button
+    <Button
       type="button"
       onClick={onClick}
       aria-label={cat.label}
       title={cat.label}
       {...rest}
-      className={`grid h-20 w-20 shrink-0 place-items-center rounded-3xl border-[3px] border-foreground text-foreground shadow-[5px_5px_0_0_var(--color-foreground)] transition-all duration-150 hover:-translate-y-0.5 active:translate-x-[3px] active:translate-y-[3px] active:shadow-none ${cat.color}`}
+      variant="outline"
+      className="h-10 shrink-0 gap-2 rounded-full border-border bg-card px-3.5 text-sm font-medium text-foreground shadow-sm active:scale-95"
     >
-      <Icon className="h-9 w-9" strokeWidth={2.5} aria-hidden />
-    </button>
+      <Icon className="h-4 w-4 text-primary" strokeWidth={2.25} aria-hidden />
+      <span>{cat.label}</span>
+    </Button>
   );
 }
 
@@ -75,17 +78,18 @@ function CategoryMenu({
 
   return (
     <div>
-      <p className="mb-2 text-base font-black text-foreground">{cat.label}</p>
+      <p className="mb-2 text-base font-semibold text-foreground">{cat.label}</p>
       <div className="flex flex-col gap-1.5">
         {cat.options?.map((opt) => (
-          <button
+          <Button
             key={opt}
             type="button"
             onClick={() => onPick(opt)}
-            className="rounded-xl border-2 border-transparent px-3 py-2 text-right text-base font-bold text-foreground transition-colors hover:border-foreground hover:bg-secondary"
+            variant="ghost"
+            className="h-10 justify-start rounded-md px-3 text-right text-base font-medium text-foreground"
           >
             {opt}
-          </button>
+          </Button>
         ))}
       </div>
       {cat.allowCustom && (
@@ -103,14 +107,14 @@ function CategoryMenu({
             onChange={(e) => setCustom(e.target.value)}
             placeholder={cat.customPlaceholder ?? "פריט מותאם..."}
             aria-label={`פריט מותאם בקטגוריית ${cat.label}`}
-            className="min-w-0 rounded-xl border-2 border-foreground bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            className="min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
-          <button
+          <Button
             type="submit"
-            className="rounded-xl border-2 border-foreground bg-primary px-3 py-2 text-sm font-black text-primary-foreground active:scale-95"
+            className="h-10 rounded-md px-3 text-sm font-semibold"
           >
             הוסף
-          </button>
+          </Button>
         </form>
       )}
     </div>
