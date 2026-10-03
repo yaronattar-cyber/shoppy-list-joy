@@ -81,3 +81,11 @@ export function stepFor(unit: string): number {
   if (unit === "ק״ג" || unit === "ליטר") return 0.5;
   return 1;
 }
+
+// בונה מחרוזת שה-parser יודע לקרוא חזרה ("2 קילו עגבניות")
+export function toEntryText(name: string, quantity: number, unit: string): string {
+  const word = Object.entries(UNIT_WORDS).find(([, v]) => v === unit)?.[0];
+  const q = quantity > 0 ? quantity : 1;
+  if (word) return `${q} ${word} ${name}`;
+  return q === 1 ? name : `${q} ${name}`;
+}
