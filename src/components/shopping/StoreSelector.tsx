@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Copy, ExternalLink, Pencil, Plus, Star, Store, Trash2 } from "lucide-react";
+import { Check, ChevronDown, Copy, ExternalLink, Pencil, Plus, Star, Store, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { estimateForStore, formatPrice, type BasketLine } from "@/lib/prices";
 import type { ShoppingItem } from "@/lib/shopping-list";
@@ -45,14 +46,23 @@ export function StoreSelector(p: Props) {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pt-3 sm:px-6">
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2 [scrollbar-width:none]" data-no-swipe>
-        <button type="button" className={chip(!p.active)} onClick={() => p.onSelect(null)}>כללי</button>
-        {p.stores.map((s) => (
-          <button key={s.id} type="button" className={chip(p.active?.id === s.id)} onClick={() => p.onSelect(s.id)}><span className="flex items-center gap-1">{s.is_default && <Star className="h-3.5 w-3.5 fill-current" aria-label="סופר הבית" />}{s.name}</span></button>
-        ))}
-        <button type="button" aria-label="הוספת חנות" className={`${chip(false)} flex items-center gap-1 border-dashed text-primary`} onClick={() => setEditing({ name: "", url: "" })}>
-          <Plus className="h-4 w-4" />חנות
-        </button>
+      {/* תפריט נפתח לבחירת חנות */}
+      <div className="pb-2">
+        <DropdownMenu dir="rtl">
+          <DropdownMenuTrigger asChild>
+            <Button type="button" variant="outline" size="sm"><Store />חנויות<ChevronDown className="h-4 w-4" /></Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="max-h-80 w-60 overflow-y-auto text-right">
+            <DropdownMenuItem onSelect={() => p.onSelect(null)} className={!p.active ? "font-bold text-primary" : ""}>{!p.active && <Check />}כללי</DropdownMenuItem>
+            {p.stores.map((s) => (
+              <DropdownMenuItem key={s.id} onSelect={() => p.onSelect(s.id)} className={p.active?.id === s.id ? "font-bold text-primary" : ""}>
+                {p.active?.id === s.id && <Check />}{s.name}{s.is_default && <Star className="fill-current" aria-label="סופר הבית" />}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={() => setEditing({ name: "", url: "" })} className="text-primary"><Plus />הוספת חנות</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
       <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 shadow-sm">
         <Store className="h-5 w-5 shrink-0 text-primary" />
