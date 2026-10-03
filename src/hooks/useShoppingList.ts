@@ -231,7 +231,10 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
           });
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        // התחברות מחדש/ניתוק — משיכה מלאה כדי לא לפספס שינויים
+        if (status === "SUBSCRIBED" || status === "CHANNEL_ERROR" || status === "TIMED_OUT") void refresh();
+      });
 
     const goOnline = () => {
       setOnline(true);
@@ -244,9 +247,10 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
     window.addEventListener("online", goOnline);
     window.addEventListener("offline", goOffline);
     document.addEventListener("visibilitychange", onVisible);
-    // ניסיון חוזר תקופתי — navigator.onLine לא תמיד אמין בקליטה חלשה
+    // סנכרון רקע: שליחת תור + משיכת שינויים של בני המשפחה (רשת ביטחון ל־Realtime)
     const timer = setInterval(() => {
-      if (readJson<Op[]>(queueKey(familyId), []).length) void flush();
+      if (document.visibilityState !== "visible") return;
+      void flush().then(() => refresh());
     }, 15000);
 
     return () => {
