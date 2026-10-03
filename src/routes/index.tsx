@@ -124,7 +124,12 @@ function Index() {
         />
       )}
       {screen === "shop" && (
-        <ShopScreen items={list.items} onToggle={list.toggleItem} onBack={() => setScreen("list")} />
+        <ShopScreen
+          items={list.items}
+          onToggle={list.toggleItem}
+          onQuantity={list.setQuantity}
+          onBack={() => setScreen("list")}
+        />
       )}
       {screen === "family" && (
         <FamilyScreen
