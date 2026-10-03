@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveName } from "@/lib/categories";
 import { formatQuantity, parseQuantity } from "@/lib/quantity";
@@ -27,6 +27,28 @@ const toItem = (row: Row): ShoppingItem => ({
   addedBy: row.added_by,
   createdAt: row.created_at,
 });
+
+// מראה מקומי (localStorage) של הפריטים שסומנו „נקנה” — שומר את הכוונה גם אם
+// העדכון לענן לא הספיק להישמר (רענון מהיר, סגירת האפליקציה או רשת חלשה)
+const doneKey = (familyId: string) => `shopping-done-${familyId}`;
+const loadDoneIds = (familyId: string | null): string[] => {
+  if (!familyId) return [];
+  try {
+    const raw = localStorage.getItem(doneKey(familyId));
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+};
+const saveDoneIds = (familyId: string | null, ids: string[]) => {
+  if (!familyId) return;
+  try {
+    localStorage.setItem(doneKey(familyId), JSON.stringify([...new Set(ids)]));
+  } catch {
+    /* אין מקום/גישה — נמשיך עם הענן בלבד */
+  }
+};
 
 // רשימת הקניות של המשפחה — שמורה ב-Cloud ומסונכרנת בזמן אמת בין המכשירים
 export function useShoppingList(familyId: string | null, userName?: string) {
