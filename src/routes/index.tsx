@@ -64,6 +64,12 @@ function Index() {
   };
   const swipe = useSwipe({ onLeft: () => step(1), onRight: () => step(-1) });
 
+  // מסך הבית תמיד מוסיף לסופר הבית
+  const { resetToDefault } = stores;
+  useEffect(() => {
+    if (screen === "home") resetToDefault();
+  }, [screen, resetToDefault]);
+
   useEffect(() => {
     if (family.joinedFromLink) setScreen("family");
   }, [family.joinedFromLink]);

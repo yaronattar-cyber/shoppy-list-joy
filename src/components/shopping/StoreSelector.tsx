@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ExternalLink, Pencil, Plus, Store, Trash2 } from "lucide-react";
+import { ExternalLink, Pencil, Plus, Star, Store, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { estimateForStore, formatPrice, type BasketLine } from "@/lib/prices";
@@ -10,7 +10,7 @@ type Props = {
   active: StoreInfo | null;
   lines: BasketLine[];
   onSelect: (id: string | null) => void;
-  onSave: (s: { id?: string; name: string; url: string }) => void;
+  onSave: (s: { id?: string; name: string; url: string; is_default?: boolean }) => void;
   onRemove: (id: string) => void;
 };
 
@@ -24,7 +24,7 @@ const host = (url: string) => {
 
 // בורר חנויות: צ׳יפים נגללים + כרטיס חנות פעילה + עורך
 export function StoreSelector(p: Props) {
-  const [editing, setEditing] = useState<{ id?: string; name: string; url: string } | null>(null);
+  const [editing, setEditing] = useState<{ id?: string; name: string; url: string; is_default?: boolean } | null>(null);
   const total = estimateForStore(p.lines, p.active?.name ?? "");
   const chip = (selected: boolean) =>
     `shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
@@ -36,7 +36,7 @@ export function StoreSelector(p: Props) {
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-2 [scrollbar-width:none]" data-no-swipe>
         <button type="button" className={chip(!p.active)} onClick={() => p.onSelect(null)}>כללי</button>
         {p.stores.map((s) => (
-          <button key={s.id} type="button" className={chip(p.active?.id === s.id)} onClick={() => p.onSelect(s.id)}>{s.name}</button>
+          <button key={s.id} type="button" className={chip(p.active?.id === s.id)} onClick={() => p.onSelect(s.id)}><span className="flex items-center gap-1">{s.is_default && <Star className="h-3.5 w-3.5 fill-current" aria-label="סופר הבית" />}{s.name}</span></button>
         ))}
         <button type="button" aria-label="הוספת חנות" className={`${chip(false)} flex items-center gap-1 border-dashed text-primary`} onClick={() => setEditing({ name: "", url: "" })}>
           <Plus className="h-4 w-4" />חנות
@@ -86,6 +86,10 @@ export function StoreSelector(p: Props) {
               </label>
               <label className="block text-sm font-medium">כתובת אתר החנות
                 <input dir="ltr" inputMode="url" value={editing.url} onChange={(e) => setEditing({ ...editing, url: e.target.value })} placeholder="www.rami-levy.co.il" className="mt-1 h-11 w-full rounded-md border border-input bg-card px-3 text-left text-base outline-none focus:ring-2 focus:ring-ring" />
+              </label>
+              <label className="flex items-center gap-3 rounded-md border border-border bg-card px-3 py-2.5 text-sm font-medium">
+                <input type="checkbox" checked={!!editing.is_default} onChange={(e) => setEditing({ ...editing, is_default: e.target.checked })} className="h-5 w-5 accent-[var(--color-primary)]" />
+                <Star className="h-4 w-4 text-primary" />סופר הבית (ברירת מחדל)
               </label>
               <div className="flex gap-2 pt-2">
                 <Button type="submit" className="h-11 flex-1">שמירה</Button>
