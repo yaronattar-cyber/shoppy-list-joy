@@ -3,12 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { resolveName } from "@/lib/categories";
 import { formatQuantity, parseQuantity } from "@/lib/quantity";
 import type { ShoppingItem } from "@/lib/shopping-list";
+import { loadHistory, recordPurchase, type HistoryEntry } from "@/lib/product-history";
 
 type Row = {
   id: string;
   family_id: string;
   name: string;
   completed: boolean;
+  out_of_stock: boolean;
   quantity: number;
   unit: string;
   notes: string;
@@ -23,6 +25,7 @@ const toItem = (row: Row): ShoppingItem => ({
   familyId: row.family_id,
   name: row.name,
   completed: row.completed,
+  outOfStock: !!row.out_of_stock,
   quantity: Number(row.quantity) || 1,
   unit: row.unit ?? "",
   notes: row.notes ?? "",
@@ -58,6 +61,8 @@ const saveDoneIds = (familyId: string | null, ids: string[]) => {
 export function useShoppingList(familyId: string | null, userName?: string) {
   const [rows, setRows] = useState<ShoppingItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [productHistory, setProductHistory] = useState<HistoryEntry[]>([]);
+  useEffect(() => setProductHistory(loadHistory()), []);
   // שחזור סימוני „נקנו” מקומיים פעם אחת לכל קבוצה, כדי לא להתנגד למכשירים אחרים
   const reconciledRef = useRef<string | null>(null);
 
@@ -175,22 +180,34 @@ export function useShoppingList(familyId: string | null, userName?: string) {
     [refresh],
   );
 
-  // סימון/ביטול סימון — מיד במסך, שמירת הכוונה מקומית, ואז עדכון הענן
+  // הקשה: רגיל → נקנה; ממצב נקנה/חסר → חזרה לרגיל. נקנה נשמר להיסטוריה
   const toggleItem = useCallback(
     (id: string) => {
       const item = rows.find((i) => i.id === id);
       if (!item) return;
-      const next = !item.completed;
-      setRows((r) => r.map((i) => (i.id === id ? { ...i, completed: next } : i)));
+      const next = !(item.completed || item.outOfStock);
+      setRows((r) => r.map((i) => (i.id === id ? { ...i, completed: next, outOfStock: false } : i)));
       const mirror = loadDoneIds(familyId);
       saveDoneIds(familyId, next ? [...mirror, id] : mirror.filter((x) => x !== id));
-      void (async () => {
-        const { error } = await supabase.from("items").update({ completed: next }).eq("id", id);
-        if (error) {
-          console.error("update item", error);
-          // נשמור את המצב האופטימי — השחזור בטעינה הבאה יסנכרן מול הענן
-        }
-      })();
+      if (next) setProductHistory(recordPurchase(item.name, item.category));
+      void supabase.from("items").update({ completed: next, out_of_stock: false }).eq("id", id).then(({ error }) => {
+        if (error) console.error("update item", error);
+      });
+    },
+    [rows, familyId],
+  );
+
+  // הקשה כפולה / לחיצה ארוכה — סימון „חסר במלאי” (או ביטולו)
+  const markOutOfStock = useCallback(
+    (id: string) => {
+      const item = rows.find((i) => i.id === id);
+      if (!item) return;
+      const next = !item.outOfStock;
+      setRows((r) => r.map((i) => (i.id === id ? { ...i, outOfStock: next, completed: false } : i)));
+      saveDoneIds(familyId, loadDoneIds(familyId).filter((x) => x !== id));
+      void supabase.from("items").update({ out_of_stock: next, completed: false }).eq("id", id).then(({ error }) => {
+        if (error) console.error("out of stock", error);
+      });
     },
     [rows, familyId],
   );
@@ -272,7 +289,9 @@ export function useShoppingList(familyId: string | null, userName?: string) {
   return {
     items,
     history,
+    productHistory,
     loading,
+    markOutOfStock,
     addItem,
     addMany,
     toggleItem,
