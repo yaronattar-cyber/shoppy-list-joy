@@ -98,10 +98,20 @@ function applyOps(items: ShoppingItem[], ops: Op[]): ShoppingItem[] {
 const isNetworkError = (msg: string) =>
   (typeof navigator !== "undefined" && !navigator.onLine) || /fetch|network|timeout|load failed/i.test(msg);
 
-async function sendOp(op: Op) {
-  if (op.type === "insert") return supabase.from("items").upsert(op.rows, { onConflict: "id", ignoreDuplicates: true });
-  if (op.type === "update") return supabase.from("items").update(op.patch).in("id", op.ids);
-  return supabase.from("items").delete().in("id", op.ids);
+// שליחה במנות של 50 כדי שבקשות גדולות לא ייחסמו (URL ארוך מדי)
+const CHUNK = 50;
+async function sendOp(op: Op): Promise<{ error: { message: string } | null }> {
+  const list = op.type === "insert" ? op.rows : op.ids;
+  for (let i = 0; i < list.length; i += CHUNK) {
+    const { error } =
+      op.type === "insert"
+        ? await supabase.from("items").upsert(op.rows.slice(i, i + CHUNK), { onConflict: "id", ignoreDuplicates: true })
+        : op.type === "update"
+          ? await supabase.from("items").update(op.patch).in("id", op.ids.slice(i, i + CHUNK))
+          : await supabase.from("items").delete().in("id", op.ids.slice(i, i + CHUNK));
+    if (error) return { error };
+  }
+  return { error: null };
 }
 
 // רשימת הקניות של המשפחה — ענן + מטמון מקומי, עובדת גם ללא קליטה
