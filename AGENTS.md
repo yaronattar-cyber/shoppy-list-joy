@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Shared shopping-item UI belongs in reusable row and bottom-sheet components so List and In-Store stay behaviorally consistent.
