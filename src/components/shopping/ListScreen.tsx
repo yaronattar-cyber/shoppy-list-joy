@@ -135,7 +135,7 @@ export function ListScreen(p: Props) {
             <span>פריטים שנרכשו ({done.length})</span>
             <ChevronDown className={`h-4 w-4 transition-transform ${showDone ? "rotate-180" : ""}`} />
           </Button>
-          {showDone && <ul className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">{done.map((item) => <ShoppingItemRow key={item.id} item={item} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />)}</ul>}
+          {showDone && <ul className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">{done.map((item) => <ShoppingItemRow key={item.id} item={item} storeLabel={tag(item)} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />)}</ul>}
         </section>
       )}
       {!p.items.length && <div className="mt-12 text-center text-muted-foreground"><ShoppingCart className="mx-auto mb-3 h-10 w-10 opacity-40" /><p>הוסיפו מוצר ראשון למעלה</p></div>}
