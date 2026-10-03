@@ -13,7 +13,7 @@ import { matchHistory, type HistoryEntry } from "@/lib/product-history";
 import { basketTotals, formatDistance, formatPrice, STORE_DISTANCES } from "@/lib/prices";
 import { parsePastedList, type ShoppingItem } from "@/lib/shopping-list";
 
-type ItemDetails = { name: string; quantity: number; unit: string; notes: string; category: string };
+type ItemDetails = { name: string; quantity: number; unit: string; notes: string; category: string; storeId?: string | null };
 type Props = {
   items: ShoppingItem[];
   history: string[];
@@ -27,6 +27,7 @@ type Props = {
   onMarkAll: (completed: boolean) => void;
   onArchive: () => void;
   storeName?: string | undefined;
+  stores?: { id: string; name: string }[];
 };
 
 export function ListScreen(p: Props) {
@@ -126,7 +127,7 @@ export function ListScreen(p: Props) {
         <Button type="button" className="w-full" disabled={!doneCount} onClick={p.onArchive}><Archive />ניקוי פריטים שנקנו{doneCount ? ` (${doneCount})` : ""}</Button>
       </div>
 
-      <ItemEditDrawer item={selected} onClose={() => setSelected(null)} onSave={p.onUpdate} onDelete={p.onRemove} />
+      <ItemEditDrawer item={selected} stores={p.stores} onClose={() => setSelected(null)} onSave={p.onUpdate} onDelete={p.onRemove} />
 
       <AiRequestDrawer open={aiOpen} onOpenChange={setAiOpen} storeName={p.storeName} onAddMany={p.onAddMany} />
 
