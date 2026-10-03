@@ -31,6 +31,7 @@ type Props = {
   stores?: { id: string; name: string }[];
   targets?: AddTarget[];
   onAddTo?: (name: string, target: AddTarget) => string | null;
+  isGeneral?: boolean;
 };
 
 export function ListScreen(p: Props) {
@@ -52,6 +53,16 @@ export function ListScreen(p: Props) {
   const suggestions = useMemo(() => matchHistory(p.history, p.productHistory, quick), [p.history, p.productHistory, quick]);
   const todo = p.items.filter((item) => !item.completed);
   const done = p.items.filter((item) => item.completed);
+  // רשימה כללית: תגית חנות לכל פריט וקיבוץ לפי חנויות
+  const general = !!p.isGeneral;
+  const storeNameOf = (item: ShoppingItem) => p.stores?.find((s) => s.id === item.storeId)?.name ?? "ללא חנות";
+  const tag = (item: ShoppingItem) => (general ? storeNameOf(item) : undefined);
+  const byStore = general && !grouped;
+  const storeGroups = (rows: ShoppingItem[]) => {
+    const m = new Map<string, ShoppingItem[]>();
+    for (const r of rows) { const k = storeNameOf(r); m.set(k, [...(m.get(k) ?? []), r]); }
+    return [...m.entries()].sort(([a], [b]) => (a === "ללא חנות" ? 1 : b === "ללא חנות" ? -1 : a.localeCompare(b, "he")));
+  };
   const [sort, setSort] = useState<"price" | "distance">("price");
   const doneCount = p.items.filter((item) => item.completed).length;
   const allDone = p.items.length > 0 && doneCount === p.items.length;
@@ -104,13 +115,18 @@ export function ListScreen(p: Props) {
         <p className="text-sm text-muted-foreground">אפשר להמשיך לקופה</p>
       </div>}
 
-      {todo.length > 0 && (grouped
+      {todo.length > 0 && (byStore
+        ? storeGroups(todo).map(([label, rows]) => <section key={label} className="mt-3">
+            <h2 className="mb-1 px-1 text-xs font-semibold text-muted-foreground">{label} ({rows.length})</h2>
+            <ul className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">{rows.map((item) => <ShoppingItemRow key={item.id} item={item} storeLabel={tag(item)} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />)}</ul>
+          </section>)
+        : grouped
         ? groupByCategory(todo).map(([cat, rows]) => <section key={cat} className="mt-3">
             <h2 className="mb-1 px-1 text-xs font-semibold text-muted-foreground">{cat} ({rows.length})</h2>
-            <ul className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">{rows.map((item) => <ShoppingItemRow key={item.id} item={item} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />)}</ul>
+            <ul className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">{rows.map((item) => <ShoppingItemRow key={item.id} item={item} storeLabel={tag(item)} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />)}</ul>
           </section>)
         : <ul className="mt-3 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-            {todo.map((item) => <ShoppingItemRow key={item.id} item={item} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />)}
+            {todo.map((item) => <ShoppingItemRow key={item.id} item={item} storeLabel={tag(item)} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />)}
           </ul>)}
       {p.items.length > 0 && <p className="mt-2 text-xs text-muted-foreground">הקשה: נקנה · לחיצה ארוכה: חסר במלאי</p>}
       {done.length > 0 && (
@@ -119,7 +135,7 @@ export function ListScreen(p: Props) {
             <span>פריטים שנרכשו ({done.length})</span>
             <ChevronDown className={`h-4 w-4 transition-transform ${showDone ? "rotate-180" : ""}`} />
           </Button>
-          {showDone && <ul className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">{done.map((item) => <ShoppingItemRow key={item.id} item={item} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />)}</ul>}
+          {showDone && <ul className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">{done.map((item) => <ShoppingItemRow key={item.id} item={item} storeLabel={tag(item)} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />)}</ul>}
         </section>
       )}
       {!p.items.length && <div className="mt-12 text-center text-muted-foreground"><ShoppingCart className="mx-auto mb-3 h-10 w-10 opacity-40" /><p>הוסיפו מוצר ראשון למעלה</p></div>}
