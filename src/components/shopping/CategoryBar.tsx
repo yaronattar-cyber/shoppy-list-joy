@@ -59,9 +59,10 @@ function ComicButton({
       title={cat.label}
       {...rest}
       variant="outline"
-      className="h-10 shrink-0 gap-2 rounded-full border-border bg-card px-3.5 text-sm font-medium text-foreground shadow-sm active:scale-95"
+      style={{ backgroundColor: `var(--cat-${cat.id}, var(--card))`, color: `var(--cat-${cat.id}-fg, var(--foreground))` }}
+      className="h-11 shrink-0 gap-2 rounded-full border-transparent px-4 text-sm font-semibold shadow-soft transition-transform hover:brightness-95 active:scale-95"
     >
-      <Icon className="h-4 w-4 text-primary" strokeWidth={2.25} aria-hidden />
+      <Icon className="h-4 w-4" strokeWidth={2.4} aria-hidden />
       <span>{cat.label}</span>
     </Button>
   );
