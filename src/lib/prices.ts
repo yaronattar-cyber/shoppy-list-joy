@@ -62,11 +62,15 @@ export const STORE_DISTANCES: Record<Store, number> = {
   ויקטורי: 600,
 };
 
-export function basketTotals(itemNames: string[]): BasketTotal[] {
+export type BasketLine = { name: string; quantity?: number; completed?: boolean; outOfStock?: boolean };
+
+// סל פעיל בלבד: מדלגים על פריטים שנקנו/חסרים ומכפילים בכמות
+export function basketTotals(lines: BasketLine[]): BasketTotal[] {
+  const active = lines.filter((l) => !l.completed && !l.outOfStock);
   return STORES.map((store) => ({
     store,
     total:
-      Math.round(itemNames.reduce((sum, name) => sum + priceAt(name, store), 0) * 10) / 10,
+      Math.round(active.reduce((sum, l) => sum + priceAt(l.name, store) * (l.quantity && l.quantity > 0 ? l.quantity : 1), 0) * 10) / 10,
   })).sort((a, b) => a.total - b.total);
 }
 

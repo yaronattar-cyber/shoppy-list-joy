@@ -38,7 +38,7 @@ export function ListScreen(p: Props) {
   const [sort, setSort] = useState<"price" | "distance">("price");
   const doneCount = p.items.filter((item) => item.completed).length;
   const allDone = p.items.length > 0 && doneCount === p.items.length;
-  const totals = useMemo(() => basketTotals(p.items.map((item) => item.name)), [p.items]);
+  const totals = useMemo(() => basketTotals(p.items), [p.items]);
   const cheapest = totals[0];
   const nearest = [...totals].sort((a, b) => STORE_DISTANCES[a.store] - STORE_DISTANCES[b.store])[0];
   const sortedTotals = [...totals].sort((a, b) => sort === "price" ? a.total - b.total : STORE_DISTANCES[a.store] - STORE_DISTANCES[b.store]);
@@ -65,7 +65,7 @@ export function ListScreen(p: Props) {
       {todo.length > 0 && <ul className="mt-3 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
         {todo.map((item) => <ShoppingItemRow key={item.id} item={item} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />)}
       </ul>}
-      {p.items.length > 0 && <p className="mt-2 text-xs text-muted-foreground">הקשה: נקנה · הקשה כפולה או לחיצה ארוכה: חסר במלאי</p>}
+      {p.items.length > 0 && <p className="mt-2 text-xs text-muted-foreground">הקשה: נקנה · לחיצה ארוכה: חסר במלאי</p>}
       {done.length > 0 && (
         <section className="mt-6">
           <Button type="button" variant="ghost" onClick={() => setShowDone((v) => !v)} aria-expanded={showDone} className="mb-2 h-9 w-full justify-between px-1 text-sm font-semibold text-muted-foreground">
@@ -78,7 +78,7 @@ export function ListScreen(p: Props) {
       {!p.items.length && <div className="mt-12 text-center text-muted-foreground"><ShoppingCart className="mx-auto mb-3 h-10 w-10 opacity-40" /><p>הוסיפו מוצר ראשון למעלה</p></div>}
 
       <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 mx-auto max-w-2xl space-y-2 px-4 sm:px-6">
-        {cheapest && nearest && (
+        {cheapest && nearest && todo.some((i) => !i.outOfStock) && (
           <Button type="button" variant="outline" onClick={() => setPricesOpen(true)} className="h-auto w-full justify-start whitespace-normal rounded-full border-border bg-card px-4 py-2.5 text-right shadow-lg">
             <Tag className="h-4 w-4 shrink-0 text-primary" />
             <span className="min-w-0 flex-1 text-sm"><strong>סל זול: {cheapest.store} (₪{formatPrice(cheapest.total)})</strong><span className="text-muted-foreground"> · קרוב: {nearest.store} ({formatDistance(STORE_DISTANCES[nearest.store])})</span></span>
