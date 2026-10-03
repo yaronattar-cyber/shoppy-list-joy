@@ -14,21 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      event_members: {
+        Row: {
+          event_id: string
+          family_id: string
+          joined_at: string
+        }
+        Insert: {
+          event_id: string
+          family_id: string
+          joined_at?: string
+        }
+        Update: {
+          event_id?: string
+          family_id?: string
+          joined_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_members_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_members_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       families: {
         Row: {
           created_at: string
           id: string
+          kind: string
           name: string
+          owner_family_id: string | null
         }
         Insert: {
           created_at?: string
           id: string
+          kind?: string
           name?: string
+          owner_family_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
+          kind?: string
           name?: string
+          owner_family_id?: string | null
         }
         Relationships: []
       }

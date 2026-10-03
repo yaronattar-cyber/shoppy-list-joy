@@ -57,6 +57,13 @@
       "when": 1791026866408,
       "tag": "0007_replica_identity_full",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791031761593,
+      "tag": "0008_event_lists",
+      "breakpoints": true
     }
   ]
 }

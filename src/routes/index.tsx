@@ -14,6 +14,8 @@ import { useSpeech } from "@/hooks/useSpeech";
 import { useSwipe } from "@/hooks/useSwipe";
 import { useStores } from "@/hooks/useStores";
 import { StoreSelector } from "@/components/shopping/StoreSelector";
+import { EventBar } from "@/components/shopping/EventBar";
+import { useEvents } from "@/hooks/useEvents";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -53,6 +55,13 @@ function Index() {
   const family = useFamily();
   const stores = useStores(family.familyId);
   const list = useShoppingList(family.familyId, family.userName ?? undefined, stores.activeId);
+  const events = useEvents(family.familyId);
+  // רשימת אירוע משותפת פועלת כרשימה עצמאית עם קוד משלה
+  const eventList = useShoppingList(events.activeId, family.userName ?? undefined, null);
+  const shown = events.active ? eventList : list;
+  useEffect(() => {
+    if (events.joinedName) setScreen("list");
+  }, [events.joinedName]);
   const { speak } = useSpeech();
   const { clearPrevious } = family;
   const { refresh } = list;
@@ -138,6 +147,19 @@ function Index() {
       </nav>
 
       {screen === "list" && (
+        <EventBar
+          familyId={family.familyId}
+          userName={family.userName}
+          events={events.events}
+          active={events.active}
+          joinedName={events.joinedName}
+          onClearJoined={events.clearJoined}
+          onSelect={events.select}
+          onCreate={(n) => void events.create(n)}
+          onClose={(ev) => void events.close(ev)}
+        />
+      )}
+      {screen === "list" && !events.active && (
         <StoreSelector
           stores={stores.stores}
           active={stores.active}
@@ -163,19 +185,19 @@ function Index() {
       )}
       {screen === "list" && (
         <ListScreen
-          items={list.items}
+          items={shown.items}
           history={list.history}
           productHistory={list.productHistory}
-          onOutOfStock={list.markOutOfStock}
-          onAdd={list.addItem}
-          onAddMany={list.addMany}
-          onToggle={list.toggleItem}
-          onUpdate={list.updateDetails}
-          onRemove={(id) => void list.removeItem(id)}
-          onMarkAll={(c) => void list.markAll(c)}
-          onArchive={() => void list.archiveCompleted()}
-          storeName={stores.active?.name}
-          stores={stores.stores}
+          onOutOfStock={shown.markOutOfStock}
+          onAdd={shown.addItem}
+          onAddMany={shown.addMany}
+          onToggle={shown.toggleItem}
+          onUpdate={shown.updateDetails}
+          onRemove={(id) => void shown.removeItem(id)}
+          onMarkAll={(c) => void shown.markAll(c)}
+          onArchive={() => void shown.archiveCompleted()}
+          storeName={events.active ? events.active.name : stores.active?.name}
+          stores={events.active ? [] : stores.stores}
         />
       )}
       {screen === "inventory" && (
