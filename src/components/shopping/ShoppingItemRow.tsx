@@ -3,6 +3,7 @@ import { Check, ChevronLeft, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatQuantity } from "@/lib/quantity";
 import type { ShoppingItem } from "@/lib/shopping-list";
+import { haptic } from "@/lib/shopping-tools";
 
 type Props = {
   item: ShoppingItem;
@@ -24,11 +25,12 @@ export function ShoppingItemRow({ item, onToggle, onOutOfStock, onOpen }: Props)
 
   const handleClick = () => {
     if (longPressed.current) { longPressed.current = false; return; }
+    haptic(15);
     onToggle(item.id);
   };
   const startPress = () => {
     longPressed.current = false;
-    pressTimer.current = setTimeout(() => { longPressed.current = true; navigator.vibrate?.(30); onOutOfStock(item.id); }, LONG_PRESS_MS);
+    pressTimer.current = setTimeout(() => { longPressed.current = true; haptic([30, 60, 30]); onOutOfStock(item.id); }, LONG_PRESS_MS);
   };
   const cancelPress = () => { if (pressTimer.current) clearTimeout(pressTimer.current); pressTimer.current = null; };
 

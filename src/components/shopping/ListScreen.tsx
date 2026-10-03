@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
-import { Archive, CheckCheck, ChevronDown, ListPlus, ShoppingCart, Tag, Wand2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Archive, CheckCheck, ChevronDown, Layers, ListPlus, PartyPopper, Send, Share2, ShoppingCart, Sun, Tag, Wand2 } from "lucide-react";
+import { atStoreText, groupByCategory, listAsText, openWhatsApp, setWakeLock, wakeLockSupported } from "@/lib/shopping-tools";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { AiRequestDrawer } from "./AiRequestDrawer";
@@ -34,6 +35,11 @@ export function ListScreen(p: Props) {
   const [aiOpen, setAiOpen] = useState(false);
   const [pasted, setPasted] = useState("");
   const [showDone, setShowDone] = useState(true);
+  const [awake, setAwake] = useState(false);
+  const [grouped, setGrouped] = useState(false);
+  const [canWake, setCanWake] = useState(false);
+  useEffect(() => setCanWake(wakeLockSupported()), []);
+  useEffect(() => () => { void setWakeLock(false); }, []);
   const suggestions = useMemo(() => matchHistory(p.history, p.productHistory, quick), [p.history, p.productHistory, quick]);
   const todo = p.items.filter((item) => !item.completed);
   const done = p.items.filter((item) => item.completed);
@@ -65,9 +71,28 @@ export function ListScreen(p: Props) {
         </div>
       </div>
 
-      {todo.length > 0 && <ul className="mt-3 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-        {todo.map((item) => <ShoppingItemRow key={item.id} item={item} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />)}
-      </ul>}
+      {/* כלי קנייה: מסך פעיל, קיבוץ, שיתוף */}
+      <div className="mt-2 flex flex-wrap gap-2">
+        {canWake && <Button type="button" size="sm" variant={awake ? "default" : "outline"} onClick={async () => setAwake(await setWakeLock(!awake))}><Sun />{awake ? "מסך פעיל" : "השאר מסך דולק"}</Button>}
+        <Button type="button" size="sm" variant={grouped ? "default" : "outline"} onClick={() => setGrouped((g) => !g)}><Layers />{grouped ? "לפי מחלקות" : "לפי סדר הוספה"}</Button>
+        <Button type="button" size="sm" variant="outline" onClick={() => openWhatsApp(atStoreText(p.storeName))}><Share2 />אני בסופר</Button>
+        {todo.length > 0 && <Button type="button" size="sm" variant="outline" onClick={() => openWhatsApp(listAsText(p.items, p.storeName))}><Send />שלח רשימה</Button>}
+      </div>
+
+      {allDone && <div className="mt-4 animate-scale-in rounded-lg border border-primary/30 bg-primary/10 p-4 text-center">
+        <PartyPopper className="mx-auto mb-1 h-8 w-8 text-primary" />
+        <p className="font-bold text-foreground">כל הכבוד, הסל הושלם!</p>
+        <p className="text-sm text-muted-foreground">אפשר להמשיך לקופה</p>
+      </div>}
+
+      {todo.length > 0 && (grouped
+        ? groupByCategory(todo).map(([cat, rows]) => <section key={cat} className="mt-3">
+            <h2 className="mb-1 px-1 text-xs font-semibold text-muted-foreground">{cat} ({rows.length})</h2>
+            <ul className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">{rows.map((item) => <ShoppingItemRow key={item.id} item={item} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />)}</ul>
+          </section>)
+        : <ul className="mt-3 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+            {todo.map((item) => <ShoppingItemRow key={item.id} item={item} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />)}
+          </ul>)}
       {p.items.length > 0 && <p className="mt-2 text-xs text-muted-foreground">הקשה: נקנה · לחיצה ארוכה: חסר במלאי</p>}
       {done.length > 0 && (
         <section className="mt-6">
