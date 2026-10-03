@@ -35,27 +35,43 @@ const toItem = (row: Row): ShoppingItem => ({
   createdAt: row.created_at,
 });
 
-// מראה מקומי (localStorage) של הפריטים שסומנו „נקנה” — שומר את הכוונה גם אם
-// העדכון לענן לא הספיק להישמר (רענון מהיר, סגירת האפליקציה או רשת חלשה)
-const doneKey = (familyId: string) => `shopping-done-${familyId}`;
-const loadDoneIds = (familyId: string | null): string[] => {
-  if (!familyId) return [];
+// תור מקומי של שינויי סטטוס שנכשלו (רשת חלשה) — נשלחים שוב רק אם הם טריים,
+// כדי לא לדרוס שינויים מאוחרים יותר של בני משפחה אחרים
+type Pending = { completed: boolean; outOfStock: boolean; at: number };
+const PENDING_TTL_MS = 10 * 60 * 1000;
+const pendingKey = (familyId: string) => `shopping-pending-${familyId}`;
+const loadPending = (familyId: string | null): Record<string, Pending> => {
+  if (!familyId) return {};
   try {
-    const raw = localStorage.getItem(doneKey(familyId));
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string") : [];
+    const parsed = JSON.parse(localStorage.getItem(pendingKey(familyId)) ?? "{}");
+    return parsed && typeof parsed === "object" ? parsed : {};
   } catch {
-    return [];
+    return {};
   }
 };
-const saveDoneIds = (familyId: string | null, ids: string[]) => {
+const savePending = (familyId: string | null, map: Record<string, Pending>) => {
   if (!familyId) return;
   try {
-    localStorage.setItem(doneKey(familyId), JSON.stringify([...new Set(ids)]));
+    localStorage.setItem(pendingKey(familyId), JSON.stringify(map));
   } catch {
-    /* אין מקום/גישה — נמשיך עם הענן בלבד */
+    /* אין גישה — נמשיך עם הענן בלבד */
   }
 };
+const setPending = (familyId: string | null, id: string, value: Pending | null) => {
+  const map = loadPending(familyId);
+  if (value) map[id] = value;
+  else delete map[id];
+  savePending(familyId, map);
+};
+
+// עדכון סטטוס לענן; בכישלון נשמר בתור המקומי לשליחה חוזרת
+async function sendStatus(familyId: string | null, id: string, completed: boolean, outOfStock: boolean) {
+  const { error } = await supabase.from("items").update({ completed, out_of_stock: outOfStock }).eq("id", id);
+  if (error) {
+    console.error("update status", error);
+    setPending(familyId, id, { completed, outOfStock, at: Date.now() });
+  } else setPending(familyId, id, null);
+}
 
 // רשימת הקניות של המשפחה — שמורה ב-Cloud ומסונכרנת בזמן אמת בין המכשירים
 export function useShoppingList(familyId: string | null, userName?: string) {
@@ -81,22 +97,18 @@ export function useShoppingList(familyId: string | null, userName?: string) {
     setRows(loaded);
     setLoading(false);
 
-    // שחזור סימוני „נקנו” שנשמרו מקומית — אם העדכון לענן לא הספיק להישמר
+    // שליחה חוזרת של שינויים שנכשלו — פעם אחת לכל קבוצה ורק אם לא פג תוקפם
     if (reconciledRef.current === familyId) return;
     reconciledRef.current = familyId;
-    const mirror = loadDoneIds(familyId);
-    if (!mirror.length) return;
+    const pending = loadPending(familyId);
+    savePending(familyId, {});
     const byId = new Map(loaded.map((i) => [i.id, i]));
-    const alive = mirror.filter((id) => byId.has(id));
-    const toMark = alive.filter((id) => !byId.get(id)!.completed);
-    saveDoneIds(familyId, alive);
-    if (toMark.length) {
-      const { error: upErr } = await supabase.from("items").update({ completed: true }).in("id", toMark);
-      if (upErr) {
-        console.error("restore done items", upErr);
-        return;
-      }
-      setRows((r) => r.map((i) => (toMark.includes(i.id) ? { ...i, completed: true } : i)));
+    for (const [id, p] of Object.entries(pending)) {
+      const cur = byId.get(id);
+      if (!cur || Date.now() - p.at > PENDING_TTL_MS) continue;
+      if (cur.completed === p.completed && cur.outOfStock === p.outOfStock) continue;
+      void sendStatus(familyId, id, p.completed, p.outOfStock);
+      setRows((r) => r.map((i) => (i.id === id ? { ...i, completed: p.completed, outOfStock: p.outOfStock } : i)));
     }
   }, [familyId]);
 
@@ -110,8 +122,18 @@ export function useShoppingList(familyId: string | null, userName?: string) {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "items", filter: `family_id=eq.${familyId}` },
-        () => {
-          void refresh();
+        (payload) => {
+          // מיזוג האירוע ל-state המקומי במקום טעינה מלאה
+          if (payload.eventType === "DELETE") {
+            const oldId = (payload.old as Partial<Row>).id;
+            setRows((r) => r.filter((i) => i.id !== oldId));
+            return;
+          }
+          const next = toItem(payload.new as Row);
+          setRows((r) => {
+            const exists = r.some((i) => i.id === next.id);
+            return exists ? r.map((i) => (i.id === next.id ? next : i)) : [next, ...r];
+          });
         },
       )
       .subscribe();
@@ -187,12 +209,8 @@ export function useShoppingList(familyId: string | null, userName?: string) {
       if (!item) return;
       const next = !(item.completed || item.outOfStock);
       setRows((r) => r.map((i) => (i.id === id ? { ...i, completed: next, outOfStock: false } : i)));
-      const mirror = loadDoneIds(familyId);
-      saveDoneIds(familyId, next ? [...mirror, id] : mirror.filter((x) => x !== id));
       if (next) setProductHistory(recordPurchase(item.name, item.category));
-      void supabase.from("items").update({ completed: next, out_of_stock: false }).eq("id", id).then(({ error }) => {
-        if (error) console.error("update item", error);
-      });
+      void sendStatus(familyId, id, next, false);
     },
     [rows, familyId],
   );
@@ -204,10 +222,7 @@ export function useShoppingList(familyId: string | null, userName?: string) {
       if (!item) return;
       const next = !item.outOfStock;
       setRows((r) => r.map((i) => (i.id === id ? { ...i, outOfStock: next, completed: false } : i)));
-      saveDoneIds(familyId, loadDoneIds(familyId).filter((x) => x !== id));
-      void supabase.from("items").update({ out_of_stock: next, completed: false }).eq("id", id).then(({ error }) => {
-        if (error) console.error("out of stock", error);
-      });
+      void sendStatus(familyId, id, false, next);
     },
     [rows, familyId],
   );
@@ -242,7 +257,7 @@ export function useShoppingList(familyId: string | null, userName?: string) {
 
   const removeItem = useCallback(
     async (id: string) => {
-      saveDoneIds(familyId, loadDoneIds(familyId).filter((x) => x !== id));
+      setPending(familyId, id, null);
       const { error } = await supabase.from("items").delete().eq("id", id);
       if (error) console.error("remove item", error);
       await refresh();
@@ -254,17 +269,10 @@ export function useShoppingList(familyId: string | null, userName?: string) {
   const markAll = useCallback(
     async (completed: boolean) => {
       if (!familyId) return;
-      // עדכון המראה המקומית בהתאם לכוונה
-      const mirror = loadDoneIds(familyId);
-      if (completed) {
-        const ids = rows.filter((i) => !i.archived).map((i) => i.id);
-        saveDoneIds(familyId, [...mirror, ...ids]);
-      } else {
-        saveDoneIds(familyId, mirror.filter((id) => !rows.some((i) => i.id === id)));
-      }
+      setRows((r) => r.map((i) => (i.archived ? i : { ...i, completed, outOfStock: false })));
       const { error } = await supabase
         .from("items")
-        .update({ completed })
+        .update({ completed, out_of_stock: false })
         .eq("family_id", familyId)
         .eq("archived", false);
       if (error) console.error("mark all", error);
