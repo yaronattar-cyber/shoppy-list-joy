@@ -39,10 +39,6 @@ export function StoreSelector(p: Props) {
     try { await navigator.clipboard.writeText(t); return true; } catch { return false; }
   };
   const total = estimateForStore(p.lines, p.active?.name ?? "");
-  const chip = (selected: boolean) =>
-    `shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
-      selected ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground hover:bg-accent"
-    }`;
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pt-3 sm:px-6">
