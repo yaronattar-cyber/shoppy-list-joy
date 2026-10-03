@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
-import { Archive, CheckCheck, ChevronDown, ListPlus, ShoppingCart, Tag } from "lucide-react";
+import { Archive, CheckCheck, ChevronDown, ListPlus, ShoppingCart, Tag, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { AiRequestDrawer } from "./AiRequestDrawer";
 import { ItemEditDrawer } from "./ItemEditDrawer";
 import { ShoppingItemRow } from "./ShoppingItemRow";
 import { HistorySuggestions } from "./HistorySuggestions";
@@ -22,6 +23,7 @@ type Props = {
   onRemove: (id: string) => void;
   onMarkAll: (completed: boolean) => void;
   onArchive: () => void;
+  storeName?: string;
 };
 
 export function ListScreen(p: Props) {
@@ -29,6 +31,7 @@ export function ListScreen(p: Props) {
   const [selected, setSelected] = useState<ShoppingItem | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [pricesOpen, setPricesOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
   const [pasted, setPasted] = useState("");
   const [showDone, setShowDone] = useState(true);
   const suggestions = useMemo(() => matchHistory(p.history, p.productHistory, quick), [p.history, p.productHistory, quick]);
@@ -57,6 +60,7 @@ export function ListScreen(p: Props) {
         <p className="min-w-0 text-sm text-muted-foreground">{p.items.length ? `${doneCount} מתוך ${p.items.length} הושלמו` : "הרשימה ריקה"}</p>
         <div className="flex shrink-0 gap-1">
           <Button type="button" variant="ghost" size="sm" onClick={() => p.onMarkAll(!allDone)}><CheckCheck />{allDone ? "בטל הכל" : "סמן הכל"}</Button>
+          <Button type="button" variant="ghost" size="sm" onClick={() => setAiOpen(true)}><Wand2 />בקשה חופשית</Button>
           <Button type="button" variant="ghost" size="sm" onClick={() => setImportOpen(true)}>ייבוא</Button>
         </div>
       </div>
@@ -87,6 +91,8 @@ export function ListScreen(p: Props) {
       </div>
 
       <ItemEditDrawer item={selected} onClose={() => setSelected(null)} onSave={p.onUpdate} onDelete={p.onRemove} />
+
+      <AiRequestDrawer open={aiOpen} onOpenChange={setAiOpen} storeName={p.storeName} onAddMany={p.onAddMany} />
 
       <Drawer open={importOpen} onOpenChange={setImportOpen}>
         <DrawerContent dir="rtl" className="mx-auto max-w-xl rounded-t-2xl bg-card">
