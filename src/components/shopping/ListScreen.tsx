@@ -22,7 +22,6 @@ type Props = {
   onRemove: (id: string) => void;
   onMarkAll: (completed: boolean) => void;
   onArchive: () => void;
-  onShop: () => void;
 };
 
 export function ListScreen(p: Props) {
@@ -46,7 +45,7 @@ export function ListScreen(p: Props) {
   return (
     <section className="mx-auto w-full max-w-2xl px-4 pb-44 pt-4 sm:px-6">
       <div className="sticky top-0 z-30 -mx-4 border-b border-border bg-background/95 px-4 pb-3 pt-2 backdrop-blur sm:-mx-6 sm:px-6">
-        <h1 className="mb-3 text-2xl font-bold text-foreground">הרשימה שלי</h1>
+        <h1 className="mb-3 text-2xl font-bold text-foreground">רשימת קניות</h1>
         <form className="grid grid-cols-[minmax(0,1fr)_auto] gap-2" onSubmit={(event) => { event.preventDefault(); if (p.onAdd(quick)) setQuick(""); }}>
           <input value={quick} onChange={(event) => setQuick(event.target.value)} placeholder="הוספת מוצר..." aria-label="הוספה מהירה" className="h-11 min-w-0 rounded-md border border-input bg-card px-3 text-base outline-none focus:ring-2 focus:ring-ring" />
           <Button type="submit" className="h-11 px-4"><ListPlus />הוסף</Button>
@@ -84,10 +83,7 @@ export function ListScreen(p: Props) {
             <span className="min-w-0 flex-1 text-sm"><strong>סל זול: {cheapest.store} (₪{formatPrice(cheapest.total)})</strong><span className="text-muted-foreground"> · קרוב: {nearest.store} ({formatDistance(STORE_DISTANCES[nearest.store])})</span></span>
           </Button>
         )}
-        <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-2">
-          <Button type="button" variant="outline" disabled={!doneCount} onClick={p.onArchive}><Archive />ארכוב</Button>
-          <Button type="button" onClick={p.onShop}><ShoppingCart />יציאה לקניות</Button>
-        </div>
+        <Button type="button" className="w-full" disabled={!doneCount} onClick={p.onArchive}><Archive />ניקוי פריטים שנקנו{doneCount ? ` (${doneCount})` : ""}</Button>
       </div>
 
       <ItemEditDrawer item={selected} onClose={() => setSelected(null)} onSave={p.onUpdate} onDelete={p.onRemove} />

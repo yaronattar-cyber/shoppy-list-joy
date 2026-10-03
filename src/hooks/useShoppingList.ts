@@ -144,6 +144,8 @@ export function useShoppingList(familyId: string | null, userName?: string) {
   }, [familyId, refresh]);
 
   const items = useMemo(() => rows.filter((i) => !i.archived), [rows]);
+  // מלאי — פריטים שנקנו ונוקו מהרשימה
+  const inventory = useMemo(() => rows.filter((i) => i.archived), [rows]);
 
   // היסטוריית המשפחה — לשימוש בהשלמה אוטומטית
   const history = useMemo(() => {
@@ -294,8 +296,27 @@ export function useShoppingList(familyId: string | null, userName?: string) {
     await refresh();
   }, [familyId, refresh]);
 
+  // מלאי: החזרה לרשימה (כן) או מחיקה לצמיתות (לא)
+  const restoreFromInventory = useCallback(async (ids: string[]) => {
+    if (!ids.length) return;
+    setRows((r) => r.map((i) => (ids.includes(i.id) ? { ...i, archived: false, completed: false, outOfStock: false } : i)));
+    const { error } = await supabase.from("items").update({ archived: false, completed: false, out_of_stock: false }).in("id", ids);
+    if (error) console.error("restore", error);
+    await refresh();
+  }, [refresh]);
+  const deleteFromInventory = useCallback(async (ids: string[]) => {
+    if (!ids.length) return;
+    setRows((r) => r.filter((i) => !ids.includes(i.id)));
+    const { error } = await supabase.from("items").delete().in("id", ids);
+    if (error) console.error("delete inventory", error);
+    await refresh();
+  }, [refresh]);
+
   return {
     items,
+    inventory,
+    restoreFromInventory,
+    deleteFromInventory,
     history,
     productHistory,
     loading,

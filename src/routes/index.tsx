@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Home, ListChecks, ShoppingCart, Users } from "lucide-react";
+import { Home, ListChecks, Package, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AddScreen } from "@/components/shopping/AddScreen";
 import { ListScreen } from "@/components/shopping/ListScreen";
-import { ShopScreen } from "@/components/shopping/ShopScreen";
+import { InventoryScreen } from "@/components/shopping/InventoryScreen";
 import { FamilyScreen } from "@/components/shopping/FamilyScreen";
 import { Onboarding } from "@/components/shopping/Onboarding";
 import { useFamily } from "@/hooks/useFamily";
@@ -34,7 +34,7 @@ export const Route = createFileRoute("/")({
 });
 
 // סדר המסכים — משמש להחלקה
-const ORDER = ["home", "list", "shop"] as const;
+const ORDER = ["home", "list", "inventory"] as const;
 type Screen = (typeof ORDER)[number] | "family";
 
 function Index() {
@@ -82,7 +82,7 @@ function Index() {
           [
             ["home", "בית", Home],
             ["list", "רשימה", ListChecks],
-            ["shop", "קניות", ShoppingCart],
+            ["inventory", "מלאי", Package],
             ["family", "משפחה", Users],
           ] as const
         ).map(([id, label, Icon]) => (
@@ -128,16 +128,13 @@ function Index() {
           onRemove={(id) => void list.removeItem(id)}
           onMarkAll={(c) => void list.markAll(c)}
           onArchive={() => void list.archiveCompleted()}
-          onShop={() => setScreen("shop")}
         />
       )}
-      {screen === "shop" && (
-        <ShopScreen
-          items={list.items}
-          onToggle={list.toggleItem}
-          onOutOfStock={list.markOutOfStock}
-          onUpdate={list.updateDetails}
-          onRemove={(id) => void list.removeItem(id)}
+      {screen === "inventory" && (
+        <InventoryScreen
+          items={list.inventory}
+          onRestore={(ids) => void list.restoreFromInventory(ids)}
+          onDelete={(ids) => void list.deleteFromInventory(ids)}
         />
       )}
       {screen === "family" && (
