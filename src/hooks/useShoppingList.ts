@@ -288,11 +288,14 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
   );
 
   const addItem = useCallback(
-    (rawName: string) => {
+    // targetStore: שיוך לחנות אחרת מהפעילה (undefined = החנות הפעילה)
+    (rawName: string, targetStore?: string | null) => {
       const parsed = parseQuantity(rawName);
       const name = resolveName(parsed.name);
       if (!name || !familyId) return null;
-      enqueue({ type: "insert", rows: [makeRow(name, parsed.quantity, parsed.unit)] });
+      const row = makeRow(name, parsed.quantity, parsed.unit);
+      if (targetStore !== undefined) row.store_id = targetStore;
+      enqueue({ type: "insert", rows: [row] });
       const q = formatQuantity(parsed.quantity, parsed.unit);
       return q ? `${q} ${name}` : name;
     },
