@@ -54,6 +54,8 @@ const saveDoneIds = (familyId: string | null, ids: string[]) => {
 export function useShoppingList(familyId: string | null, userName?: string) {
   const [rows, setRows] = useState<ShoppingItem[]>([]);
   const [loading, setLoading] = useState(true);
+  // שחזור סימוני „נקנו” מקומיים פעם אחת לכל קבוצה, כדי לא להתנגד למכשירים אחרים
+  const reconciledRef = useRef<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!familyId) return;
@@ -66,8 +68,27 @@ export function useShoppingList(familyId: string | null, userName?: string) {
       console.error("load items", error);
       return;
     }
-    setRows(((data ?? []) as Row[]).map(toItem));
+    const loaded = ((data ?? []) as Row[]).map(toItem);
+    setRows(loaded);
     setLoading(false);
+
+    // שחזור סימוני „נקנו” שנשמרו מקומית — אם העדכון לענן לא הספיק להישמר
+    if (reconciledRef.current === familyId) return;
+    reconciledRef.current = familyId;
+    const mirror = loadDoneIds(familyId);
+    if (!mirror.length) return;
+    const byId = new Map(loaded.map((i) => [i.id, i]));
+    const alive = mirror.filter((id) => byId.has(id));
+    const toMark = alive.filter((id) => !byId.get(id)!.completed);
+    saveDoneIds(familyId, alive);
+    if (toMark.length) {
+      const { error: upErr } = await supabase.from("items").update({ completed: true }).in("id", toMark);
+      if (upErr) {
+        console.error("restore done items", upErr);
+        return;
+      }
+      setRows((r) => r.map((i) => (toMark.includes(i.id) ? { ...i, completed: true } : i)));
+    }
   }, [familyId]);
 
   useEffect(() => {
