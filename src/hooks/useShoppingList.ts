@@ -306,6 +306,22 @@ export function useShoppingList(familyId: string | null, userName?: string) {
     [familyId, enqueue, makeRow],
   );
 
+  // הוספת אוכל מוכן ישירות למלאי, בלי לעבור דרך רשימת הקניות
+  const addPreparedMeal = useCallback(
+    (rawName: string) => {
+      const parsed = parseQuantity(rawName);
+      const name = parsed.name.trim();
+      if (!name || !familyId) return false;
+      const row = makeRow(name, parsed.quantity, parsed.unit);
+      enqueue({
+        type: "insert",
+        rows: [{ ...row, completed: true, archived: true, category: "prepared-meal" }],
+      });
+      return true;
+    },
+    [familyId, enqueue, makeRow],
+  );
+
   const update = useCallback((id: string, patch: Patch) => enqueue({ type: "update", ids: [id], patch }), [enqueue]);
 
   // הקשה: רגיל → נקנה; ממצב נקנה/חסר → חזרה לרגיל
@@ -398,6 +414,7 @@ export function useShoppingList(familyId: string | null, userName?: string) {
     markOutOfStock,
     addItem,
     addMany,
+    addPreparedMeal,
     toggleItem,
     renameItem,
     setQuantity,

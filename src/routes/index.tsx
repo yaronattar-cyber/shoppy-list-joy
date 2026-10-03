@@ -162,6 +162,7 @@ function Index() {
           items={list.inventory}
           onRestore={(ids) => void list.restoreFromInventory(ids)}
           onDelete={(ids) => void list.deleteFromInventory(ids)}
+          onAddPreparedMeal={list.addPreparedMeal}
         />
       )}
       {screen === "family" && (
