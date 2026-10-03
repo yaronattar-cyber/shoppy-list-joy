@@ -127,7 +127,7 @@ export function ListScreen(p: Props) {
         <Button type="button" className="w-full" disabled={!doneCount} onClick={p.onArchive}><Archive />ניקוי פריטים שנקנו{doneCount ? ` (${doneCount})` : ""}</Button>
       </div>
 
-      <ItemEditDrawer item={selected} stores={p.stores} onClose={() => setSelected(null)} onSave={p.onUpdate} onDelete={p.onRemove} />
+      <ItemEditDrawer item={selected} stores={p.stores ?? []} onClose={() => setSelected(null)} onSave={p.onUpdate} onDelete={p.onRemove} />
 
       <AiRequestDrawer open={aiOpen} onOpenChange={setAiOpen} storeName={p.storeName} onAddMany={p.onAddMany} />
 
