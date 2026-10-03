@@ -371,9 +371,11 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
   );
 
   const updateDetails = useCallback(
-    (id: string, details: Pick<Row, "name" | "quantity" | "unit" | "notes" | "category">) => {
+    (id: string, details: Pick<Row, "name" | "quantity" | "unit" | "notes" | "category"> & { storeId?: string | null }) => {
       if (!details.name.trim() || !(details.quantity > 0)) return;
-      update(id, { ...details, name: details.name.trim() });
+      const { storeId, ...rest } = details;
+      // storeId מועבר רק כשנבחרה חנות בחלונית העריכה
+      update(id, { ...rest, name: rest.name.trim(), ...(storeId !== undefined ? { store_id: storeId } : {}) });
     },
     [update],
   );

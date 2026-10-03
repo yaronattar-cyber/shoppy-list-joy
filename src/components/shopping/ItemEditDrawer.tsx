@@ -8,19 +8,21 @@ import { formatDateTime, type ShoppingItem } from "@/lib/shopping-list";
 
 type Props = {
   item: ShoppingItem | null;
+  stores?: { id: string; name: string }[];
   onClose: () => void;
-  onSave: (id: string, details: { name: string; quantity: number; unit: string; notes: string; category: string }) => void;
+  onSave: (id: string, details: { name: string; quantity: number; unit: string; notes: string; category: string; storeId?: string | null }) => void;
   onDelete: (id: string) => void;
 };
 
 const field = "h-11 w-full rounded-md border border-input bg-card px-3 text-base text-foreground outline-none focus:ring-2 focus:ring-ring";
 
-export function ItemEditDrawer({ item, onClose, onSave, onDelete }: Props) {
+export function ItemEditDrawer({ item, stores = [], onClose, onSave, onDelete }: Props) {
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [unit, setUnit] = useState("");
   const [notes, setNotes] = useState("");
   const [category, setCategory] = useState("");
+  const [storeId, setStoreId] = useState("");
 
   useEffect(() => {
     if (!item) return;
@@ -29,6 +31,7 @@ export function ItemEditDrawer({ item, onClose, onSave, onDelete }: Props) {
     setUnit(item.unit);
     setNotes(item.notes);
     setCategory(item.category);
+    setStoreId(item.storeId ?? "");
   }, [item]);
 
   return (
