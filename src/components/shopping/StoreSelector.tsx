@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Check, ChevronDown, Copy, ExternalLink, Pencil, Plus, Star, Store, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { estimateForStore, formatPrice, type BasketLine } from "@/lib/prices";
 import type { ShoppingItem } from "@/lib/shopping-list";
 import type { StoreInfo } from "@/hooks/useStores";
+import type { EventList } from "@/hooks/useEvents";
 
 type Props = {
   stores: StoreInfo[];
@@ -15,6 +16,10 @@ type Props = {
   onSave: (s: { id?: string; name: string; url: string; is_default?: boolean }) => void;
   onRemove: (id: string) => void;
   onAdd?: (name: string) => void;
+  events?: EventList[];
+  activeEvent?: EventList | null;
+  onSelectEvent?: (id: string | null) => void;
+  onCreateEvent?: (name: string) => void;
 };
 
 const host = (url: string) => {
@@ -25,12 +30,14 @@ const host = (url: string) => {
   }
 };
 
-// בורר חנויות: צ׳יפים נגללים + כרטיס חנות פעילה + עורך
+// בורר חנויות ואירועים: תפריט נגלל אחד לחנויות ולרשימות אירוע + כרטיס חנות פעילה + עורך
 export function StoreSelector(p: Props) {
   const [editing, setEditing] = useState<{ id?: string; name: string; url: string; is_default?: boolean } | null>(null);
   const [msg, setMsg] = useState("");
   const [copyOpen, setCopyOpen] = useState(false);
   const [onlyTodo, setOnlyTodo] = useState(true);
+  const [creatingEvent, setCreatingEvent] = useState(false);
+  const [eventName, setEventName] = useState("");
   const all = p.lines as ShoppingItem[];
   const copyItems = onlyTodo ? all.filter((i) => !i.completed) : all;
   // שמות מוצרים בלבד – שורה לכל מוצר, להדבקה בחיפוש באתר
@@ -42,50 +49,75 @@ export function StoreSelector(p: Props) {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pt-3 sm:px-6">
-      {/* תפריט נפתח לבחירת חנות */}
+      {/* תפריט נפתח לבחירת חנות או אירוע */}
       <div className="pb-2">
         <DropdownMenu dir="rtl">
           <DropdownMenuTrigger asChild>
-            <Button type="button" variant="outline" size="sm"><Store />חנויות<ChevronDown className="h-4 w-4" /></Button>
+            <Button type="button" variant="outline" size="sm"><Store />חנויות ואירועים<ChevronDown className="h-4 w-4" /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="max-h-80 w-60 overflow-y-auto text-right">
-            <DropdownMenuItem onSelect={() => p.onSelect(null)} className={!p.active ? "font-bold text-primary" : ""}>{!p.active && <Check />}כללי</DropdownMenuItem>
+            <DropdownMenuLabel className="text-xs text-muted-foreground">רשימות ביתיות</DropdownMenuLabel>
+            <DropdownMenuItem onSelect={() => p.onSelect(null)} className={!p.active && !p.activeEvent ? "font-bold text-primary" : ""}>
+              {!p.active && !p.activeEvent && <Check />}כללי
+            </DropdownMenuItem>
             {p.stores.map((s) => (
-              <DropdownMenuItem key={s.id} onSelect={() => p.onSelect(s.id)} className={p.active?.id === s.id ? "font-bold text-primary" : ""}>
-                {p.active?.id === s.id && <Check />}{s.name}{s.is_default && <Star className="fill-current" aria-label="סופר הבית" />}
+              <DropdownMenuItem key={s.id} onSelect={() => p.onSelect(s.id)} className={p.active?.id === s.id && !p.activeEvent ? "font-bold text-primary" : ""}>
+                {p.active?.id === s.id && !p.activeEvent && <Check />}{s.name}{s.is_default && <Star className="fill-current" aria-label="סופר הבית" />}
               </DropdownMenuItem>
             ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs text-muted-foreground">רשימות אירוע</DropdownMenuLabel>
+            {p.events?.map((e) => (
+              <DropdownMenuItem key={e.id} onSelect={() => p.onSelectEvent?.(e.id)} className={p.activeEvent?.id === e.id ? "font-bold text-primary" : ""}>
+                {p.activeEvent?.id === e.id && <Check />}🎉 {e.name}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuItem onSelect={() => setCreatingEvent(true)} className="text-primary"><Plus />אירוע חדש</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={() => setEditing({ name: "", url: "" })} className="text-primary"><Plus />הוספת חנות</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 shadow-sm">
-        <Store className="h-5 w-5 shrink-0 text-primary" />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-foreground">{p.active?.name ?? "רשימה כללית"}</p>
-          {p.active?.url ? (
-            <a href={p.active.url} target="_blank" rel="noreferrer" className="flex items-center gap-1 truncate text-xs text-muted-foreground hover:text-primary" dir="ltr">
-              {host(p.active.url)}<ExternalLink className="h-3 w-3" />
-            </a>
-          ) : (
-            <p className="text-xs text-muted-foreground">{p.active ? "לא הוגדר אתר" : "פריטים ללא חנות מסוימת"}</p>
+
+      {creatingEvent && (
+        <form className="mb-2 flex gap-2" onSubmit={(e) => { e.preventDefault(); if (eventName.trim()) { p.onCreateEvent?.(eventName); setEventName(""); setCreatingEvent(false); } }}>
+          <input autoFocus value={eventName} onChange={(e) => setEventName(e.target.value)} placeholder="שם האירוע (למשל: על האש שבת)" className="h-10 min-w-0 flex-1 rounded-md border border-input bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-ring" />
+          <Button type="submit" size="sm" disabled={!eventName.trim()}>צור</Button>
+          <Button type="button" variant="ghost" size="icon" aria-label="ביטול" onClick={() => setCreatingEvent(false)}>✕</Button>
+        </form>
+      )}
+
+      {/* כרטיס החנות מוצג רק כשאין אירוע פעיל */}
+      {!p.activeEvent && (
+        <>
+          <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 shadow-sm">
+            <Store className="h-5 w-5 shrink-0 text-primary" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-foreground">{p.active?.name ?? "רשימה כללית"}</p>
+              {p.active?.url ? (
+                <a href={p.active.url} target="_blank" rel="noreferrer" className="flex items-center gap-1 truncate text-xs text-muted-foreground hover:text-primary" dir="ltr">
+                  {host(p.active.url)}<ExternalLink className="h-3 w-3" />
+                </a>
+              ) : (
+                <p className="text-xs text-muted-foreground">{p.active ? "לא הוגדר אתר" : "פריטים ללא חנות מסוימת"}</p>
+              )}
+            </div>
+            <div className="shrink-0 text-left">
+              <p className="text-[11px] text-muted-foreground">סל משוער</p>
+              <p className="text-sm font-bold text-primary">₪{formatPrice(total)}</p>
+            </div>
+            {p.active && (
+              <Button type="button" variant="ghost" size="icon" aria-label="עריכת חנות" onClick={() => setEditing({ ...p.active! })}>
+                <Pencil className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          {p.active?.url && p.lines.length > 0 && (
+            <Button type="button" variant="outline" size="sm" className="mt-2 w-full" onClick={() => { setOnlyTodo(p.lines.some((l) => !l.completed)); setMsg(""); setCopyOpen(true); }}>
+              <Copy />מעבר לאתר והעתקת רשימה
+            </Button>
           )}
-        </div>
-        <div className="shrink-0 text-left">
-          <p className="text-[11px] text-muted-foreground">סל משוער</p>
-          <p className="text-sm font-bold text-primary">₪{formatPrice(total)}</p>
-        </div>
-        {p.active && (
-          <Button type="button" variant="ghost" size="icon" aria-label="עריכת חנות" onClick={() => setEditing({ ...p.active! })}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
-      {p.active?.url && p.lines.length > 0 && (
-        <Button type="button" variant="outline" size="sm" className="mt-2 w-full" onClick={() => { setOnlyTodo(p.lines.some((l) => !l.completed)); setMsg(""); setCopyOpen(true); }}>
-          <Copy />מעבר לאתר והעתקת רשימה
-        </Button>
+        </>
       )}
 
       <Drawer open={copyOpen} onOpenChange={setCopyOpen}>
