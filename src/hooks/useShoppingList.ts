@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { resolveName } from "@/lib/categories";
 import { formatQuantity, parseQuantity } from "@/lib/quantity";
@@ -28,10 +28,34 @@ const toItem = (row: Row): ShoppingItem => ({
   createdAt: row.created_at,
 });
 
+// מראה מקומי (localStorage) של הפריטים שסומנו „נקנה” — שומר את הכוונה גם אם
+// העדכון לענן לא הספיק להישמר (רענון מהיר, סגירת האפליקציה או רשת חלשה)
+const doneKey = (familyId: string) => `shopping-done-${familyId}`;
+const loadDoneIds = (familyId: string | null): string[] => {
+  if (!familyId) return [];
+  try {
+    const raw = localStorage.getItem(doneKey(familyId));
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+};
+const saveDoneIds = (familyId: string | null, ids: string[]) => {
+  if (!familyId) return;
+  try {
+    localStorage.setItem(doneKey(familyId), JSON.stringify([...new Set(ids)]));
+  } catch {
+    /* אין מקום/גישה — נמשיך עם הענן בלבד */
+  }
+};
+
 // רשימת הקניות של המשפחה — שמורה ב-Cloud ומסונכרנת בזמן אמת בין המכשירים
 export function useShoppingList(familyId: string | null, userName?: string) {
   const [rows, setRows] = useState<ShoppingItem[]>([]);
   const [loading, setLoading] = useState(true);
+  // שחזור סימוני „נקנו” מקומיים פעם אחת לכל קבוצה, כדי לא להתנגד למכשירים אחרים
+  const reconciledRef = useRef<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!familyId) return;
@@ -44,8 +68,27 @@ export function useShoppingList(familyId: string | null, userName?: string) {
       console.error("load items", error);
       return;
     }
-    setRows(((data ?? []) as Row[]).map(toItem));
+    const loaded = ((data ?? []) as Row[]).map(toItem);
+    setRows(loaded);
     setLoading(false);
+
+    // שחזור סימוני „נקנו” שנשמרו מקומית — אם העדכון לענן לא הספיק להישמר
+    if (reconciledRef.current === familyId) return;
+    reconciledRef.current = familyId;
+    const mirror = loadDoneIds(familyId);
+    if (!mirror.length) return;
+    const byId = new Map(loaded.map((i) => [i.id, i]));
+    const alive = mirror.filter((id) => byId.has(id));
+    const toMark = alive.filter((id) => !byId.get(id)!.completed);
+    saveDoneIds(familyId, alive);
+    if (toMark.length) {
+      const { error: upErr } = await supabase.from("items").update({ completed: true }).in("id", toMark);
+      if (upErr) {
+        console.error("restore done items", upErr);
+        return;
+      }
+      setRows((r) => r.map((i) => (toMark.includes(i.id) ? { ...i, completed: true } : i)));
+    }
   }, [familyId]);
 
   useEffect(() => {
@@ -128,13 +171,24 @@ export function useShoppingList(familyId: string | null, userName?: string) {
     [refresh],
   );
 
+  // סימון/ביטול סימון — מיד במסך, שמירת הכוונה מקומית, ואז עדכון הענן
   const toggleItem = useCallback(
     (id: string) => {
       const item = rows.find((i) => i.id === id);
       if (!item) return;
-      void update(id, { completed: !item.completed });
+      const next = !item.completed;
+      setRows((r) => r.map((i) => (i.id === id ? { ...i, completed: next } : i)));
+      const mirror = loadDoneIds(familyId);
+      saveDoneIds(familyId, next ? [...mirror, id] : mirror.filter((x) => x !== id));
+      void (async () => {
+        const { error } = await supabase.from("items").update({ completed: next }).eq("id", id);
+        if (error) {
+          console.error("update item", error);
+          // נשמור את המצב האופטימי — השחזור בטעינה הבאה יסנכרן מול הענן
+        }
+      })();
     },
-    [rows, update],
+    [rows, familyId],
   );
 
   const renameItem = useCallback(
@@ -158,17 +212,26 @@ export function useShoppingList(familyId: string | null, userName?: string) {
 
   const removeItem = useCallback(
     async (id: string) => {
+      saveDoneIds(familyId, loadDoneIds(familyId).filter((x) => x !== id));
       const { error } = await supabase.from("items").delete().eq("id", id);
       if (error) console.error("remove item", error);
       await refresh();
     },
-    [refresh],
+    [familyId, refresh],
   );
 
   // „סמן הכל” — סימון או ביטול סימון של כל הפריטים הפעילים
   const markAll = useCallback(
     async (completed: boolean) => {
       if (!familyId) return;
+      // עדכון המראה המקומית בהתאם לכוונה
+      const mirror = loadDoneIds(familyId);
+      if (completed) {
+        const ids = rows.filter((i) => !i.archived).map((i) => i.id);
+        saveDoneIds(familyId, [...mirror, ...ids]);
+      } else {
+        saveDoneIds(familyId, mirror.filter((id) => !rows.some((i) => i.id === id)));
+      }
       const { error } = await supabase
         .from("items")
         .update({ completed })
@@ -177,7 +240,7 @@ export function useShoppingList(familyId: string | null, userName?: string) {
       if (error) console.error("mark all", error);
       await refresh();
     },
-    [familyId, refresh],
+    [familyId, rows, refresh],
   );
 
   // העברת הפריטים שהושלמו לארכיון — נשארים בהיסטוריה להשלמה אוטומטית
