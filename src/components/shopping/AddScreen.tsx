@@ -8,7 +8,8 @@ import { HistorySuggestions } from "./HistorySuggestions";
 import { matchHistory, type HistoryEntry } from "@/lib/product-history";
 import type { ShoppingItem } from "@/lib/shopping-list";
 
-export type AddTarget = { id: string | null; label: string; kind: "store" | "event" };
+import { TargetPicker, type AddTarget } from "./TargetPicker";
+export type { AddTarget };
 
 type Props = {
   userName: string;
@@ -51,7 +52,7 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
   const add = (name: string) => {
     const n = name.trim();
     if (!n) return null;
-    if (targets.length > 1) { setPicking(n); return n; }
+    if (targets.length) { setPicking(n); return n; }
     const t = targets[0];
     if (!t) return null;
     const added = onAddTo(n, t);
@@ -167,26 +168,7 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
         </div>
       )}
 
-      {/* בחירת יעד: לאיזו חנות / רשימת אירוע לשייך */}
-      {picking !== null && (
-        <div role="dialog" aria-modal="true" aria-label="בחירת רשימה" className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/50 backdrop-blur-sm" onClick={() => setPicking(null)}>
-          <div className="w-full max-w-md rounded-t-3xl border border-border bg-card p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-soft" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-bold text-foreground">לאיזו רשימה להוסיף?</h2>
-            <p className="mt-1 text-sm text-muted-foreground">„{picking}”</p>
-            <div className="mt-4 flex max-h-[50vh] flex-col gap-2 overflow-y-auto">
-              {targets.map((t) => (
-                <Button key={`${t.kind}-${t.id}`} type="button" variant={t.kind === "event" ? "secondary" : "outline"} className="h-12 justify-start rounded-xl text-base font-semibold" onClick={() => { const n = picking; setPicking(null); const added = onAddTo(n, t); if (added) showPopup(`${added} → ${t.label}`); }}>
-                  {t.kind === "event" ? <PartyPopper className="h-4 w-4" /> : <Store className="h-4 w-4" />}{t.label}
-                </Button>
-              ))}
-            </div>
-            <Button type="button" variant="ghost" className="mt-3 h-10 w-full" onClick={() => setPicking(null)}>ביטול</Button>
-          </div>
-        </div>
-      )}
-
-
-
+      <TargetPicker name={picking} targets={targets} onCancel={() => setPicking(null)} onPick={(t) => { const n = picking ?? ""; setPicking(null); const added = onAddTo(n, t); if (added) showPopup(`${added} → ${t.label}`); }} />
 
       {/* פריטים אחרונים */}
       <div className="mt-6 flex items-center justify-between">

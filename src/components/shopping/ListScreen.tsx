@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { AiRequestDrawer } from "./AiRequestDrawer";
 import { ItemEditDrawer } from "./ItemEditDrawer";
+import { TargetPicker, type AddTarget } from "./TargetPicker";
 import { ShoppingItemRow } from "./ShoppingItemRow";
 import { HistorySuggestions } from "./HistorySuggestions";
 import { matchHistory, type HistoryEntry } from "@/lib/product-history";
@@ -28,10 +29,15 @@ type Props = {
   onArchive: () => void;
   storeName?: string | undefined;
   stores?: { id: string; name: string }[];
+  targets?: AddTarget[];
+  onAddTo?: (name: string, target: AddTarget) => string | null;
 };
 
 export function ListScreen(p: Props) {
   const [quick, setQuick] = useState("");
+  const [picking, setPicking] = useState<string | null>(null);
+  // הוספה ידנית: שואלים לאיזו רשימה לשייך
+  const submitQuick = () => { const n = quick.trim(); if (!n) return; if (p.targets?.length && p.onAddTo) setPicking(n); else if (p.onAdd(n)) setQuick(""); };
   const [selected, setSelected] = useState<ShoppingItem | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [pricesOpen, setPricesOpen] = useState(false);
@@ -56,10 +62,11 @@ export function ListScreen(p: Props) {
 
   return (
     <section className="mx-auto w-full max-w-2xl px-4 pb-44 pt-4 sm:px-6">
+      <TargetPicker name={picking} targets={p.targets ?? []} onCancel={() => setPicking(null)} onPick={(t) => { const n = picking ?? ""; setPicking(null); if (p.onAddTo?.(n, t)) setQuick(""); }} />
       <div className="sticky top-0 z-30 -mx-4 border-b border-border bg-background/95 px-4 pb-3 pt-2 backdrop-blur sm:-mx-6 sm:px-6">
         <h1 className="mb-3 text-2xl font-bold text-foreground">רשימת קניות</h1>
         <div className="flex gap-2">
-          <form className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] gap-2" onSubmit={(event) => { event.preventDefault(); if (p.onAdd(quick)) setQuick(""); }}>
+          <form className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] gap-2" onSubmit={(event) => { event.preventDefault(); submitQuick(); }}>
             <input value={quick} onChange={(event) => setQuick(event.target.value)} placeholder="הוספת מוצר..." aria-label="הוספה מהירה" className="h-11 min-w-0 rounded-md border border-input bg-card px-3 text-base outline-none focus:ring-2 focus:ring-ring" />
             <Button type="submit" className="h-11 px-4"><ListPlus />הוסף</Button>
           </form>
