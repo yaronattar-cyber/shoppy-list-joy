@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Check, Mic, MicOff, Plus } from "lucide-react";
+import { ArrowLeft, Check, Mic, MicOff, Plus, ScanBarcode } from "lucide-react";
+import { BarcodeScanner } from "./BarcodeScanner";
 import { Button } from "@/components/ui/button";
 import { CategoryBar } from "./CategoryBar";
 import { useSpeechToText } from "@/hooks/useSpeechToText";
@@ -29,6 +30,7 @@ const greeting = () => {
 export function AddScreen({ userName, items = [], history = [], productHistory = [], onAdd, onToggle, onGoShopping, onSpeak }: Props) {
   const [value, setValue] = useState("");
   const [popup, setPopup] = useState<string | null>(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
