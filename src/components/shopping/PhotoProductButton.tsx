@@ -17,7 +17,7 @@ async function toDataUrl(file: File): Promise<string> {
 }
 
 // צילום מוצר → זיהוי שם → אישור → הוספה לרשימת החנות שנבחרה
-export function PhotoProductButton({ storeName, onAdd }: { storeName: string; onAdd: (name: string) => void }) {
+export function PhotoProductButton({ storeName, onAdd, compact }: { storeName: string; onAdd: (name: string) => void; compact?: boolean }) {
   const input = useRef<HTMLInputElement>(null);
   const recognize = useServerFn(recognizeProduct);
   const [open, setOpen] = useState(false);
@@ -41,9 +41,11 @@ export function PhotoProductButton({ storeName, onAdd }: { storeName: string; on
 
   return (
     <>
-      <Button type="button" variant="outline" size="sm" className="mt-2 w-full" onClick={() => input.current?.click()}>
-        <Camera />צילום מוצר והוספה ל{storeName}
-      </Button>
+      {compact ? (
+        <Button type="button" variant="outline" className="h-11 w-11 px-0" aria-label="צילום מוצר והוספה" onClick={() => input.current?.click()}><Camera /></Button>
+      ) : (
+        <Button type="button" variant="outline" size="sm" className="mt-2 w-full" onClick={() => input.current?.click()}><Camera />צילום מוצר והוספה ל{storeName}</Button>
+      )}
       <input ref={input} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { void onFile(e.target.files?.[0]); e.target.value = ""; }} />
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerContent dir="rtl">

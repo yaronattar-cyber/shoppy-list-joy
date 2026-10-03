@@ -1,3 +1,4 @@
+import { PhotoProductButton } from "./PhotoProductButton";
 import { useEffect, useMemo, useState } from "react";
 import { Archive, CheckCheck, ChevronDown, ClipboardList, Eye, Layers, ListPlus, PartyPopper, Send, Share2, ShoppingCart, SlidersHorizontal, Sun, Tag, Wand2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -56,9 +57,10 @@ export function ListScreen(p: Props) {
     <section className="mx-auto w-full max-w-2xl px-4 pb-44 pt-4 sm:px-6">
       <div className="sticky top-0 z-30 -mx-4 border-b border-border bg-background/95 px-4 pb-3 pt-2 backdrop-blur sm:-mx-6 sm:px-6">
         <h1 className="mb-3 text-2xl font-bold text-foreground">רשימת קניות</h1>
-        <form className="grid grid-cols-[minmax(0,1fr)_auto] gap-2" onSubmit={(event) => { event.preventDefault(); if (p.onAdd(quick)) setQuick(""); }}>
+        <form className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-2" onSubmit={(event) => { event.preventDefault(); if (p.onAdd(quick)) setQuick(""); }}>
           <input value={quick} onChange={(event) => setQuick(event.target.value)} placeholder="הוספת מוצר..." aria-label="הוספה מהירה" className="h-11 min-w-0 rounded-md border border-input bg-card px-3 text-base outline-none focus:ring-2 focus:ring-ring" />
           <Button type="submit" className="h-11 px-4"><ListPlus />הוסף</Button>
+          <PhotoProductButton compact storeName="הרשימה" onAdd={(name) => { p.onAdd(name); }} />
         </form>
         <HistorySuggestions items={suggestions} onPick={(name) => { if (p.onAdd(name)) setQuick(""); }} />
       </div>

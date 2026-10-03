@@ -3,7 +3,6 @@ import { Copy, ExternalLink, Pencil, Plus, Star, Store, Trash2 } from "lucide-re
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { estimateForStore, formatPrice, type BasketLine } from "@/lib/prices";
-import { PhotoProductButton } from "./PhotoProductButton";
 import type { ShoppingItem } from "@/lib/shopping-list";
 import type { StoreInfo } from "@/hooks/useStores";
 
@@ -82,7 +81,6 @@ export function StoreSelector(p: Props) {
           <Copy />מעבר לאתר והעתקת רשימה
         </Button>
       )}
-      {p.onAdd && <PhotoProductButton storeName={p.active?.name ?? "הרשימה"} onAdd={p.onAdd} />}
 
       <Drawer open={copyOpen} onOpenChange={setCopyOpen}>
         <DrawerContent dir="rtl">
