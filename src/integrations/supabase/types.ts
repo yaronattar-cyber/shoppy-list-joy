@@ -153,6 +153,7 @@ export type Database = {
           created_at: string
           family_id: string
           id: string
+          is_default: boolean
           name: string
           url: string
         }
@@ -160,6 +161,7 @@ export type Database = {
           created_at?: string
           family_id: string
           id?: string
+          is_default?: boolean
           name: string
           url?: string
         }
@@ -167,6 +169,7 @@ export type Database = {
           created_at?: string
           family_id?: string
           id?: string
+          is_default?: boolean
           name?: string
           url?: string
         }
