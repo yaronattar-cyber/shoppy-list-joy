@@ -1,0 +1,1 @@
+ALTER TABLE public.items ADD COLUMN IF NOT EXISTS out_of_stock boolean NOT NULL DEFAULT false;
