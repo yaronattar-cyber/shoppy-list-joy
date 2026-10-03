@@ -36,17 +36,19 @@ export function PhotoProductButton({ storeName, onAdd, compact }: { storeName: s
       const r = await recognize({ data: { image: url } });
       if (r.error) setErr(r.error);
       setName(r.name);
+      // הוספה אוטומטית מיד כשהזיהוי הצליח
+      if (!r.error && r.name?.trim()) confirm(r.name);
     } catch { setErr("הזיהוי נכשל, נסו שוב"); }
     setBusy(false);
   };
 
-  const confirm = () => {
-    const n = name.trim();
+  const confirm = (override?: string) => {
+    const n = (override ?? name).trim();
     if (!n) return;
     const res = onAdd(n);
     if (res === null) { setErr("ההוספה נכשלה — ודאו שאתם מחוברים למשפחה ונסו שוב"); return; }
     setAdded(typeof res === "string" ? res : n);
-    setTimeout(() => setOpen(false), 1600);
+    setTimeout(() => setOpen(false), 1800);
   };
 
   return (
