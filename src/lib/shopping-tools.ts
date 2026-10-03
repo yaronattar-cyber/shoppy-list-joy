@@ -31,6 +31,14 @@ export function listAsText(items: ShoppingItem[], storeName?: string) {
 export const atStoreText = (storeName?: string) =>
   `היי כולם, אני עכשיו ב${storeName ? `־${storeName}` : "סופר"}. למישהו חסר עוד משהו? הוסיפו כאן: ${window.location.origin}`;
 
+// מעתיק את הפריטים שטרם נקנו ללוח ופותח את אתר החנות (אם הוגדר)
+export async function copyListAndOpenStore(items: ShoppingItem[], url?: string, storeName?: string): Promise<boolean> {
+  const win = url ? window.open(/^https?:\/\//.test(url) ? url : `https://${url}`, "_blank", "noopener") : null;
+  try { await navigator.clipboard.writeText(listAsText(items, storeName)); } catch { return false; }
+  void win;
+  return true;
+}
+
 export function groupByCategory(items: ShoppingItem[]) {
   const map = new Map<string, ShoppingItem[]>();
   for (const item of items) {
