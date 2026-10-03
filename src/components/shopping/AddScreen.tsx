@@ -87,21 +87,36 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
 
       <CategoryBar onAdd={add} />
 
-      {/* מיקרופון */}
-      <div className="mt-6 flex flex-col items-center">
-        <button
-          type="button"
-          onClick={stt.start}
-          disabled={!stt.supported}
-          aria-label={stt.listening ? "מקשיב, לחצו לעצירה" : "הוספה בדיבור"}
-          className={`grid h-20 w-20 place-items-center rounded-full text-primary-foreground shadow-soft transition-transform active:scale-95 ${stt.listening ? "mic-ripple bg-destructive" : stt.supported ? "bg-hero" : "bg-muted text-muted-foreground"}`}
-        >
-          {stt.supported ? <Mic className="h-9 w-9" /> : <MicOff className="h-9 w-9" />}
-        </button>
-        <p className="mt-2 text-sm font-medium text-muted-foreground">
-          {!stt.supported ? "הדפדפן אינו תומך בזיהוי דיבור" : stt.listening ? "מקשיב..." : "לחצו ודברו"}
-        </p>
+      {/* מיקרופון וסריקת ברקוד */}
+      <div className="mt-6 flex items-start justify-center gap-10">
+        <div className="flex flex-col items-center">
+          <button
+            type="button"
+            onClick={stt.start}
+            disabled={!stt.supported}
+            aria-label={stt.listening ? "מקשיב, לחצו לעצירה" : "הוספה בדיבור"}
+            className={`grid h-20 w-20 place-items-center rounded-full text-primary-foreground shadow-soft transition-transform active:scale-95 ${stt.listening ? "mic-ripple bg-destructive" : stt.supported ? "bg-hero" : "bg-muted text-muted-foreground"}`}
+          >
+            {stt.supported ? <Mic className="h-9 w-9" /> : <MicOff className="h-9 w-9" />}
+          </button>
+          <p className="mt-2 text-sm font-medium text-muted-foreground">
+            {!stt.supported ? "אין זיהוי דיבור" : stt.listening ? "מקשיב..." : "לחצו ודברו"}
+          </p>
+        </div>
+        <div className="flex flex-col items-center">
+          <button
+            type="button"
+            onClick={() => setScannerOpen(true)}
+            aria-label="הוספה בסריקת ברקוד"
+            className="grid h-20 w-20 place-items-center rounded-full bg-hero text-primary-foreground shadow-soft transition-transform active:scale-95"
+          >
+            <ScanBarcode className="h-9 w-9" />
+          </button>
+          <p className="mt-2 text-sm font-medium text-muted-foreground">סריקת ברקוד</p>
+        </div>
       </div>
+
+      <BarcodeScanner open={scannerOpen} onClose={() => setScannerOpen(false)} onResult={(name) => add(name)} />
 
       {/* פריטים אחרונים */}
       <div className="mt-6 flex items-center justify-between">
