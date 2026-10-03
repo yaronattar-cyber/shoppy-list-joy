@@ -38,7 +38,7 @@ export function StoreChips({ stores, activeId, items, onSelect }: Props) {
 
   return (
     <div className="relative mx-auto w-full max-w-2xl">
-      <div ref={ref} onScroll={check} className="flex gap-2 overflow-x-auto px-4 pb-1 pt-2 [scrollbar-width:none] sm:px-6 [&::-webkit-scrollbar]:hidden">
+      <div ref={ref} data-no-swipe onScroll={check} className="flex gap-2 overflow-x-auto px-4 pb-1 pt-2 [scrollbar-width:none] sm:px-6 [&::-webkit-scrollbar]:hidden">
         {chips.map((c) => {
           const active = c.all ? (activeId ?? null) === null : c.id === activeId;
           const tone = c.all || c.id === "__none" ? undefined : storeTone(stores, c.id);
