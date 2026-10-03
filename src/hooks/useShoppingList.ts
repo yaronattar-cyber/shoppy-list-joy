@@ -171,13 +171,24 @@ export function useShoppingList(familyId: string | null, userName?: string) {
     [refresh],
   );
 
+  // סימון/ביטול סימון — מיד במסך, שמירת הכוונה מקומית, ואז עדכון הענן
   const toggleItem = useCallback(
     (id: string) => {
       const item = rows.find((i) => i.id === id);
       if (!item) return;
-      void update(id, { completed: !item.completed });
+      const next = !item.completed;
+      setRows((r) => r.map((i) => (i.id === id ? { ...i, completed: next } : i)));
+      const mirror = loadDoneIds(familyId);
+      saveDoneIds(familyId, next ? [...mirror, id] : mirror.filter((x) => x !== id));
+      void (async () => {
+        const { error } = await supabase.from("items").update({ completed: next }).eq("id", id);
+        if (error) {
+          console.error("update item", error);
+          // נשמור את המצב האופטימי — השחזור בטעינה הבאה יסנכרן מול הענן
+        }
+      })();
     },
-    [rows, update],
+    [rows, familyId],
   );
 
   const renameItem = useCallback(
@@ -201,17 +212,26 @@ export function useShoppingList(familyId: string | null, userName?: string) {
 
   const removeItem = useCallback(
     async (id: string) => {
+      saveDoneIds(familyId, loadDoneIds(familyId).filter((x) => x !== id));
       const { error } = await supabase.from("items").delete().eq("id", id);
       if (error) console.error("remove item", error);
       await refresh();
     },
-    [refresh],
+    [familyId, refresh],
   );
 
   // „סמן הכל” — סימון או ביטול סימון של כל הפריטים הפעילים
   const markAll = useCallback(
     async (completed: boolean) => {
       if (!familyId) return;
+      // עדכון המראה המקומית בהתאם לכוונה
+      const mirror = loadDoneIds(familyId);
+      if (completed) {
+        const ids = rows.filter((i) => !i.archived).map((i) => i.id);
+        saveDoneIds(familyId, [...mirror, ...ids]);
+      } else {
+        saveDoneIds(familyId, mirror.filter((id) => !rows.some((i) => i.id === id)));
+      }
       const { error } = await supabase
         .from("items")
         .update({ completed })
@@ -220,7 +240,7 @@ export function useShoppingList(familyId: string | null, userName?: string) {
       if (error) console.error("mark all", error);
       await refresh();
     },
-    [familyId, refresh],
+    [familyId, rows, refresh],
   );
 
   // העברת הפריטים שהושלמו לארכיון — נשארים בהיסטוריה להשלמה אוטומטית
