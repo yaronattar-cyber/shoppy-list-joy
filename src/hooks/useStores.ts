@@ -30,7 +30,9 @@ export function useStores(familyId: string | null) {
   useEffect(() => {
     if (!familyId) return;
     setStores(read<StoreInfo[]>(cacheKey(familyId), []));
-    setActiveId(undefined);
+    // שחזור החנות שנבחרה (נשמר גם ברענון אחרי חזרה מהמצלמה)
+    const saved = read<string | null | undefined>(activeKey(familyId), undefined);
+    setActiveId(saved ?? undefined);
     let alive = true;
     const pull = async () => {
       const { data } = await supabase.from("stores").select("id,name,url,is_default").eq("family_id", familyId).order("created_at");
@@ -58,7 +60,10 @@ export function useStores(familyId: string | null) {
     [familyId],
   );
   // חזרה לסופר הבית (ברירת מחדל)
-  const resetToDefault = useCallback(() => setActiveId(undefined), []);
+  const resetToDefault = useCallback(() => {
+    setActiveId(undefined);
+    if (familyId) localStorage.removeItem(activeKey(familyId));
+  }, [familyId]);
 
   const save = useCallback(
     async (store: { id?: string; name: string; url: string; is_default?: boolean }) => {
