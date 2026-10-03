@@ -76,6 +76,18 @@ function Index() {
 
   return (
     <main className="min-h-screen bg-background pb-[calc(4.5rem+env(safe-area-inset-bottom))]" {...swipe}>
+      {(!list.online || list.pendingCount > 0) && (
+        <div
+          role="status"
+          className="sticky top-0 z-50 border-b border-border bg-muted px-4 py-1.5 text-center text-xs text-muted-foreground"
+        >
+          {!list.online
+            ? `מצב לא מקוון — השינויים נשמרים במכשיר${list.pendingCount ? ` (${list.pendingCount} ממתינים)` : ""}`
+            : list.syncing
+              ? "מסנכרן שינויים..."
+              : `${list.pendingCount} שינויים ממתינים לסנכרון`}
+        </div>
+      )}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_color-mix(in_oklab,var(--color-foreground)_8%,transparent)] backdrop-blur">
         <div className="mx-auto grid h-[4.5rem] max-w-xl grid-cols-4 px-2">
         {(
