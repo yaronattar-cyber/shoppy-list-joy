@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Check, Mic, MicOff, Plus, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, Mic, MicOff, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CategoryBar } from "./CategoryBar";
 import { useSpeechToText } from "@/hooks/useSpeechToText";
 import { HistorySuggestions } from "./HistorySuggestions";
 import { matchHistory, type HistoryEntry } from "@/lib/product-history";
-import { CATEGORIES } from "@/lib/categories";
 import type { ShoppingItem } from "@/lib/shopping-list";
 
 type Props = {
@@ -48,10 +47,6 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
   const suggestions = useMemo(() => matchHistory(history, productHistory, value), [history, productHistory, value]);
   const pending = items.filter((i) => !i.completed);
   const recent = [...pending].reverse().slice(0, 4);
-  const favorites = useMemo(() => {
-    const top = productHistory.slice(0, 6).map((h) => h.name);
-    return top.length >= 4 ? top : ["חלב", "לחם", "ביצים", "עגבניות", "גבינה", "מלפפונים"];
-  }, [productHistory]);
 
   return (
     <section className="mx-auto w-full max-w-2xl px-4 pb-28 pt-4 sm:px-6">
@@ -88,20 +83,22 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
         {!stt.listening && stt.error && <p className="mt-3 rounded-xl bg-destructive/10 px-3 py-2 text-sm text-destructive">{stt.error}</p>}
       </div>
 
-      <h2 className="mt-4 text-sm font-semibold text-muted-foreground">קטגוריות</h2>
       <CategoryBar onAdd={add} />
 
-      {/* מועדפים */}
-      <h2 className="mt-5 flex items-center gap-1.5 text-sm font-semibold text-muted-foreground"><Sparkles className="h-4 w-4 text-primary" />הוספה מהירה</h2>
-      <div className="mt-2 grid grid-cols-3 gap-2">
-        {favorites.map((name, i) => {
-          const cat = CATEGORIES[i % CATEGORIES.length];
-          return (
-            <button key={name} type="button" onClick={() => add(name)} style={{ backgroundColor: `var(--cat-${cat?.id})`, color: `var(--cat-${cat?.id}-fg)` }} className="rounded-2xl px-2 py-4 text-center text-sm font-semibold shadow-soft transition-transform active:scale-95">
-              <Plus className="mx-auto mb-1 h-4 w-4 opacity-70" />{name}
-            </button>
-          );
-        })}
+      {/* מיקרופון */}
+      <div className="mt-6 flex flex-col items-center">
+        <button
+          type="button"
+          onClick={stt.start}
+          disabled={!stt.supported}
+          aria-label={stt.listening ? "מקשיב, לחצו לעצירה" : "הוספה בדיבור"}
+          className={`grid h-20 w-20 place-items-center rounded-full text-primary-foreground shadow-soft transition-transform active:scale-95 ${stt.listening ? "mic-ripple bg-destructive" : stt.supported ? "bg-hero" : "bg-muted text-muted-foreground"}`}
+        >
+          {stt.supported ? <Mic className="h-9 w-9" /> : <MicOff className="h-9 w-9" />}
+        </button>
+        <p className="mt-2 text-sm font-medium text-muted-foreground">
+          {!stt.supported ? "הדפדפן אינו תומך בזיהוי דיבור" : stt.listening ? "מקשיב..." : "לחצו ודברו"}
+        </p>
       </div>
 
       {/* פריטים אחרונים */}
