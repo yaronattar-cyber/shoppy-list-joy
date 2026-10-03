@@ -11,6 +11,8 @@ type Row = {
   completed: boolean;
   quantity: number;
   unit: string;
+  notes: string;
+  category: string;
   archived: boolean;
   added_by: string;
   created_at: string;
@@ -23,6 +25,8 @@ const toItem = (row: Row): ShoppingItem => ({
   completed: row.completed,
   quantity: Number(row.quantity) || 1,
   unit: row.unit ?? "",
+  notes: row.notes ?? "",
+  category: row.category ?? "",
   archived: row.archived,
   addedBy: row.added_by,
   createdAt: row.created_at,
@@ -163,7 +167,7 @@ export function useShoppingList(familyId: string | null, userName?: string) {
   );
 
   const update = useCallback(
-    async (id: string, patch: Partial<Pick<Row, "name" | "completed" | "archived" | "quantity" | "unit">>) => {
+    async (id: string, patch: Partial<Pick<Row, "name" | "completed" | "archived" | "quantity" | "unit" | "notes" | "category">>) => {
       const { error } = await supabase.from("items").update(patch).eq("id", id);
       if (error) console.error("update item", error);
       await refresh();
@@ -206,6 +210,15 @@ export function useShoppingList(familyId: string | null, userName?: string) {
       if (!(quantity > 0)) return;
       setRows((r) => r.map((i) => (i.id === id ? { ...i, quantity, unit: unit ?? i.unit } : i)));
       void update(id, unit === undefined ? { quantity } : { quantity, unit });
+    },
+    [update],
+  );
+
+  const updateDetails = useCallback(
+    (id: string, details: Pick<Row, "name" | "quantity" | "unit" | "notes" | "category">) => {
+      if (!details.name.trim() || !(details.quantity > 0)) return;
+      setRows((current) => current.map((item) => (item.id === id ? { ...item, ...details, name: details.name.trim() } : item)));
+      void update(id, { ...details, name: details.name.trim() });
     },
     [update],
   );
@@ -265,6 +278,7 @@ export function useShoppingList(familyId: string | null, userName?: string) {
     toggleItem,
     renameItem,
     setQuantity,
+    updateDetails,
     removeItem,
     markAll,
     archiveCompleted,
