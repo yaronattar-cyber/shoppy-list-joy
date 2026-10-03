@@ -96,6 +96,13 @@
   --cat-cheese: oklch(0.94 0.05 50); --cat-cheese-fg: oklch(0.52 0.15 45);
   --cat-vegetables: oklch(0.94 0.07 140); --cat-vegetables-fg: oklch(0.45 0.14 145);
   --cat-other: oklch(0.94 0.04 320); --cat-other-fg: oklch(0.48 0.14 330);
+  /* גוונים עדינים לתגיות חנויות */
+  --store-1: oklch(0.94 0.05 160); --store-1-fg: oklch(0.45 0.12 160);
+  --store-2: oklch(0.94 0.04 240); --store-2-fg: oklch(0.45 0.13 245);
+  --store-3: oklch(0.95 0.06 70); --store-3-fg: oklch(0.5 0.13 60);
+  --store-4: oklch(0.94 0.04 320); --store-4-fg: oklch(0.48 0.14 330);
+  --store-5: oklch(0.94 0.05 25); --store-5-fg: oklch(0.5 0.15 25);
+  --store-6: oklch(0.94 0.04 200); --store-6-fg: oklch(0.45 0.1 210);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);

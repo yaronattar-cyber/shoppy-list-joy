@@ -265,6 +265,8 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
   // חנות נבחרת = הפריטים שלה בלבד; רשימה כללית (null) = כל הפריטים מכל החנויות
   const items = useMemo(() => rows.filter((i) => !i.archived && (storeId === null || (i.storeId ?? null) === storeId)), [rows, storeId]);
   const inventory = useMemo(() => rows.filter((i) => i.archived), [rows]);
+  // כל הפריטים הפעילים — למוני הלשוניות
+  const allActive = useMemo(() => rows.filter((i) => !i.archived), [rows]);
 
   const history = useMemo(() => [...new Set(rows.map((i) => i.name))], [rows]);
 
@@ -415,6 +417,7 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
 
   return {
     items,
+    allActive,
     inventory,
     restoreFromInventory,
     deleteFromInventory,
