@@ -119,6 +119,8 @@ function Index() {
         <AddScreen
           userName={family.userName}
           count={list.items.length}
+          items={list.items}
+          onToggle={list.toggleItem}
           history={list.history}
           productHistory={list.productHistory}
           onAdd={list.addItem}
