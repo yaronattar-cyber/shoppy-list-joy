@@ -77,6 +77,7 @@ export type Database = {
           notes: string
           out_of_stock: boolean
           quantity: number
+          store_id: string | null
           unit: string
         }
         Insert: {
@@ -91,6 +92,7 @@ export type Database = {
           notes?: string
           out_of_stock?: boolean
           quantity?: number
+          store_id?: string | null
           unit?: string
         }
         Update: {
@@ -105,6 +107,7 @@ export type Database = {
           notes?: string
           out_of_stock?: boolean
           quantity?: number
+          store_id?: string | null
           unit?: string
         }
         Relationships: [
@@ -113,6 +116,13 @@ export type Database = {
             columns: ["family_id"]
             isOneToOne: false
             referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "items_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
@@ -137,6 +147,38 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      stores: {
+        Row: {
+          created_at: string
+          family_id: string
+          id: string
+          name: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          family_id: string
+          id?: string
+          name: string
+          url?: string
+        }
+        Update: {
+          created_at?: string
+          family_id?: string
+          id?: string
+          name?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stores_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
