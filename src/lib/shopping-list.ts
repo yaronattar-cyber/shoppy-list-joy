@@ -7,6 +7,8 @@ export type ShoppingItem = {
   completed: boolean;
   quantity: number;
   unit: string;
+  notes: string;
+  category: string;
   archived: boolean;
   addedBy: string;
   createdAt: string; // ISO

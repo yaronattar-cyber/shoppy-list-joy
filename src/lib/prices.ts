@@ -55,6 +55,13 @@ export function priceAt(itemName: string, store: Store): number {
 
 export type BasketTotal = { store: Store; total: number };
 
+export const STORE_DISTANCES: Record<Store, number> = {
+  "רמי לוי": 850,
+  שופרסל: 150,
+  יוחננוף: 1200,
+  ויקטורי: 600,
+};
+
 export function basketTotals(itemNames: string[]): BasketTotal[] {
   return STORES.map((store) => ({
     store,
@@ -65,4 +72,8 @@ export function basketTotals(itemNames: string[]): BasketTotal[] {
 
 export function formatPrice(value: number): string {
   return value.toFixed(2);
+}
+
+export function formatDistance(meters: number): string {
+  return meters < 1000 ? `${meters} מ׳` : `${(meters / 1000).toFixed(1)} ק״מ`;
 }
