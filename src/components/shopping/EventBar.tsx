@@ -16,6 +16,8 @@ type Props = {
 // באנר אירוע פעיל: שיתוף בוואטסאפ וסגירה/עזיבה (הבחירה והיצירה בתפריט "חנויות ואירועים")
 export function EventBar(p: Props) {
   const [confirm, setConfirm] = useState(false);
+  // הגנה: אל תציג כלום אם אין אירוע פעיל (למשל בזמן טעינה)
+  if (!p.active) return null;
   const isOwner = p.active.owner_family_id === p.familyId;
 
   return (

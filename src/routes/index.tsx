@@ -146,7 +146,7 @@ function Index() {
         </div>
       </nav>
 
-      {screen === "list" && (events.active || events.joinedName) && events.active && (
+      {screen === "list" && events.active && (
         <EventBar
           familyId={family.familyId}
           userName={family.userName}
