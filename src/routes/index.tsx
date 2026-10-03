@@ -145,6 +145,7 @@ function Index() {
           onSelect={stores.select}
           onSave={(st) => void stores.save(st)}
           onRemove={(id) => void stores.remove(id)}
+          onAdd={(name) => void list.addItem(name)}
         />
       )}
       {screen === "home" && (

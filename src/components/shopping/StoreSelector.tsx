@@ -3,7 +3,7 @@ import { Copy, ExternalLink, Pencil, Plus, Star, Store, Trash2 } from "lucide-re
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { estimateForStore, formatPrice, type BasketLine } from "@/lib/prices";
-import { listAsText } from "@/lib/shopping-tools";
+import { PhotoProductButton } from "./PhotoProductButton";
 import type { ShoppingItem } from "@/lib/shopping-list";
 import type { StoreInfo } from "@/hooks/useStores";
 
@@ -14,6 +14,7 @@ type Props = {
   onSelect: (id: string | null) => void;
   onSave: (s: { id?: string; name: string; url: string; is_default?: boolean }) => void;
   onRemove: (id: string) => void;
+  onAdd?: (name: string) => void;
 };
 
 const host = (url: string) => {
@@ -31,8 +32,9 @@ export function StoreSelector(p: Props) {
   const [copyOpen, setCopyOpen] = useState(false);
   const [onlyTodo, setOnlyTodo] = useState(true);
   const all = p.lines as ShoppingItem[];
-  const copyItems = onlyTodo ? all.filter((i) => !i.completed) : all.map((i) => ({ ...i, completed: false }));
-  const text = copyItems.length ? listAsText(copyItems, p.active?.name) : "אין פריטים להעתקה";
+  const copyItems = onlyTodo ? all.filter((i) => !i.completed) : all;
+  // שמות מוצרים בלבד – שורה לכל מוצר, להדבקה בחיפוש באתר
+  const text = copyItems.length ? copyItems.map((i) => i.name).join("\n") : "אין פריטים להעתקה";
   const copyText = async (t: string) => {
     try { await navigator.clipboard.writeText(t); return true; } catch { return false; }
   };
@@ -80,6 +82,7 @@ export function StoreSelector(p: Props) {
           <Copy />מעבר לאתר והעתקת רשימה
         </Button>
       )}
+      {p.onAdd && <PhotoProductButton storeName={p.active?.name ?? "הרשימה"} onAdd={p.onAdd} />}
 
       <Drawer open={copyOpen} onOpenChange={setCopyOpen}>
         <DrawerContent dir="rtl">
