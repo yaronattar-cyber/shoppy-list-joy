@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { Home, ListChecks, Package, Pin, PinOff, Users } from "lucide-react";
 import { toast } from "sonner";
-import type { AddTarget } from "@/components/shopping/AddScreen";
+import type { AddTarget } from "@/components/shopping/TargetPicker";
 import { Button } from "@/components/ui/button";
 import { AddScreen } from "@/components/shopping/AddScreen";
 import { ListScreen } from "@/components/shopping/ListScreen";
@@ -84,10 +84,15 @@ function Index() {
     ...stores.stores.map((st) => ({ id: st.id, label: st.name, kind: "store" as const })),
     ...events.events.map((ev) => ({ id: ev.id, label: ev.name, kind: "event" as const })),
   ];
-  if (!stores.stores.length) targets.unshift({ id: null, label: "הרשימה הכללית", kind: "store" });
+  targets.push({ id: null, label: "כללי (ללא שיוך לחנות)", kind: "store" });
   const addTo = (name: string, t: AddTarget) => {
-    if (t.kind === "store") return list.addItem(name, t.id);
+    if (t.kind === "store") {
+      const r = list.addItem(name, t.id);
+      if (r) toast.success(`${r} נוסף ל${t.label}`);
+      return r;
+    }
     if (!t.id) return null;
+    toast.success(`${name} נוסף ל${t.label}`);
     if (events.activeId === t.id) return eventList.addItem(name);
     events.select(t.id);
     setPendingEvent({ id: t.id, name });
@@ -180,17 +185,19 @@ function Index() {
         </div>
       </nav>
 
-      <Button
-        type="button"
-        size="icon"
-        variant="ghost"
-        onClick={toggleStart}
-        aria-label={startScreen === screen ? "ביטול מסך פתיחה" : "קבע כמסך פתיחה"}
-        title={startScreen === screen ? "זהו מסך הפתיחה" : "קבע כמסך פתיחה"}
-        className={`fixed left-2 top-2 z-40 h-9 w-9 rounded-full bg-card/80 shadow-soft backdrop-blur ${startScreen === screen ? "text-primary" : "text-muted-foreground"}`}
-      >
-        {startScreen === screen ? <Pin className="h-4 w-4 fill-current" /> : <PinOff className="h-4 w-4" />}
-      </Button>
+      {/* קביעת המסך הנוכחי כמסך הפתיחה */}
+      <div className="mx-auto flex w-full max-w-2xl justify-end px-4 pt-3 sm:px-6">
+        <Button
+          type="button"
+          size="sm"
+          variant={startScreen === screen ? "default" : "outline"}
+          onClick={toggleStart}
+          className="h-8 rounded-full px-3 text-xs font-semibold"
+        >
+          {startScreen === screen ? <Pin className="h-3.5 w-3.5 fill-current" /> : <PinOff className="h-3.5 w-3.5" />}
+          {startScreen === screen ? "מסך פתיחה קבוע" : "קבע כמסך פתיחה"}
+        </Button>
+      </div>
       {screen === "list" && events.active && (
         <EventBar
           familyId={family.familyId}
@@ -245,6 +252,8 @@ function Index() {
           onArchive={() => void shown.archiveCompleted()}
           storeName={events.active ? events.active.name : stores.active?.name}
           stores={events.active ? [] : stores.stores}
+          targets={targets}
+          onAddTo={addTo}
         />
       )}
       {screen === "inventory" && (
