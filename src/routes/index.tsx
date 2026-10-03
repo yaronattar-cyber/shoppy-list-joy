@@ -12,6 +12,8 @@ import { useFamily } from "@/hooks/useFamily";
 import { useShoppingList } from "@/hooks/useShoppingList";
 import { useSpeech } from "@/hooks/useSpeech";
 import { useSwipe } from "@/hooks/useSwipe";
+import { useStores } from "@/hooks/useStores";
+import { StoreSelector } from "@/components/shopping/StoreSelector";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -41,7 +43,8 @@ type Screen = (typeof ORDER)[number] | "family";
 function Index() {
   const [screen, setScreen] = useState<Screen>("home");
   const family = useFamily();
-  const list = useShoppingList(family.familyId, family.userName ?? undefined);
+  const stores = useStores(family.familyId);
+  const list = useShoppingList(family.familyId, family.userName ?? undefined, stores.activeId);
   const { speak } = useSpeech();
   const { clearPrevious } = family;
   const { refresh } = list;
@@ -128,6 +131,16 @@ function Index() {
         </div>
       </nav>
 
+      {(screen === "home" || screen === "list") && (
+        <StoreSelector
+          stores={stores.stores}
+          active={stores.active}
+          lines={list.items}
+          onSelect={stores.select}
+          onSave={(st) => void stores.save(st)}
+          onRemove={(id) => void stores.remove(id)}
+        />
+      )}
       {screen === "home" && (
         <AddScreen
           userName={family.userName}
