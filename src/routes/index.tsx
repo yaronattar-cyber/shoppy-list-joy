@@ -108,6 +108,7 @@ function Index() {
           userName={family.userName}
           count={list.items.length}
           history={list.history}
+          productHistory={list.productHistory}
           onAdd={list.addItem}
           onGoShopping={() => setScreen("list")}
           onOpenFamily={() => setScreen("family")}
@@ -117,6 +118,9 @@ function Index() {
       {screen === "list" && (
         <ListScreen
           items={list.items}
+          history={list.history}
+          productHistory={list.productHistory}
+          onOutOfStock={list.markOutOfStock}
           onAdd={list.addItem}
           onAddMany={list.addMany}
           onToggle={list.toggleItem}
@@ -131,6 +135,7 @@ function Index() {
         <ShopScreen
           items={list.items}
           onToggle={list.toggleItem}
+          onOutOfStock={list.markOutOfStock}
           onUpdate={list.updateDetails}
           onRemove={(id) => void list.removeItem(id)}
         />

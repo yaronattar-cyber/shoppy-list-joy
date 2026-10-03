@@ -43,6 +43,7 @@ export type Database = {
           id: string
           name: string
           notes: string
+          out_of_stock: boolean
           quantity: number
           unit: string
         }
@@ -56,6 +57,7 @@ export type Database = {
           id?: string
           name: string
           notes?: string
+          out_of_stock?: boolean
           quantity?: number
           unit?: string
         }
@@ -69,6 +71,7 @@ export type Database = {
           id?: string
           name?: string
           notes?: string
+          out_of_stock?: boolean
           quantity?: number
           unit?: string
         }
