@@ -42,10 +42,12 @@ type Screen = (typeof ORDER)[number] | "family";
 
 function Index() {
   const [screen, setScreen] = useState<Screen>("home");
+  const [restored, setRestored] = useState(false);
   // שחזור המסך הפעיל אם הדפדפן רוענן (למשל אחרי פתיחת המצלמה)
   useEffect(() => {
     const saved = sessionStorage.getItem("active-screen") as Screen | null;
     if (saved && saved !== "home") setScreen(saved);
+    setRestored(true);
   }, []);
   useEffect(() => { sessionStorage.setItem("active-screen", screen); }, [screen]);
   const family = useFamily();
@@ -73,8 +75,8 @@ function Index() {
   // מסך הבית תמיד מוסיף לסופר הבית
   const { resetToDefault } = stores;
   useEffect(() => {
-    if (screen === "home") resetToDefault();
-  }, [screen, resetToDefault]);
+    if (restored && screen === "home") resetToDefault();
+  }, [restored, screen, resetToDefault]);
 
   useEffect(() => {
     if (family.joinedFromLink) setScreen("family");

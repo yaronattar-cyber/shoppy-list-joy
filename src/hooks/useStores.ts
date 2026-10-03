@@ -30,7 +30,9 @@ export function useStores(familyId: string | null) {
   useEffect(() => {
     if (!familyId) return;
     setStores(read<StoreInfo[]>(cacheKey(familyId), []));
-    setActiveId(undefined);
+    // שחזור החנות שנבחרה (נשמר גם ברענון אחרי חזרה מהמצלמה)
+    let saved: string | null | undefined; try { const r = sessionStorage.getItem(activeKey(familyId)); saved = r ? JSON.parse(r) : undefined; } catch { saved = undefined; }
+    setActiveId(saved ?? undefined);
     let alive = true;
     const pull = async () => {
       const { data } = await supabase.from("stores").select("id,name,url,is_default").eq("family_id", familyId).order("created_at");
@@ -53,12 +55,15 @@ export function useStores(familyId: string | null) {
   const select = useCallback(
     (id: string | null) => {
       setActiveId(id);
-      if (familyId) localStorage.setItem(activeKey(familyId), JSON.stringify(id));
+      if (familyId) sessionStorage.setItem(activeKey(familyId), JSON.stringify(id));
     },
     [familyId],
   );
   // חזרה לסופר הבית (ברירת מחדל)
-  const resetToDefault = useCallback(() => setActiveId(undefined), []);
+  const resetToDefault = useCallback(() => {
+    setActiveId(undefined);
+    if (familyId) sessionStorage.removeItem(activeKey(familyId));
+  }, [familyId]);
 
   const save = useCallback(
     async (store: { id?: string; name: string; url: string; is_default?: boolean }) => {
