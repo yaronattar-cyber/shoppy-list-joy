@@ -9,7 +9,7 @@ export type AiItem = { name: string; quantity: number; unit: string };
 export const parseShoppingRequest = createServerFn({ method: "POST" })
   .inputValidator((d) => z.object({ text: z.string().trim().min(1).max(2000) }).parse(d))
   .handler(async ({ data }): Promise<{ items: AiItem[]; error?: string }> => {
-    const apiKey = process.env.LOVABLE_API_KEY;
+    const apiKey = process.env['LOVABLE_API_KEY'];
     if (!apiKey) return { items: [], error: "שירות ה-AI אינו מוגדר" };
     const { createOpenAI } = await import("@ai-sdk/openai");
     const { streamText } = await import("ai");

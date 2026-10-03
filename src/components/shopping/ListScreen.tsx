@@ -23,7 +23,7 @@ type Props = {
   onRemove: (id: string) => void;
   onMarkAll: (completed: boolean) => void;
   onArchive: () => void;
-  storeName?: string;
+  storeName?: string | undefined;
 };
 
 export function ListScreen(p: Props) {

@@ -7,7 +7,7 @@ import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerHeader, Dr
 import { parseShoppingRequest, type AiItem } from "@/lib/ai/parse-request.functions";
 import { formatQuantity, toEntryText } from "@/lib/quantity";
 
-type Props = { open: boolean; onOpenChange: (o: boolean) => void; storeName?: string; onAddMany: (names: string[]) => Promise<number> };
+type Props = { open: boolean; onOpenChange: (o: boolean) => void; storeName?: string | undefined; onAddMany: (names: string[]) => Promise<number> };
 
 export function AiRequestDrawer({ open, onOpenChange, storeName, onAddMany }: Props) {
   const parse = useServerFn(parseShoppingRequest);
