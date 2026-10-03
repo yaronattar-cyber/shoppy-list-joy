@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Home, ListChecks, Package, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AddScreen } from "@/components/shopping/AddScreen";
 import { ListScreen } from "@/components/shopping/ListScreen";
 import { InventoryScreen } from "@/components/shopping/InventoryScreen";
 import { FamilyScreen } from "@/components/shopping/FamilyScreen";
+import { MergeFamilyDialog } from "@/components/shopping/MergeFamilyDialog";
 import { Onboarding } from "@/components/shopping/Onboarding";
 import { useFamily } from "@/hooks/useFamily";
 import { useShoppingList } from "@/hooks/useShoppingList";
@@ -42,6 +43,15 @@ function Index() {
   const family = useFamily();
   const list = useShoppingList(family.familyId, family.userName ?? undefined);
   const { speak } = useSpeech();
+  const { clearPrevious } = family;
+  const { refresh } = list;
+  const onMergeDone = useCallback(
+    (merged: boolean) => {
+      clearPrevious();
+      if (merged) void refresh();
+    },
+    [clearPrevious, refresh],
+  );
 
   // RTL: החלקה שמאלה = המסך הבא
   const step = (dir: 1 | -1) => {
@@ -76,6 +86,9 @@ function Index() {
 
   return (
     <main className="min-h-screen bg-background pb-[calc(4.5rem+env(safe-area-inset-bottom))]" {...swipe}>
+      {family.previousFamilyId && (
+        <MergeFamilyDialog from={family.previousFamilyId} to={family.familyId} onDone={onMergeDone} />
+      )}
       {(!list.online || list.pendingCount > 0) && (
         <div
           role="status"

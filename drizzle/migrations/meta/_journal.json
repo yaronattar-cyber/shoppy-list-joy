@@ -29,6 +29,13 @@
       "when": 1791013105412,
       "tag": "0003_add_item_out_of_stock",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791016659150,
+      "tag": "0004_family_product_history",
+      "breakpoints": true
     }
   ]
 }

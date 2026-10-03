@@ -32,6 +32,38 @@ export type Database = {
         }
         Relationships: []
       }
+      family_product_history: {
+        Row: {
+          category: string
+          count: number
+          family_id: string
+          last_used: string
+          name: string
+        }
+        Insert: {
+          category?: string
+          count?: number
+          family_id: string
+          last_used?: string
+          name: string
+        }
+        Update: {
+          category?: string
+          count?: number
+          family_id?: string
+          last_used?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_product_history_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       items: {
         Row: {
           added_by: string
@@ -111,7 +143,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      merge_family_items: {
+        Args: { _from: string; _to: string }
+        Returns: number
+      }
+      record_family_purchase: {
+        Args: { _category: string; _family_id: string; _name: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

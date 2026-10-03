@@ -24,6 +24,8 @@ export function useFamily() {
   const [userName, setUserName] = useState<string | null>(null);
   const [joinedFromLink, setJoinedFromLink] = useState(false);
   const [ready, setReady] = useState(false);
+  // המשפחה הקודמת — כדי להציע מיזוג פריטים אחרי הצטרפות
+  const [previousFamilyId, setPreviousFamilyId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -37,6 +39,7 @@ export function useFamily() {
       setFamilyId(id);
       setUserName(loadUserName());
       setJoinedFromLink(!!fromUrl && fromUrl !== stored);
+      if (fromUrl && stored && fromUrl !== stored) setPreviousFamilyId(stored);
       setReady(true);
     };
     void boot();
@@ -54,9 +57,13 @@ export function useFamily() {
     const clean = id.trim().toUpperCase();
     if (!clean) return;
     await ensureFamily(clean);
+    const prev = loadFamilyId();
     saveFamilyId(clean);
     setFamilyId(clean);
+    if (prev && prev !== clean) setPreviousFamilyId(prev);
   }, []);
+
+  const clearPrevious = useCallback(() => setPreviousFamilyId(null), []);
 
   const createFamily = useCallback(async (name?: string) => {
     const id = newFamilyCode();
@@ -66,5 +73,5 @@ export function useFamily() {
     return id;
   }, []);
 
-  return { familyId, userName, ready, joinedFromLink, chooseName, joinFamily, createFamily };
+  return { familyId, previousFamilyId, clearPrevious, userName, ready, joinedFromLink, chooseName, joinFamily, createFamily };
 }
