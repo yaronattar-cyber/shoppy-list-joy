@@ -80,7 +80,7 @@ export function BarcodeScanner({ open, onClose, onResult }: Props) {
                 return;
               }
               setStatus("error");
-              setMessage(`לא נמצא מוצר עבור ברקוד ${codes[0].rawValue} — אפשר לסרוק שוב או להוסיף ידנית`);
+              setMessage(`לא נמצא מוצר עבור ברקוד ${raw} — אפשר לסרוק שוב או להוסיף ידנית`);
               setTimeout(() => { if (!cancelled) { setStatus("scanning"); setMessage(null); } }, 2500);
             }
           } catch { /* פריים בודד נכשל — ממשיכים */ }
