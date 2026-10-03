@@ -394,7 +394,6 @@ export function useShoppingList(familyId: string | null, userName?: string) {
     deleteFromInventory,
     history,
     productHistory,
-    refresh,
     loading,
     markOutOfStock,
     addItem,
