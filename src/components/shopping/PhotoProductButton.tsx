@@ -17,7 +17,7 @@ async function toDataUrl(file: File): Promise<string> {
 }
 
 // צילום מוצר → זיהוי שם → אישור → הוספה לרשימת החנות שנבחרה
-export function PhotoProductButton({ storeName, onAdd, compact }: { storeName: string; onAdd: (name: string) => void; compact?: boolean }) {
+export function PhotoProductButton({ storeName, onAdd, compact }: { storeName: string; onAdd: (name: string) => string | null | void; compact?: boolean }) {
   const input = useRef<HTMLInputElement>(null);
   const recognize = useServerFn(recognizeProduct);
   const [open, setOpen] = useState(false);
@@ -25,10 +25,11 @@ export function PhotoProductButton({ storeName, onAdd, compact }: { storeName: s
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [added, setAdded] = useState("");
 
   const onFile = async (f?: File) => {
     if (!f) return;
-    setOpen(true); setBusy(true); setErr(""); setName("");
+    setOpen(true); setBusy(true); setErr(""); setName(""); setAdded("");
     try {
       const url = await toDataUrl(f);
       setImg(url);
@@ -37,6 +38,15 @@ export function PhotoProductButton({ storeName, onAdd, compact }: { storeName: s
       setName(r.name);
     } catch { setErr("הזיהוי נכשל, נסו שוב"); }
     setBusy(false);
+  };
+
+  const confirm = () => {
+    const n = name.trim();
+    if (!n) return;
+    const res = onAdd(n);
+    if (res === null) { setErr("ההוספה נכשלה — ודאו שאתם מחוברים למשפחה ונסו שוב"); return; }
+    setAdded(typeof res === "string" ? res : n);
+    setTimeout(() => setOpen(false), 1600);
   };
 
   return (
@@ -50,21 +60,21 @@ export function PhotoProductButton({ storeName, onAdd, compact }: { storeName: s
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerContent dir="rtl">
           <DrawerHeader className="text-right">
-            <DrawerTitle>זיהוי מוצר מתמונה</DrawerTitle>
-            <DrawerDescription>בדקו וערכו את השם לפני ההוספה ל{storeName}</DrawerDescription>
+            <DrawerTitle>הוספה לרשימת {storeName}</DrawerTitle>
+            <DrawerDescription>בדקו וערכו את שם המוצר, ואז לחצו על הכפתור הירוק</DrawerDescription>
           </DrawerHeader>
           <div className="space-y-3 px-4 pb-6">
             {img && <img src={img} alt="המוצר שצולם" className="mx-auto max-h-48 rounded-md border border-border object-contain" />}
             {busy ? (
               <p className="flex items-center justify-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />מזהה מוצר...</p>
+            ) : added ? (
+              <p className="flex items-center justify-center gap-2 rounded-md bg-primary/10 p-3 text-center font-semibold text-primary"><Check className="h-5 w-5" />„{added}” נוסף לרשימת {storeName}</p>
             ) : (
               <>
                 {err && <p className="text-center text-sm text-destructive">{err}</p>}
-                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="שם המוצר" aria-label="שם המוצר" className="h-11 w-full rounded-md border border-input bg-card px-3 text-base outline-none focus:ring-2 focus:ring-ring" />
-                <div className="flex gap-2">
-                  <Button type="button" className="h-11 flex-1" disabled={!name.trim()} onClick={() => { onAdd(name.trim()); setOpen(false); }}><Check />הוספה לרשימה</Button>
-                  <Button type="button" variant="outline" className="h-11" onClick={() => input.current?.click()}><Camera />צילום חוזר</Button>
-                </div>
+                <input autoFocus value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") confirm(); }} placeholder="שם המוצר" aria-label="שם המוצר" className="h-11 w-full rounded-md border border-input bg-card px-3 text-base outline-none focus:ring-2 focus:ring-ring" />
+                <Button type="button" className="h-14 w-full text-base font-bold" disabled={!name.trim()} onClick={confirm}><Check />הוספה לרשימת {storeName}</Button>
+                <Button type="button" variant="outline" className="h-11 w-full" onClick={() => input.current?.click()}><Camera />צילום חוזר</Button>
               </>
             )}
           </div>
