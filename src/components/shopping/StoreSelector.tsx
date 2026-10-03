@@ -3,7 +3,7 @@ import { Copy, ExternalLink, Pencil, Plus, Star, Store, Trash2 } from "lucide-re
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { estimateForStore, formatPrice, type BasketLine } from "@/lib/prices";
-import { copyListAndOpenStore } from "@/lib/shopping-tools";
+import { listAsText } from "@/lib/shopping-tools";
 import type { ShoppingItem } from "@/lib/shopping-list";
 import type { StoreInfo } from "@/hooks/useStores";
 
@@ -28,6 +28,14 @@ const host = (url: string) => {
 export function StoreSelector(p: Props) {
   const [editing, setEditing] = useState<{ id?: string; name: string; url: string; is_default?: boolean } | null>(null);
   const [msg, setMsg] = useState("");
+  const [copyOpen, setCopyOpen] = useState(false);
+  const [onlyTodo, setOnlyTodo] = useState(true);
+  const all = p.lines as ShoppingItem[];
+  const copyItems = onlyTodo ? all.filter((i) => !i.completed) : all.map((i) => ({ ...i, completed: false }));
+  const text = copyItems.length ? listAsText(copyItems, p.active?.name) : "אין פריטים להעתקה";
+  const copyText = async (t: string) => {
+    try { await navigator.clipboard.writeText(t); return true; } catch { return false; }
+  };
   const total = estimateForStore(p.lines, p.active?.name ?? "");
   const chip = (selected: boolean) =>
     `shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
@@ -67,16 +75,39 @@ export function StoreSelector(p: Props) {
           </Button>
         )}
       </div>
-      {p.active?.url && p.lines.some((l) => !l.completed) && (
-        <Button type="button" variant="outline" size="sm" className="mt-2 w-full" onClick={async () => {
-          const ok = await copyListAndOpenStore(p.lines as ShoppingItem[], p.active!.url, p.active!.name);
-          setMsg(ok ? "הרשימה הועתקה ללוח – הדביקו בחיפוש באתר" : "לא הצלחנו להעתיק את הרשימה");
-          setTimeout(() => setMsg(""), 3500);
-        }}>
+      {p.active?.url && p.lines.length > 0 && (
+        <Button type="button" variant="outline" size="sm" className="mt-2 w-full" onClick={() => { setOnlyTodo(p.lines.some((l) => !l.completed)); setMsg(""); setCopyOpen(true); }}>
           <Copy />מעבר לאתר והעתקת רשימה
         </Button>
       )}
-      {msg && <p className="mt-1 animate-fade-in text-center text-xs font-medium text-primary">{msg}</p>}
+
+      <Drawer open={copyOpen} onOpenChange={setCopyOpen}>
+        <DrawerContent dir="rtl">
+          <DrawerHeader className="text-right">
+            <DrawerTitle>העתקת רשימה ל{p.active?.name}</DrawerTitle>
+            <DrawerDescription>בדקו את הרשימה, העתיקו, ואז עברו לאתר והדביקו בחיפוש.</DrawerDescription>
+          </DrawerHeader>
+          <div className="space-y-3 px-4 pb-6">
+            <label className="flex items-center gap-3 rounded-md border border-border bg-card px-3 py-2 text-sm">
+              <input type="checkbox" checked={onlyTodo} onChange={(e) => { setOnlyTodo(e.target.checked); setMsg(""); }} className="h-5 w-5 accent-[var(--color-primary)]" />
+              רק פריטים שטרם נקנו
+            </label>
+            <pre className="max-h-56 overflow-auto whitespace-pre-wrap rounded-md border border-border bg-muted p-3 text-sm text-foreground">{text}</pre>
+            {msg && <p className="animate-fade-in text-center text-sm font-semibold text-primary">{msg}</p>}
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" className="h-11 flex-1" disabled={!copyItems.length} onClick={async () => {
+                const ok = await copyText(text);
+                setMsg(ok ? "✓ הרשימה הועתקה ללוח" : "ההעתקה נכשלה – סמנו את הטקסט והעתיקו ידנית");
+              }}><Copy />העתק</Button>
+              <Button type="button" className="h-11 flex-1" onClick={async () => {
+                if (!msg.startsWith("✓")) await copyText(text);
+                const u = p.active!.url;
+                window.open(/^https?:\/\//.test(u) ? u : `https://${u}`, "_blank", "noopener");
+              }}><ExternalLink />פתח את האתר</Button>
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
 
       <Drawer open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DrawerContent dir="rtl">
