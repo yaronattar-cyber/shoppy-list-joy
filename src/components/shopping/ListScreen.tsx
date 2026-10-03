@@ -9,6 +9,7 @@ import { AiRequestDrawer } from "./AiRequestDrawer";
 import { ItemEditDrawer } from "./ItemEditDrawer";
 import { TargetPicker, type AddTarget } from "./TargetPicker";
 import { ShoppingItemRow } from "./ShoppingItemRow";
+import { storeTone } from "./StoreChips";
 import { HistorySuggestions } from "./HistorySuggestions";
 import { matchHistory, type HistoryEntry } from "@/lib/product-history";
 import { basketTotals, formatDistance, formatPrice, STORE_DISTANCES } from "@/lib/prices";
@@ -72,10 +73,10 @@ export function ListScreen(p: Props) {
   const sortedTotals = [...totals].sort((a, b) => sort === "price" ? a.total - b.total : STORE_DISTANCES[a.store] - STORE_DISTANCES[b.store]);
 
   return (
-    <section className="mx-auto w-full max-w-2xl px-4 pb-44 pt-4 sm:px-6">
+    <section className="mx-auto w-full max-w-2xl px-4 pb-44 pt-1 sm:px-6">
       <TargetPicker name={picking} targets={p.targets ?? []} onCancel={() => setPicking(null)} onPick={(t) => { const n = picking ?? ""; setPicking(null); if (p.onAddTo?.(n, t)) setQuick(""); }} />
       <div className="sticky top-0 z-30 -mx-4 border-b border-border bg-background/95 px-4 pb-3 pt-2 backdrop-blur sm:-mx-6 sm:px-6">
-        <h1 className="mb-3 text-2xl font-bold text-foreground">רשימת קניות</h1>
+        <h1 className="mb-2 text-xl font-bold text-foreground">רשימת קניות</h1>
         <div className="flex gap-2">
           <form className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] gap-2" onSubmit={(event) => { event.preventDefault(); submitQuick(); }}>
             <input value={quick} onChange={(event) => setQuick(event.target.value)} placeholder="הוספת מוצר..." aria-label="הוספה מהירה" className="h-11 min-w-0 rounded-md border border-input bg-card px-3 text-base outline-none focus:ring-2 focus:ring-ring" />
@@ -118,15 +119,15 @@ export function ListScreen(p: Props) {
       {todo.length > 0 && (byStore
         ? storeGroups(todo).map(([label, rows]) => <section key={label} className="mt-3">
             <h2 className="mb-1 px-1 text-xs font-semibold text-muted-foreground">{label} ({rows.length})</h2>
-            <ul className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">{rows.map((item) => <ShoppingItemRow key={item.id} item={item} storeLabel={tag(item)} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />)}</ul>
+            <ul className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">{rows.map((item) => <ShoppingItemRow key={item.id} item={item} storeLabel={tag(item)} storeTone={general ? storeTone(p.stores ?? [], item.storeId) : undefined} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />)}</ul>
           </section>)
         : grouped
         ? groupByCategory(todo).map(([cat, rows]) => <section key={cat} className="mt-3">
             <h2 className="mb-1 px-1 text-xs font-semibold text-muted-foreground">{cat} ({rows.length})</h2>
-            <ul className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">{rows.map((item) => <ShoppingItemRow key={item.id} item={item} storeLabel={tag(item)} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />)}</ul>
+            <ul className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">{rows.map((item) => <ShoppingItemRow key={item.id} item={item} storeLabel={tag(item)} storeTone={general ? storeTone(p.stores ?? [], item.storeId) : undefined} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />)}</ul>
           </section>)
         : <ul className="mt-3 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-            {todo.map((item) => <ShoppingItemRow key={item.id} item={item} storeLabel={tag(item)} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />)}
+            {todo.map((item) => <ShoppingItemRow key={item.id} item={item} storeLabel={tag(item)} storeTone={general ? storeTone(p.stores ?? [], item.storeId) : undefined} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />)}
           </ul>)}
       {p.items.length > 0 && <p className="mt-2 text-xs text-muted-foreground">הקשה: נקנה · לחיצה ארוכה: חסר במלאי</p>}
       {done.length > 0 && (
@@ -135,7 +136,7 @@ export function ListScreen(p: Props) {
             <span>פריטים שנרכשו ({done.length})</span>
             <ChevronDown className={`h-4 w-4 transition-transform ${showDone ? "rotate-180" : ""}`} />
           </Button>
-          {showDone && <ul className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">{done.map((item) => <ShoppingItemRow key={item.id} item={item} storeLabel={tag(item)} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />)}</ul>}
+          {showDone && <ul className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">{done.map((item) => <ShoppingItemRow key={item.id} item={item} storeLabel={tag(item)} storeTone={general ? storeTone(p.stores ?? [], item.storeId) : undefined} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />)}</ul>}
         </section>
       )}
       {!p.items.length && <div className="mt-12 text-center text-muted-foreground"><ShoppingCart className="mx-auto mb-3 h-10 w-10 opacity-40" /><p>הוסיפו מוצר ראשון למעלה</p></div>}
