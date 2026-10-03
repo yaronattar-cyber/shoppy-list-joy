@@ -65,7 +65,7 @@ export function ListScreen(p: Props) {
           </form>
           <PhotoProductButton compact storeName={p.storeName || "הרשימה"} onAdd={(name) => p.onAdd(name)} />
         </div>
-        <HistorySuggestions items={suggestions} onPick={(name) => { if (p.onAdd(name)) setQuick(""); }} />
+        <HistorySuggestions items={suggestions} onPick={(name) => setQuick(name)} />
       </div>
 
       <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">

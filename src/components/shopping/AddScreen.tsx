@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Check, Mic, MicOff, Plus, ScanBarcode } from "lucide-react";
+import { ArrowLeft, Check, Mic, MicOff, PartyPopper, Plus, ScanBarcode, Store } from "lucide-react";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { Button } from "@/components/ui/button";
 import { CategoryBar } from "./CategoryBar";
@@ -8,13 +8,16 @@ import { HistorySuggestions } from "./HistorySuggestions";
 import { matchHistory, type HistoryEntry } from "@/lib/product-history";
 import type { ShoppingItem } from "@/lib/shopping-list";
 
+export type AddTarget = { id: string | null; label: string; kind: "store" | "event" };
+
 type Props = {
   userName: string;
   count: number;
   items: ShoppingItem[];
   history: string[];
   productHistory: HistoryEntry[];
-  onAdd: (name: string) => string | null;
+  targets: AddTarget[];
+  onAddTo: (name: string, target: AddTarget) => string | null;
   onToggle: (id: string) => void;
   onGoShopping: () => void;
   onOpenFamily: () => void;
@@ -27,25 +30,38 @@ const greeting = () => {
 };
 
 // מסך הבית: כרטיס תקציר, הוספה, מועדפים ופריטים אחרונים
-export function AddScreen({ userName, items = [], history = [], productHistory = [], onAdd, onToggle, onGoShopping, onSpeak }: Props) {
+export function AddScreen({ userName, items = [], history = [], productHistory = [], targets, onAddTo, onToggle, onGoShopping }: Props) {
   const [value, setValue] = useState("");
   const [popup, setPopup] = useState<string | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanDraft, setScanDraft] = useState<string | null>(null); // שלב אישור אחרי סריקה
+  const [picking, setPicking] = useState<string | null>(null); // מוצר שממתין לבחירת רשימה
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
-  const add = (name: string) => {
-    const added = onAdd(name);
-    if (!added) return null;
-    setPopup(added);
+  const showPopup = (text: string) => {
+    setPopup(text);
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => setPopup(null), 2200);
-    return added;
   };
 
-  const stt = useSpeechToText((text) => { setValue(text); add(text); setTimeout(() => setValue(""), 500); }, setValue);
+  // הוספה: אם יש יותר מיעד אחד — שואלים לאיזו רשימה
+  const add = (name: string) => {
+    const n = name.trim();
+    if (!n) return null;
+    if (targets.length > 1) { setPicking(n); return n; }
+    const t = targets[0];
+    if (!t) return null;
+    const added = onAddTo(n, t);
+    if (added) showPopup(added);
+    return added;
+  };
+  // בחירה מהצעות/קטגוריות/דיבור ממלאת את השדה וממתינה ללחיצה על הוסף
+  const fill = (name: string) => { setValue(name); inputRef.current?.focus(); return name; };
+
+  const stt = useSpeechToText((text) => fill(text), setValue);
   const suggestions = useMemo(() => matchHistory(history, productHistory, value), [history, productHistory, value]);
   const pending = items.filter((i) => !i.completed);
   const recent = [...pending].reverse().slice(0, 4);
@@ -74,18 +90,18 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
         <Button type="button" size="icon" variant={stt.listening ? "destructive" : "secondary"} onClick={stt.start} disabled={!stt.supported} aria-label={stt.listening ? "מקשיב, לחצו לעצירה" : "הוספה בדיבור"} title={stt.supported ? "הוספה בדיבור" : "הדפדפן אינו תומך בזיהוי דיבור"} className={`relative isolate h-11 w-11 shrink-0 rounded-full ${stt.listening ? "mic-ripple" : "text-primary"}`}>
           {stt.supported ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
         </Button>
-        <input value={value} onChange={(event) => setValue(event.target.value)} placeholder="מה חסר במקרר?" aria-label="שם הפריט" autoComplete="off" className="h-11 min-w-0 flex-1 bg-transparent px-2 text-base text-foreground outline-none placeholder:text-muted-foreground" />
+        <input ref={inputRef} value={value} onChange={(event) => setValue(event.target.value)} placeholder="מה חסר במקרר?" aria-label="שם הפריט" autoComplete="off" className="h-11 min-w-0 flex-1 bg-transparent px-2 text-base text-foreground outline-none placeholder:text-muted-foreground" />
         <Button type="submit" size="icon" className="h-11 w-11 shrink-0 rounded-full" aria-label="הוספת פריט"><Plus className="h-5 w-5" /></Button>
       </form>
 
-      <HistorySuggestions items={suggestions} onPick={(name) => { add(name); setValue(""); }} />
+      <HistorySuggestions items={suggestions} onPick={(name) => fill(name)} />
 
       <div className="min-h-2" aria-live="polite">
         {stt.listening && <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive"><span className="h-2 w-2 animate-pulse rounded-full bg-destructive" />מקשיב...</div>}
         {!stt.listening && stt.error && <p className="mt-3 rounded-xl bg-destructive/10 px-3 py-2 text-sm text-destructive">{stt.error}</p>}
       </div>
 
-      <CategoryBar onAdd={add} />
+      <CategoryBar onAdd={fill} />
 
       {/* מיקרופון וסריקת ברקוד */}
       <div className="mt-6 flex items-start justify-center gap-10">
@@ -150,6 +166,26 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
           </div>
         </div>
       )}
+
+      {/* בחירת יעד: לאיזו חנות / רשימת אירוע לשייך */}
+      {picking !== null && (
+        <div role="dialog" aria-modal="true" aria-label="בחירת רשימה" className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/50 backdrop-blur-sm" onClick={() => setPicking(null)}>
+          <div className="w-full max-w-md rounded-t-3xl border border-border bg-card p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-soft" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-bold text-foreground">לאיזו רשימה להוסיף?</h2>
+            <p className="mt-1 text-sm text-muted-foreground">„{picking}”</p>
+            <div className="mt-4 flex max-h-[50vh] flex-col gap-2 overflow-y-auto">
+              {targets.map((t) => (
+                <Button key={`${t.kind}-${t.id}`} type="button" variant={t.kind === "event" ? "secondary" : "outline"} className="h-12 justify-start rounded-xl text-base font-semibold" onClick={() => { const n = picking; setPicking(null); const added = onAddTo(n, t); if (added) showPopup(`${added} → ${t.label}`); }}>
+                  {t.kind === "event" ? <PartyPopper className="h-4 w-4" /> : <Store className="h-4 w-4" />}{t.label}
+                </Button>
+              ))}
+            </div>
+            <Button type="button" variant="ghost" className="mt-3 h-10 w-full" onClick={() => setPicking(null)}>ביטול</Button>
+          </div>
+        </div>
+      )}
+
+
 
 
       {/* פריטים אחרונים */}
