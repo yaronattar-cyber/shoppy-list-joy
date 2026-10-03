@@ -31,7 +31,7 @@ export function useStores(familyId: string | null) {
     if (!familyId) return;
     setStores(read<StoreInfo[]>(cacheKey(familyId), []));
     // שחזור החנות שנבחרה (נשמר גם ברענון אחרי חזרה מהמצלמה)
-    const saved = read<string | null | undefined>(activeKey(familyId), undefined);
+    let saved: string | null | undefined; try { const r = sessionStorage.getItem(activeKey(familyId)); saved = r ? JSON.parse(r) : undefined; } catch { saved = undefined; }
     setActiveId(saved ?? undefined);
     let alive = true;
     const pull = async () => {
@@ -55,14 +55,14 @@ export function useStores(familyId: string | null) {
   const select = useCallback(
     (id: string | null) => {
       setActiveId(id);
-      if (familyId) localStorage.setItem(activeKey(familyId), JSON.stringify(id));
+      if (familyId) sessionStorage.setItem(activeKey(familyId), JSON.stringify(id));
     },
     [familyId],
   );
   // חזרה לסופר הבית (ברירת מחדל)
   const resetToDefault = useCallback(() => {
     setActiveId(undefined);
-    if (familyId) localStorage.removeItem(activeKey(familyId));
+    if (familyId) sessionStorage.removeItem(activeKey(familyId));
   }, [familyId]);
 
   const save = useCallback(
