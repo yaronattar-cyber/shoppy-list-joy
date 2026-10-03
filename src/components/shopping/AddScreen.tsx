@@ -27,7 +27,7 @@ const greeting = () => {
 };
 
 // מסך הבית: כרטיס תקציר, הוספה, מועדפים ופריטים אחרונים
-export function AddScreen({ userName, items, history, productHistory, onAdd, onToggle, onGoShopping, onSpeak }: Props) {
+export function AddScreen({ userName, items = [], history = [], productHistory = [], onAdd, onToggle, onGoShopping, onSpeak }: Props) {
   const [value, setValue] = useState("");
   const [popup, setPopup] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -59,7 +59,7 @@ export function AddScreen({ userName, items, history, productHistory, onAdd, onT
       <div className="relative overflow-hidden rounded-3xl bg-hero p-5 text-primary-foreground shadow-soft">
         <div className="absolute -left-10 -top-10 h-36 w-36 rounded-full bg-primary-foreground/10" aria-hidden />
         <div className="absolute -bottom-14 left-16 h-28 w-28 rounded-full bg-primary-foreground/10" aria-hidden />
-        <p className="relative text-sm opacity-90">{greeting()}, {userName} 👋</p>
+        <p className="relative text-sm opacity-90">{greeting()}, {userName}</p>
         <h1 className="relative mt-1 text-2xl font-bold">מה חסר לך היום?</h1>
         <div className="relative mt-4 flex items-end justify-between gap-3">
           <div>
@@ -122,7 +122,7 @@ export function AddScreen({ userName, items, history, productHistory, onAdd, onT
           ))}
         </ul>
       ) : (
-        <p className="mt-2 rounded-2xl border border-dashed border-border bg-card/60 p-5 text-center text-sm text-muted-foreground">הרשימה ריקה — אפשר להקליד, לדבר או לבחור למעלה 🛒</p>
+        <p className="mt-2 rounded-2xl border border-dashed border-border bg-card/60 p-5 text-center text-sm text-muted-foreground">הרשימה ריקה — אפשר להקליד, לדבר או לבחור למעלה</p>
       )}
 
       {popup && <div role="status" className="animate-in fade-in slide-in-from-bottom-2 fixed inset-x-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 mx-auto max-w-sm rounded-2xl bg-hero p-3 text-center text-primary-foreground shadow-soft duration-200"><p className="font-bold">אני על זה!</p><p className="text-sm opacity-90">{popup} נוסף לרשימה</p></div>}
