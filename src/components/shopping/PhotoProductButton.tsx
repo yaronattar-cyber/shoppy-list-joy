@@ -36,8 +36,7 @@ export function PhotoProductButton({ storeName, onAdd, compact }: { storeName: s
       const r = await recognize({ data: { image: url } });
       if (r.error) setErr(r.error);
       setName(r.name);
-      // הוספה אוטומטית מיד כשהזיהוי הצליח
-      if (!r.error && r.name?.trim()) confirm(r.name);
+      // השם מוצג לעריכה — ההוספה רק לאחר לחיצה על הכפתור הירוק
     } catch { setErr("הזיהוי נכשל, נסו שוב"); }
     setBusy(false);
   };
