@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { ExternalLink, Pencil, Plus, Star, Store, Trash2 } from "lucide-react";
+import { Copy, ExternalLink, Pencil, Plus, Star, Store, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { estimateForStore, formatPrice, type BasketLine } from "@/lib/prices";
+import { copyListAndOpenStore } from "@/lib/shopping-tools";
+import type { ShoppingItem } from "@/lib/shopping-list";
 import type { StoreInfo } from "@/hooks/useStores";
 
 type Props = {
@@ -25,6 +27,7 @@ const host = (url: string) => {
 // בורר חנויות: צ׳יפים נגללים + כרטיס חנות פעילה + עורך
 export function StoreSelector(p: Props) {
   const [editing, setEditing] = useState<{ id?: string; name: string; url: string; is_default?: boolean } | null>(null);
+  const [msg, setMsg] = useState("");
   const total = estimateForStore(p.lines, p.active?.name ?? "");
   const chip = (selected: boolean) =>
     `shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
@@ -64,6 +67,16 @@ export function StoreSelector(p: Props) {
           </Button>
         )}
       </div>
+      {p.active?.url && p.lines.some((l) => !l.completed) && (
+        <Button type="button" variant="outline" size="sm" className="mt-2 w-full" onClick={async () => {
+          const ok = await copyListAndOpenStore(p.lines as ShoppingItem[], p.active!.url, p.active!.name);
+          setMsg(ok ? "הרשימה הועתקה ללוח – הדביקו בחיפוש באתר" : "לא הצלחנו להעתיק את הרשימה");
+          setTimeout(() => setMsg(""), 3500);
+        }}>
+          <Copy />מעבר לאתר והעתקת רשימה
+        </Button>
+      )}
+      {msg && <p className="mt-1 animate-fade-in text-center text-xs font-medium text-primary">{msg}</p>}
 
       <Drawer open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DrawerContent dir="rtl">
