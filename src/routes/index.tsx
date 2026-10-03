@@ -42,6 +42,12 @@ type Screen = (typeof ORDER)[number] | "family";
 
 function Index() {
   const [screen, setScreen] = useState<Screen>("home");
+  // שחזור המסך הפעיל אם הדפדפן רוענן (למשל אחרי פתיחת המצלמה)
+  useEffect(() => {
+    const saved = sessionStorage.getItem("active-screen") as Screen | null;
+    if (saved && saved !== "home") setScreen(saved);
+  }, []);
+  useEffect(() => { sessionStorage.setItem("active-screen", screen); }, [screen]);
   const family = useFamily();
   const stores = useStores(family.familyId);
   const list = useShoppingList(family.familyId, family.userName ?? undefined, stores.activeId);
