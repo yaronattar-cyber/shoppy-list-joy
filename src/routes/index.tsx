@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { Home, ListChecks, ShoppingCart, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { AddScreen } from "@/components/shopping/AddScreen";
 import { ListScreen } from "@/components/shopping/ListScreen";
 import { ShopScreen } from "@/components/shopping/ShopScreen";
@@ -73,28 +75,32 @@ function Index() {
   }
 
   return (
-    <main className="min-h-screen bg-background" {...swipe}>
-      <nav className="sticky top-0 z-40 flex justify-center gap-1 border-b-2 border-foreground bg-background/95 p-2 backdrop-blur">
+    <main className="min-h-screen bg-background pb-[calc(4.5rem+env(safe-area-inset-bottom))]" {...swipe}>
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_color-mix(in_oklab,var(--color-foreground)_8%,transparent)] backdrop-blur">
+        <div className="mx-auto grid h-[4.5rem] max-w-xl grid-cols-4 px-2">
         {(
           [
-            ["home", "בית"],
-            ["list", "רשימה"],
-            ["shop", "קניות"],
-            ["family", "משפחה"],
+            ["home", "בית", Home],
+            ["list", "רשימה", ListChecks],
+            ["shop", "קניות", ShoppingCart],
+            ["family", "משפחה", Users],
           ] as const
-        ).map(([id, label]) => (
-          <button
+        ).map(([id, label, Icon]) => (
+          <Button
             key={id}
             type="button"
+            variant="ghost"
             onClick={() => setScreen(id)}
             aria-current={screen === id ? "page" : undefined}
-            className={`rounded-xl px-4 py-2 text-sm font-black ${
-              screen === id ? "bg-foreground text-background" : "text-foreground hover:bg-secondary"
+            className={`h-full flex-col gap-1 rounded-none px-1 text-xs font-medium ${
+              screen === id ? "text-primary hover:bg-accent hover:text-primary" : "text-muted-foreground"
             }`}
           >
+            <Icon className="h-5 w-5" strokeWidth={screen === id ? 2.5 : 2} />
             {label}
-          </button>
+          </Button>
         ))}
+        </div>
       </nav>
 
       {screen === "home" && (
@@ -114,12 +120,10 @@ function Index() {
           onAdd={list.addItem}
           onAddMany={list.addMany}
           onToggle={list.toggleItem}
-          onRename={list.renameItem}
-          onQuantity={list.setQuantity}
+          onUpdate={list.updateDetails}
           onRemove={(id) => void list.removeItem(id)}
           onMarkAll={(c) => void list.markAll(c)}
           onArchive={() => void list.archiveCompleted()}
-          onBack={() => setScreen("home")}
           onShop={() => setScreen("shop")}
         />
       )}
@@ -127,8 +131,8 @@ function Index() {
         <ShopScreen
           items={list.items}
           onToggle={list.toggleItem}
-          onQuantity={list.setQuantity}
-          onBack={() => setScreen("list")}
+          onUpdate={list.updateDetails}
+          onRemove={(id) => void list.removeItem(id)}
         />
       )}
       {screen === "family" && (
