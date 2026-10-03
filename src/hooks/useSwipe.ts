@@ -7,6 +7,9 @@ export function useSwipe(handlers: { onLeft?: () => void; onRight?: () => void }
   return {
     onTouchStart: (e: React.TouchEvent) => {
       const t = e.touches[0];
+      // לא מנווטים כשהמגע התחיל באזור גלילה אופקית או בחלונית
+      const el = e.target as HTMLElement | null;
+      if (el?.closest("[data-no-swipe],[role=dialog],input,textarea")) { start.current = null; return; }
       if (t) start.current = { x: t.clientX, y: t.clientY };
     },
     onTouchEnd: (e: React.TouchEvent) => {

@@ -10,7 +10,7 @@ export function CategoryBar({ onAdd }: Props) {
   const [openId, setOpenId] = useState<string | null>(null);
 
   return (
-    <div className="-mx-4 mt-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none]">
+    <div data-no-swipe className="-mx-4 mt-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none]">
       <div className="flex w-max flex-nowrap gap-2">
         {CATEGORIES.map((cat) =>
           cat.direct ? (
