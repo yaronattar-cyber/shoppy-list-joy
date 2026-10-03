@@ -82,14 +82,6 @@ function Index() {
     if (family.joinedFromLink) setScreen("family");
   }, [family.joinedFromLink]);
 
-  useEffect(() => {
-    if (!family.userName || screen !== "home") return;
-    const id = setTimeout(
-      () => speak(`שלום ${family.userName}, מה חסר לך היום?`, { once: true }),
-      400,
-    );
-    return () => clearTimeout(id);
-  }, [family.userName, screen, speak]);
 
   if (!family.ready || !family.familyId) return <main className="min-h-screen bg-background" />;
 

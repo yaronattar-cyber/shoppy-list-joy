@@ -40,7 +40,6 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
     const added = onAdd(name);
     if (!added) return null;
     setPopup(added);
-    onSpeak?.(`אני על זה! ${added}`);
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => setPopup(null), 2200);
     return added;
