@@ -37,6 +37,8 @@ export function ListScreen(p: Props) {
   const [showDone, setShowDone] = useState(true);
   const [awake, setAwake] = useState(false);
   const [grouped, setGrouped] = useState(false);
+  const [canWake, setCanWake] = useState(false);
+  useEffect(() => setCanWake(wakeLockSupported()), []);
   useEffect(() => () => { void setWakeLock(false); }, []);
   const suggestions = useMemo(() => matchHistory(p.history, p.productHistory, quick), [p.history, p.productHistory, quick]);
   const todo = p.items.filter((item) => !item.completed);
@@ -71,7 +73,7 @@ export function ListScreen(p: Props) {
 
       {/* כלי קנייה: מסך פעיל, קיבוץ, שיתוף */}
       <div className="mt-2 flex flex-wrap gap-2">
-        {wakeLockSupported() && <Button type="button" size="sm" variant={awake ? "default" : "outline"} onClick={async () => setAwake(await setWakeLock(!awake))}><Sun />{awake ? "מסך פעיל" : "השאר מסך דולק"}</Button>}
+        {canWake && <Button type="button" size="sm" variant={awake ? "default" : "outline"} onClick={async () => setAwake(await setWakeLock(!awake))}><Sun />{awake ? "מסך פעיל" : "השאר מסך דולק"}</Button>}
         <Button type="button" size="sm" variant={grouped ? "default" : "outline"} onClick={() => setGrouped((g) => !g)}><Layers />{grouped ? "לפי מחלקות" : "לפי סדר הוספה"}</Button>
         <Button type="button" size="sm" variant="outline" onClick={() => openWhatsApp(atStoreText(p.storeName))}><Share2 />אני בסופר</Button>
         {todo.length > 0 && <Button type="button" size="sm" variant="outline" onClick={() => openWhatsApp(listAsText(p.items, p.storeName))}><Send />שלח רשימה</Button>}
