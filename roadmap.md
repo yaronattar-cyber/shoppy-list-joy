@@ -1,4 +1,4 @@
-- [ ] Refactor Home, List, and Shopping UX/UI per approved plan
-- [ ] Add shared item editing sheet with notes and category persistence
-- [ ] Move store comparison to List with sortable details sheet
-- [ ] Validate responsive layouts and interactions
+- [x] Refactor Home, List, and Shopping UX/UI per approved plan
+- [x] Add shared item editing sheet with notes and category persistence
+- [x] Move store comparison to List with sortable details sheet
+- [x] Validate responsive layouts and interactions

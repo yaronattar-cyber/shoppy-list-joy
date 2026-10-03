@@ -40,7 +40,7 @@ export function ItemEditDrawer({ item, onClose, onSave, onDelete }: Props) {
         </DrawerHeader>
         <div className="space-y-4 overflow-y-auto px-4 pb-2">
           <label className="block space-y-1.5 text-sm font-medium text-foreground">שם המוצר
-            <input className={field} value={name} onChange={(e) => setName(e.target.value)} />
+            <textarea rows={2} className="w-full resize-none rounded-md border border-input bg-card px-3 py-2 text-base text-foreground outline-none focus:ring-2 focus:ring-ring" value={name} onChange={(e) => setName(e.target.value)} />
           </label>
           <div className="grid grid-cols-[minmax(0,1fr)_minmax(7rem,0.7fr)] gap-3">
             <div className="space-y-1.5">

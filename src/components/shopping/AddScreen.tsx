@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Mic, MicOff, Plus } from "lucide-react";
+import { Mic, MicOff, Plus, ShoppingBasket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CategoryBar } from "./CategoryBar";
 import { useSpeechToText } from "@/hooks/useSpeechToText";
@@ -59,7 +59,7 @@ export function AddScreen({ history, onAdd, onSpeak }: Props) {
       </div>
 
       <div className="mt-14 border-t border-border pt-8 text-center">
-        <p className="text-5xl" aria-hidden>🛒</p>
+        <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-accent text-accent-foreground" aria-hidden><ShoppingBasket className="h-7 w-7" /></span>
         <h1 className="mt-4 text-2xl font-bold text-foreground">מה נוסיף לרשימה?</h1>
         <p className="mt-1 text-sm text-muted-foreground">אפשר להקליד, לדבר או לבחור קטגוריה</p>
       </div>
