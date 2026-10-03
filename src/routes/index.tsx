@@ -15,6 +15,7 @@ import { useShoppingList } from "@/hooks/useShoppingList";
 import { useSpeech } from "@/hooks/useSpeech";
 import { useSwipe } from "@/hooks/useSwipe";
 import { useStores } from "@/hooks/useStores";
+import { StoreChips } from "@/components/shopping/StoreChips";
 import { StoreSelector } from "@/components/shopping/StoreSelector";
 import { EventBar } from "@/components/shopping/EventBar";
 import { useEvents } from "@/hooks/useEvents";
@@ -186,13 +187,13 @@ function Index() {
       </nav>
 
       {/* קביעת המסך הנוכחי כמסך הפתיחה */}
-      <div className="mx-auto flex w-full max-w-2xl justify-end px-4 pt-3 sm:px-6">
+      <div className="mx-auto flex w-full max-w-2xl justify-end px-4 pt-2 sm:px-6">
         <Button
           type="button"
           size="sm"
           variant={startScreen === screen ? "default" : "outline"}
           onClick={toggleStart}
-          className="h-8 rounded-full px-3 text-xs font-semibold"
+          className="h-7 rounded-full px-2.5 text-[11px] font-semibold"
         >
           {startScreen === screen ? <Pin className="h-3.5 w-3.5 fill-current" /> : <PinOff className="h-3.5 w-3.5" />}
           {startScreen === screen ? "מסך פתיחה קבוע" : "קבע כמסך פתיחה"}
@@ -207,6 +208,9 @@ function Index() {
           onClearJoined={events.clearJoined}
           onClose={(ev) => void events.close(ev)}
         />
+      )}
+      {screen === "list" && !events.active && (
+        <StoreChips stores={stores.stores} activeId={stores.activeId} items={list.allActive} onSelect={stores.select} />
       )}
       {screen === "list" && (
         <StoreSelector
