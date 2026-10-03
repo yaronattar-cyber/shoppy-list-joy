@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { Home, ListChecks, Package, Users } from "lucide-react";
+import { Home, ListChecks, Package, Pin, PinOff, Users } from "lucide-react";
+import { toast } from "sonner";
+import type { AddTarget } from "@/components/shopping/AddScreen";
 import { Button } from "@/components/ui/button";
 import { AddScreen } from "@/components/shopping/AddScreen";
 import { ListScreen } from "@/components/shopping/ListScreen";
@@ -45,10 +47,21 @@ type Screen = (typeof ORDER)[number] | "family";
 function Index() {
   const [screen, setScreen] = useState<Screen>("home");
   const [restored, setRestored] = useState(false);
+  const [startScreen, setStartScreen] = useState<Screen>("home");
+  const toggleStart = () => {
+    const next = startScreen === screen ? "home" : screen;
+    localStorage.setItem("start-screen", next);
+    setStartScreen(next);
+    toast.success(next === screen ? "המסך נקבע כמסך הפתיחה" : "מסך הפתיחה חזר להיות הבית");
+  };
   // שחזור המסך הפעיל אם הדפדפן רוענן (למשל אחרי פתיחת המצלמה)
   useEffect(() => {
+    // רענון באמצע שימוש משחזר את המסך; פתיחה חדשה — מסך הפתיחה שנבחר
     const saved = sessionStorage.getItem("active-screen") as Screen | null;
-    if (saved && saved !== "home") setScreen(saved);
+    const start = localStorage.getItem("start-screen") as Screen | null;
+    setStartScreen(start ?? "home");
+    if (saved) setScreen(saved);
+    else if (start) setScreen(start);
     setRestored(true);
   }, []);
   useEffect(() => { sessionStorage.setItem("active-screen", screen); }, [screen]);
@@ -59,6 +72,27 @@ function Index() {
   // רשימת אירוע משותפת פועלת כרשימה עצמאית עם קוד משלה
   const eventList = useShoppingList(events.activeId, family.userName ?? undefined, null);
   const shown = events.active ? eventList : list;
+  // מוצר שממתין להוספה לאירוע שעדיין נטען
+  const [pendingEvent, setPendingEvent] = useState<{ id: string; name: string } | null>(null);
+  useEffect(() => {
+    if (pendingEvent && events.activeId === pendingEvent.id) {
+      eventList.addItem(pendingEvent.name);
+      setPendingEvent(null);
+    }
+  }, [pendingEvent, events.activeId, eventList]);
+  const targets: AddTarget[] = [
+    ...stores.stores.map((st) => ({ id: st.id, label: st.name, kind: "store" as const })),
+    ...events.events.map((ev) => ({ id: ev.id, label: ev.name, kind: "event" as const })),
+  ];
+  if (!stores.stores.length) targets.unshift({ id: null, label: "הרשימה הכללית", kind: "store" });
+  const addTo = (name: string, t: AddTarget) => {
+    if (t.kind === "store") return list.addItem(name, t.id);
+    if (!t.id) return null;
+    if (events.activeId === t.id) return eventList.addItem(name);
+    events.select(t.id);
+    setPendingEvent({ id: t.id, name });
+    return name;
+  };
   useEffect(() => {
     if (events.joinedName) setScreen("list");
   }, [events.joinedName]);
@@ -146,6 +180,17 @@ function Index() {
         </div>
       </nav>
 
+      <Button
+        type="button"
+        size="icon"
+        variant="ghost"
+        onClick={toggleStart}
+        aria-label={startScreen === screen ? "ביטול מסך פתיחה" : "קבע כמסך פתיחה"}
+        title={startScreen === screen ? "זהו מסך הפתיחה" : "קבע כמסך פתיחה"}
+        className={`fixed left-2 top-2 z-40 h-9 w-9 rounded-full bg-card/80 shadow-soft backdrop-blur ${startScreen === screen ? "text-primary" : "text-muted-foreground"}`}
+      >
+        {startScreen === screen ? <Pin className="h-4 w-4 fill-current" /> : <PinOff className="h-4 w-4" />}
+      </Button>
       {screen === "list" && events.active && (
         <EventBar
           familyId={family.familyId}
@@ -178,7 +223,8 @@ function Index() {
           onToggle={list.toggleItem}
           history={list.history}
           productHistory={list.productHistory}
-          onAdd={list.addItem}
+          targets={targets}
+          onAddTo={addTo}
           onGoShopping={() => setScreen("list")}
           onOpenFamily={() => setScreen("family")}
           onSpeak={(text) => speak(text)}
