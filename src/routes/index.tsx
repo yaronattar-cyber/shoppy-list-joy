@@ -209,8 +209,16 @@ function Index() {
           onClose={(ev) => void events.close(ev)}
         />
       )}
-      {screen === "list" && !events.active && (
-        <StoreChips stores={stores.stores} activeId={stores.activeId} items={list.allActive} onSelect={stores.select} />
+      {screen === "list" && (
+        <StoreChips
+          stores={stores.stores}
+          activeId={stores.activeId}
+          items={list.allActive}
+          onSelect={(id) => { events.select(null); stores.select(id); }}
+          events={events.events}
+          activeEventId={events.activeId}
+          onSelectEvent={events.select}
+        />
       )}
       {screen === "list" && (
         <StoreSelector
