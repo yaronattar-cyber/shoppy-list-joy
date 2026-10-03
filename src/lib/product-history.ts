@@ -1,3 +1,4 @@
+import { supabase } from "@/integrations/supabase/client";
 // היסטוריית מוצרים מקומית — נשמרת כשפריט מסומן „נקנה” ומזינה השלמה אוטומטית
 export type HistoryEntry = { name: string; category: string; count: number; lastUsed: number };
 
@@ -41,4 +42,44 @@ export function matchHistory(names: string[], entries: HistoryEntry[], query: st
     .filter((n) => n !== q && n.includes(q))
     .sort((a, b) => (Number(b.startsWith(q)) - Number(a.startsWith(q))) || (score.get(b) ?? 0) - (score.get(a) ?? 0))
     .slice(0, limit);
+}
+
+// ---- סנכרון משפחתי בענן ----
+
+// מיזוג היסטוריה מקומית ומשפחתית: לוקחים את המונה הגבוה והשימוש האחרון
+export function mergeHistory(a: HistoryEntry[], b: HistoryEntry[]): HistoryEntry[] {
+  const map = new Map<string, HistoryEntry>();
+  for (const e of [...a, ...b]) {
+    const prev = map.get(e.name);
+    if (!prev) map.set(e.name, { ...e });
+    else {
+      prev.count = Math.max(prev.count, e.count);
+      prev.lastUsed = Math.max(prev.lastUsed, e.lastUsed);
+      if (e.category) prev.category = e.category;
+    }
+  }
+  return [...map.values()];
+}
+
+export async function fetchFamilyHistory(familyId: string): Promise<HistoryEntry[]> {
+  const { data, error } = await supabase
+    .from("family_product_history")
+    .select("name, category, count, last_used")
+    .eq("family_id", familyId)
+    .order("last_used", { ascending: false })
+    .limit(500);
+  if (error) throw error;
+  return (data ?? []).map((r) => ({ name: r.name, category: r.category, count: r.count, lastUsed: new Date(r.last_used).getTime() }));
+}
+
+export async function recordFamilyPurchase(familyId: string, name: string, category: string) {
+  const { error } = await supabase.rpc("record_family_purchase", { _family_id: familyId, _name: name.trim(), _category: category ?? "" });
+  if (error) console.warn("family history sync failed", error.message);
+}
+
+// מעביר את הפריטים וההיסטוריה מהמשפחה הקודמת לחדשה
+export async function mergeFamilyItems(from: string, to: string): Promise<number> {
+  const { data, error } = await supabase.rpc("merge_family_items", { _from: from, _to: to });
+  if (error) throw error;
+  return data ?? 0;
 }

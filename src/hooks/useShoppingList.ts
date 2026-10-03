@@ -112,7 +112,25 @@ export function useShoppingList(familyId: string | null, userName?: string) {
   const [syncing, setSyncing] = useState(false);
   const flushingRef = useRef(false);
 
-  useEffect(() => setProductHistory(loadHistory()), []);
+  // היסטוריה: מקומית מיד, ואז מיזוג עם היסטוריית המשפחה בענן + Realtime
+  useEffect(() => {
+    setProductHistory(loadHistory());
+    if (!familyId) return;
+    let active = true;
+    const pull = () =>
+      fetchFamilyHistory(familyId)
+        .then((cloud) => active && setProductHistory(mergeHistory(loadHistory(), cloud)))
+        .catch(() => {});
+    void pull();
+    const ch = supabase
+      .channel(`history-${familyId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "family_product_history", filter: `family_id=eq.${familyId}` }, () => void pull())
+      .subscribe();
+    return () => {
+      active = false;
+      void supabase.removeChannel(ch);
+    };
+  }, [familyId]);
 
   // טעינה מיידית מהמטמון
   useEffect(() => {
@@ -296,10 +314,13 @@ export function useShoppingList(familyId: string | null, userName?: string) {
       const item = rows.find((i) => i.id === id);
       if (!item) return;
       const next = !(item.completed || item.outOfStock);
-      if (next) setProductHistory(recordPurchase(item.name, item.category));
+      if (next) {
+        setProductHistory((h) => mergeHistory(h, recordPurchase(item.name, item.category)));
+        if (familyId) void recordFamilyPurchase(familyId, item.name, item.category);
+      }
       update(id, { completed: next, out_of_stock: false });
     },
-    [rows, update],
+    [rows, update, familyId],
   );
 
   // לחיצה ארוכה — „חסר במלאי” (או ביטולו)
@@ -373,6 +394,7 @@ export function useShoppingList(familyId: string | null, userName?: string) {
     deleteFromInventory,
     history,
     productHistory,
+    refresh,
     loading,
     markOutOfStock,
     addItem,
