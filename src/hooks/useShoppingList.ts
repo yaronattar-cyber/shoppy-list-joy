@@ -262,8 +262,8 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
     };
   }, [familyId, refresh, flush]);
 
-  // רשימה פעילה של החנות הנבחרת בלבד (null = רשימה כללית)
-  const items = useMemo(() => rows.filter((i) => !i.archived && (i.storeId ?? null) === storeId), [rows, storeId]);
+  // חנות נבחרת = הפריטים שלה בלבד; רשימה כללית (null) = כל הפריטים מכל החנויות
+  const items = useMemo(() => rows.filter((i) => !i.archived && (storeId === null || (i.storeId ?? null) === storeId)), [rows, storeId]);
   const inventory = useMemo(() => rows.filter((i) => i.archived), [rows]);
 
   const history = useMemo(() => [...new Set(rows.map((i) => i.name))], [rows]);

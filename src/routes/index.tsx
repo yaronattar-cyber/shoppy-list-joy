@@ -254,6 +254,7 @@ function Index() {
           stores={events.active ? [] : stores.stores}
           targets={targets}
           onAddTo={addTo}
+          isGeneral={!events.active && !stores.active}
         />
       )}
       {screen === "inventory" && (

@@ -10,12 +10,13 @@ type Props = {
   onToggle: (id: string) => void;
   onOutOfStock: (id: string) => void;
   onOpen: (item: ShoppingItem) => void;
+  storeLabel?: string | undefined;
 };
 
 const LONG_PRESS_MS = 550;
 
 // הקשה = נקנה / איפוס (מיידי); לחיצה ארוכה = חסר במלאי
-export function ShoppingItemRow({ item, onToggle, onOutOfStock, onOpen }: Props) {
+export function ShoppingItemRow({ item, onToggle, onOutOfStock, onOpen, storeLabel }: Props) {
   const quantity = formatQuantity(item.quantity, item.unit) || "×1";
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressed = useRef(false);
@@ -55,7 +56,8 @@ export function ShoppingItemRow({ item, onToggle, onOutOfStock, onOpen }: Props)
       </Button>
       <Button type="button" variant="ghost" onClick={() => onOpen(item)} className="h-auto min-w-0 justify-start whitespace-normal rounded-md px-0 py-1 text-right hover:bg-transparent">
         <span className="min-w-0 flex-1 text-right">
-          <span className={`block break-words text-base font-semibold leading-6 ${item.completed ? "text-foreground line-through opacity-50" : "text-foreground"}`}>{item.name}</span>
+          <span className={`break-words text-base font-semibold leading-6 ${item.completed ? "text-foreground line-through opacity-50" : "text-foreground"}`}>{item.name}</span>
+          {storeLabel && <span className="mr-2 inline-block rounded-full bg-accent px-2 py-0.5 align-middle text-[11px] font-medium text-accent-foreground">{storeLabel}</span>}
           {missing && <span className="block text-xs font-medium text-destructive">חסר במלאי</span>}
           {item.notes && <span className="block break-words text-xs font-normal text-muted-foreground">{item.notes}</span>}
         </span>
