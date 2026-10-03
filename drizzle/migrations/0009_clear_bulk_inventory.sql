@@ -1,0 +1,1 @@
+DELETE FROM public.items WHERE family_id = 'T4PCQ8' AND archived = true AND created_at >= '2026-10-03 07:28:00+00' AND created_at < '2026-10-03 07:32:00+00';

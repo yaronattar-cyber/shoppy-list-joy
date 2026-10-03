@@ -64,6 +64,13 @@
       "when": 1791031761593,
       "tag": "0008_event_lists",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791047619875,
+      "tag": "0009_clear_bulk_inventory",
+      "breakpoints": true
     }
   ]
 }
