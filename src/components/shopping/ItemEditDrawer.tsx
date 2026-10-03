@@ -8,19 +8,21 @@ import { formatDateTime, type ShoppingItem } from "@/lib/shopping-list";
 
 type Props = {
   item: ShoppingItem | null;
+  stores?: { id: string; name: string }[];
   onClose: () => void;
-  onSave: (id: string, details: { name: string; quantity: number; unit: string; notes: string; category: string }) => void;
+  onSave: (id: string, details: { name: string; quantity: number; unit: string; notes: string; category: string; storeId?: string | null }) => void;
   onDelete: (id: string) => void;
 };
 
 const field = "h-11 w-full rounded-md border border-input bg-card px-3 text-base text-foreground outline-none focus:ring-2 focus:ring-ring";
 
-export function ItemEditDrawer({ item, onClose, onSave, onDelete }: Props) {
+export function ItemEditDrawer({ item, stores = [], onClose, onSave, onDelete }: Props) {
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [unit, setUnit] = useState("");
   const [notes, setNotes] = useState("");
   const [category, setCategory] = useState("");
+  const [storeId, setStoreId] = useState("");
 
   useEffect(() => {
     if (!item) return;
@@ -29,6 +31,7 @@ export function ItemEditDrawer({ item, onClose, onSave, onDelete }: Props) {
     setUnit(item.unit);
     setNotes(item.notes);
     setCategory(item.category);
+    setStoreId(item.storeId ?? "");
   }, [item]);
 
   return (
@@ -66,11 +69,17 @@ export function ItemEditDrawer({ item, onClose, onSave, onDelete }: Props) {
               {CATEGORIES.map((cat) => <option key={cat.id} value={cat.id}>{cat.label}</option>)}
             </select>
           </label>
+          <label className="block space-y-1.5 text-sm font-medium text-foreground">שיוך לחנות
+            <select className={field} value={storeId} onChange={(e) => setStoreId(e.target.value)}>
+              <option value="">כללי</option>
+              {stores.map((st) => <option key={st.id} value={st.id}>{st.name}</option>)}
+            </select>
+          </label>
         </div>
         <DrawerFooter className="grid grid-cols-[auto_minmax(0,1fr)] gap-3">
           <Button type="button" variant="ghost" className="text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => { if (item) onDelete(item.id); onClose(); }}><Trash2 />מחיקה</Button>
           <DrawerClose asChild>
-            <Button type="button" size="lg" onClick={() => { if (item && name.trim() && quantity > 0) onSave(item.id, { name: name.trim(), quantity, unit, notes: notes.trim(), category }); }}>שמירת שינויים</Button>
+            <Button type="button" size="lg" onClick={() => { if (item && name.trim() && quantity > 0) onSave(item.id, { name: name.trim(), quantity, unit, notes: notes.trim(), category, storeId: storeId || null }); }}>שמירת שינויים</Button>
           </DrawerClose>
         </DrawerFooter>
       </DrawerContent>
