@@ -9,7 +9,14 @@ export function useSwipe(handlers: { onLeft?: () => void; onRight?: () => void }
       const t = e.touches[0];
       // לא מנווטים כשהמגע התחיל באזור גלילה אופקית או בחלונית
       const el = e.target as HTMLElement | null;
-      if (el?.closest("[data-no-swipe],[role=dialog],input,textarea")) { start.current = null; return; }
+      if (el?.closest("[data-no-swipe],[role=dialog],[role=menu],[role=listbox],input,textarea,select")) { start.current = null; return; }
+      // כל אלמנט שנגלל אופקית (למשל לשוניות חנויות) — גלילה ולא מעבר מסך
+      for (let n: HTMLElement | null = el; n && n !== document.body; n = n.parentElement) {
+        if (n.scrollWidth > n.clientWidth + 2 && /(auto|scroll)/.test(getComputedStyle(n).overflowX)) {
+          start.current = null;
+          return;
+        }
+      }
       if (t) start.current = { x: t.clientX, y: t.clientY };
     },
     onTouchEnd: (e: React.TouchEvent) => {
