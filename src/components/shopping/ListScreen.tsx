@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Archive, CheckCheck, ChevronDown, Layers, ListPlus, PartyPopper, Send, Share2, ShoppingCart, Sun, Tag, Wand2 } from "lucide-react";
+import { Archive, CheckCheck, ChevronDown, ClipboardList, Eye, Layers, ListPlus, PartyPopper, Send, Share2, ShoppingCart, SlidersHorizontal, Sun, Tag, Wand2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { atStoreText, groupByCategory, listAsText, openWhatsApp, setWakeLock, wakeLockSupported } from "@/lib/shopping-tools";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
@@ -64,19 +65,25 @@ export function ListScreen(p: Props) {
 
       <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
         <p className="min-w-0 text-sm text-muted-foreground">{p.items.length ? `${doneCount} מתוך ${p.items.length} הושלמו` : "הרשימה ריקה"}</p>
-        <div className="flex shrink-0 gap-1">
-          <Button type="button" variant="ghost" size="sm" onClick={() => p.onMarkAll(!allDone)}><CheckCheck />{allDone ? "בטל הכל" : "סמן הכל"}</Button>
-          <Button type="button" variant="ghost" size="sm" onClick={() => setAiOpen(true)}><Wand2 />בקשה חופשית</Button>
-          <Button type="button" variant="ghost" size="sm" onClick={() => setImportOpen(true)}>ייבוא</Button>
-        </div>
-      </div>
-
-      {/* כלי קנייה: מסך פעיל, קיבוץ, שיתוף */}
-      <div className="mt-2 flex flex-wrap gap-2">
-        {canWake && <Button type="button" size="sm" variant={awake ? "default" : "outline"} onClick={async () => setAwake(await setWakeLock(!awake))}><Sun />{awake ? "מסך פעיל" : "השאר מסך דולק"}</Button>}
-        <Button type="button" size="sm" variant={grouped ? "default" : "outline"} onClick={() => setGrouped((g) => !g)}><Layers />{grouped ? "לפי מחלקות" : "לפי סדר הוספה"}</Button>
-        <Button type="button" size="sm" variant="outline" onClick={() => openWhatsApp(atStoreText(p.storeName))}><Share2 />אני בסופר</Button>
-        {todo.length > 0 && <Button type="button" size="sm" variant="outline" onClick={() => openWhatsApp(listAsText(p.items, p.storeName))}><Send />שלח רשימה</Button>}
+        {/* תפריט אפשרויות מרוכז */}
+        <DropdownMenu dir="rtl">
+          <DropdownMenuTrigger asChild>
+            <Button type="button" variant="outline" size="sm"><SlidersHorizontal />אפשרויות</Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-60 text-right">
+            <DropdownMenuLabel>תצוגה</DropdownMenuLabel>
+            <DropdownMenuCheckboxItem checked={grouped} onCheckedChange={(v) => setGrouped(!!v)} onSelect={(e) => e.preventDefault()} className="pl-2 pr-8 [&>span]:left-auto [&>span]:right-2"><Layers className="ml-2 h-4 w-4" />סידור לפי מחלקות</DropdownMenuCheckboxItem>
+            {canWake && <DropdownMenuCheckboxItem checked={awake} onCheckedChange={async (v) => setAwake(await setWakeLock(!!v))} onSelect={(e) => e.preventDefault()} className="pl-2 pr-8 [&>span]:left-auto [&>span]:right-2"><Sun className="ml-2 h-4 w-4" />השאר מסך דולק</DropdownMenuCheckboxItem>}
+            <DropdownMenuCheckboxItem checked={showDone} onCheckedChange={(v) => setShowDone(!!v)} onSelect={(e) => e.preventDefault()} className="pl-2 pr-8 [&>span]:left-auto [&>span]:right-2"><Eye className="ml-2 h-4 w-4" />הצג פריטים שנרכשו</DropdownMenuCheckboxItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>פעולות</DropdownMenuLabel>
+            <DropdownMenuItem disabled={!p.items.length} onSelect={() => p.onMarkAll(!allDone)}><CheckCheck />{allDone ? "בטל הכל" : "סמן הכל"}</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setAiOpen(true)}><Wand2 />בקשה חופשית</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setImportOpen(true)}><ClipboardList />ייבוא מ־Keep</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => openWhatsApp(atStoreText(p.storeName))}><Share2 />אני בסופר</DropdownMenuItem>
+            <DropdownMenuItem disabled={!todo.length} onSelect={() => openWhatsApp(listAsText(p.items, p.storeName))}><Send />שלח רשימה</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {allDone && <div className="mt-4 animate-scale-in rounded-lg border border-primary/30 bg-primary/10 p-4 text-center">
