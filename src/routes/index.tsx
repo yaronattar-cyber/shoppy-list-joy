@@ -146,20 +146,17 @@ function Index() {
         </div>
       </nav>
 
-      {screen === "list" && (
+      {screen === "list" && events.active && (
         <EventBar
           familyId={family.familyId}
           userName={family.userName}
-          events={events.events}
           active={events.active}
           joinedName={events.joinedName}
           onClearJoined={events.clearJoined}
-          onSelect={events.select}
-          onCreate={(n) => void events.create(n)}
           onClose={(ev) => void events.close(ev)}
         />
       )}
-      {screen === "list" && !events.active && (
+      {screen === "list" && (
         <StoreSelector
           stores={stores.stores}
           active={stores.active}
@@ -167,6 +164,10 @@ function Index() {
           onSelect={stores.select}
           onSave={(st) => void stores.save(st)}
           onRemove={(id) => void stores.remove(id)}
+          events={events.events}
+          activeEvent={events.active}
+          onSelectEvent={events.select}
+          onCreateEvent={(n) => void events.create(n)}
         />
       )}
       {screen === "home" && (

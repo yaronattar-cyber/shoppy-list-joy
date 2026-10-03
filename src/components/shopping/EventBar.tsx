@@ -1,29 +1,24 @@
 import { useState } from "react";
-import { Check, ChevronDown, LogOut, PartyPopper, Plus, Share2, Trash2, X } from "lucide-react";
+import { LogOut, PartyPopper, Share2, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { eventWhatsapp, type EventList } from "@/hooks/useEvents";
 
 type Props = {
   familyId: string;
   userName?: string;
-  events: EventList[];
-  active: EventList | null;
+  active: EventList;
   joinedName: string | null;
   onClearJoined: () => void;
-  onSelect: (id: string | null) => void;
-  onCreate: (name: string) => void;
   onClose: (ev: EventList) => void;
 };
 
-// רשימות אירוע משותפות בין משפחות: בחירה, יצירה, שיתוף וסגירה
+// באנר אירוע פעיל: שיתוף בוואטסאפ וסגירה/עזיבה (הבחירה והיצירה בתפריט "חנויות ואירועים")
 export function EventBar(p: Props) {
-  const [creating, setCreating] = useState(false);
-  const [name, setName] = useState("");
   const [confirm, setConfirm] = useState(false);
-  const isOwner = p.active?.owner_family_id === p.familyId;
+  // הגנה: אל תציג כלום אם אין אירוע פעיל (למשל בזמן טעינה)
+  if (!p.active) return null;
+  const isOwner = p.active.owner_family_id === p.familyId;
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pt-3 sm:px-6">
@@ -33,47 +28,19 @@ export function EventBar(p: Props) {
           <button type="button" aria-label="סגירה" onClick={p.onClearJoined}><X className="h-4 w-4" /></button>
         </div>
       )}
-      <div className="flex items-center gap-2">
-        <DropdownMenu dir="rtl">
-          <DropdownMenuTrigger asChild>
-            <Button type="button" variant={p.active ? "default" : "outline"} size="sm"><PartyPopper />אירועים<ChevronDown className="h-4 w-4" /></Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="max-h-80 w-60 overflow-y-auto text-right">
-            <DropdownMenuItem onSelect={() => p.onSelect(null)} className={!p.active ? "font-bold text-primary" : ""}>{!p.active && <Check />}הרשימות הביתיות</DropdownMenuItem>
-            {p.events.map((e) => (
-              <DropdownMenuItem key={e.id} onSelect={() => p.onSelect(e.id)} className={p.active?.id === e.id ? "font-bold text-primary" : ""}>
-                {p.active?.id === e.id && <Check />}🎉 {e.name}
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => setCreating(true)} className="text-primary"><Plus />אירוע חדש</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      {creating && (
-        <form className="mt-2 flex gap-2" onSubmit={(e) => { e.preventDefault(); if (name.trim()) { p.onCreate(name); setName(""); setCreating(false); } }}>
-          <Input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="שם האירוע (למשל: על האש שבת)" />
-          <Button type="submit" disabled={!name.trim()}>צור</Button>
-          <Button type="button" variant="ghost" size="icon" aria-label="ביטול" onClick={() => setCreating(false)}><X /></Button>
-        </form>
-      )}
-
-      {p.active && (
-        <div className="mt-2 flex items-center gap-2 rounded-lg border border-primary/40 bg-accent px-3 py-2">
-          <PartyPopper className="h-5 w-5 shrink-0 text-primary" />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-foreground">{p.active.name}</p>
-            <p className="text-xs text-muted-foreground">רשימה משותפת · קוד {p.active.id}</p>
-          </div>
-          <Button asChild variant="ghost" size="icon" aria-label="שיתוף בוואטסאפ">
-            <a href={eventWhatsapp(p.active, p.userName)} target="_blank" rel="noreferrer"><Share2 className="h-4 w-4" /></a>
-          </Button>
-          <Button type="button" variant="ghost" size="icon" aria-label={isOwner ? "סגירת האירוע" : "עזיבת האירוע"} onClick={() => setConfirm(true)} className="text-destructive">
-            {isOwner ? <Trash2 className="h-4 w-4" /> : <LogOut className="h-4 w-4" />}
-          </Button>
+      <div className="flex items-center gap-2 rounded-lg border border-primary/40 bg-accent px-3 py-2">
+        <PartyPopper className="h-5 w-5 shrink-0 text-primary" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-foreground">{p.active.name}</p>
+          <p className="text-xs text-muted-foreground">רשימה משותפת · קוד {p.active.id}</p>
         </div>
-      )}
+        <Button asChild variant="ghost" size="icon" aria-label="שיתוף בוואטסאפ">
+          <a href={eventWhatsapp(p.active, p.userName)} target="_blank" rel="noreferrer"><Share2 className="h-4 w-4" /></a>
+        </Button>
+        <Button type="button" variant="ghost" size="icon" aria-label={isOwner ? "סגירת האירוע" : "עזיבת האירוע"} onClick={() => setConfirm(true)} className="text-destructive">
+          {isOwner ? <Trash2 className="h-4 w-4" /> : <LogOut className="h-4 w-4" />}
+        </Button>
+      </div>
 
       <AlertDialog open={confirm} onOpenChange={setConfirm}>
         <AlertDialogContent dir="rtl">
@@ -85,7 +52,7 @@ export function EventBar(p: Props) {
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
             <AlertDialogCancel>ביטול</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => p.active && p.onClose(p.active)}>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => p.onClose(p.active)}>
               {isOwner ? "סגור אירוע" : "עזוב"}
             </AlertDialogAction>
           </AlertDialogFooter>
