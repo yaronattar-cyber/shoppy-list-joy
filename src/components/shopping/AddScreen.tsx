@@ -31,6 +31,7 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
   const [value, setValue] = useState("");
   const [popup, setPopup] = useState<string | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [scanDraft, setScanDraft] = useState<string | null>(null); // שלב אישור אחרי סריקה
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
@@ -116,7 +117,41 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
         </div>
       </div>
 
-      <BarcodeScanner open={scannerOpen} onClose={() => setScannerOpen(false)} onResult={(name) => add(name)} />
+      <BarcodeScanner open={scannerOpen} onClose={() => setScannerOpen(false)} onResult={(name) => setScanDraft(name)} />
+
+      {/* אישור ועריכת שם לפני הוספת מוצר שנסרק */}
+      {scanDraft !== null && (
+        <div role="dialog" aria-modal="true" aria-label="אישור מוצר שנסרק" className="fixed inset-0 z-50 grid place-items-center bg-foreground/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-3xl border border-border bg-card p-5 shadow-soft">
+            <h2 className="text-lg font-bold text-foreground">נמצא מוצר — בדקו את השם</h2>
+            <p className="mt-1 text-sm text-muted-foreground">אפשר לערוך את השם לפני ההוספה לרשימה</p>
+            <input
+              value={scanDraft}
+              onChange={(event) => setScanDraft(event.target.value)}
+              aria-label="שם המוצר שנסרק"
+              autoFocus
+              className="mt-4 h-11 w-full rounded-xl border border-border bg-background px-3 text-base text-foreground outline-none focus:ring-2 focus:ring-primary/40"
+            />
+            <div className="mt-4 flex gap-2">
+              <Button
+                type="button"
+                className="h-11 flex-1 rounded-xl font-semibold"
+                onClick={() => {
+                  const name = scanDraft.trim();
+                  setScanDraft(null);
+                  if (name) add(name);
+                }}
+              >
+                <Check className="h-4 w-4" /> הוספה לרשימה
+              </Button>
+              <Button type="button" variant="secondary" className="h-11 flex-1 rounded-xl font-semibold" onClick={() => setScanDraft(null)}>
+                ביטול
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* פריטים אחרונים */}
       <div className="mt-6 flex items-center justify-between">
