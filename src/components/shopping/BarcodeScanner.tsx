@@ -68,10 +68,11 @@ export function BarcodeScanner({ open, onClose, onResult }: Props) {
           if (cancelled || !videoRef.current) return;
           try {
             const codes = await detector.detect(videoRef.current);
-            if (codes.length > 0 && codes[0].rawValue) {
+            const raw = codes[0]?.rawValue;
+            if (raw) {
               setStatus("loading");
               setMessage("מזהה מוצר...");
-              const name = await lookupProduct(codes[0].rawValue);
+              const name = await lookupProduct(raw);
               if (cancelled) return;
               if (name) {
                 onResult(name);
