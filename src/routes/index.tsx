@@ -131,7 +131,7 @@ function Index() {
         </div>
       </nav>
 
-      {(screen === "home" || screen === "list") && (
+      {screen === "list" && (
         <StoreSelector
           stores={stores.stores}
           active={stores.active}
