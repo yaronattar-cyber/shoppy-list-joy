@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { resolveName } from "@/lib/categories";
 import { formatQuantity, parseQuantity } from "@/lib/quantity";
 import type { ShoppingItem } from "@/lib/shopping-list";
-import { loadHistory, recordPurchase, type HistoryEntry } from "@/lib/product-history";
+import { fetchFamilyHistory, loadHistory, mergeHistory, recordFamilyPurchase, recordPurchase, type HistoryEntry } from "@/lib/product-history";
 
 type Row = {
   id: string;
