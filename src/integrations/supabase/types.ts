@@ -36,33 +36,39 @@ export type Database = {
         Row: {
           added_by: string
           archived: boolean
+          category: string
           completed: boolean
           created_at: string
           family_id: string
           id: string
           name: string
+          notes: string
           quantity: number
           unit: string
         }
         Insert: {
           added_by?: string
           archived?: boolean
+          category?: string
           completed?: boolean
           created_at?: string
           family_id: string
           id?: string
           name: string
+          notes?: string
           quantity?: number
           unit?: string
         }
         Update: {
           added_by?: string
           archived?: boolean
+          category?: string
           completed?: boolean
           created_at?: string
           family_id?: string
           id?: string
           name?: string
+          notes?: string
           quantity?: number
           unit?: string
         }
