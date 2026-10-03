@@ -27,7 +27,7 @@ const greeting = () => {
 };
 
 // מסך הבית: כרטיס תקציר, הוספה, מועדפים ופריטים אחרונים
-export function AddScreen({ userName, items, history, productHistory, onAdd, onToggle, onGoShopping, onSpeak }: Props) {
+export function AddScreen({ userName, items = [], history = [], productHistory = [], onAdd, onToggle, onGoShopping, onSpeak }: Props) {
   const [value, setValue] = useState("");
   const [popup, setPopup] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
