@@ -47,6 +47,9 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
+  --color-primary-glow: var(--primary-glow);
+  --shadow-soft: var(--shadow-soft);
+  --shadow-glow: var(--shadow-glow);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -63,8 +66,8 @@
 }
 
 :root {
-  --radius: 0.5rem;
-  --background: oklch(0.985 0.002 247.8);
+  --radius: 0.875rem;
+  --background: oklch(0.975 0.012 85);
   --foreground: oklch(0.208 0.042 265.755);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.208 0.042 265.755);
@@ -74,15 +77,25 @@
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.968 0.007 247.896);
   --secondary-foreground: oklch(0.279 0.041 260.031);
-  --muted: oklch(0.968 0.007 247.896);
+  --muted: oklch(0.955 0.014 85);
   --muted-foreground: oklch(0.554 0.046 257.417);
   --accent: oklch(0.962 0.044 156.743);
   --accent-foreground: oklch(0.393 0.095 152.535);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
+  --border: oklch(0.915 0.016 80);
   --input: oklch(0.869 0.022 252.894);
   --ring: oklch(0.596 0.145 163.225);
+  --primary-glow: oklch(0.72 0.16 150);
+  --gradient-hero: linear-gradient(135deg, oklch(0.52 0.13 165), oklch(0.68 0.16 145));
+  --shadow-soft: 0 8px 24px -12px color-mix(in oklab, var(--foreground) 22%, transparent);
+  --shadow-glow: 0 0 0 4px color-mix(in oklab, var(--primary) 18%, transparent), 0 10px 28px -12px color-mix(in oklab, var(--primary) 45%, transparent);
+  --cat-milk: oklch(0.94 0.04 235); --cat-milk-fg: oklch(0.45 0.13 245);
+  --cat-bread: oklch(0.94 0.06 80); --cat-bread-fg: oklch(0.5 0.12 65);
+  --cat-eggs: oklch(0.95 0.08 98); --cat-eggs-fg: oklch(0.5 0.11 85);
+  --cat-cheese: oklch(0.94 0.05 50); --cat-cheese-fg: oklch(0.52 0.15 45);
+  --cat-vegetables: oklch(0.94 0.07 140); --cat-vegetables-fg: oklch(0.45 0.14 145);
+  --cat-other: oklch(0.94 0.04 320); --cat-other-fg: oklch(0.48 0.14 330);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -144,3 +157,12 @@
     font-family: var(--font-sans);
   }
 }
+
+@utility bg-hero { background-image: var(--gradient-hero); }
+@utility shadow-soft { box-shadow: var(--shadow-soft); }
+@utility shadow-glow { box-shadow: var(--shadow-glow); }
+@utility mic-ripple {
+  &::before, &::after { content: ""; position: absolute; inset: 0; border-radius: 9999px; background: var(--destructive); opacity: .35; animation: mic-ripple 1.4s ease-out infinite; z-index: -1; }
+  &::after { animation-delay: .7s; }
+}
+@keyframes mic-ripple { from { transform: scale(1); opacity: .4; } to { transform: scale(1.8); opacity: 0; } }
