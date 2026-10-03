@@ -20,6 +20,8 @@ type Row = {
   created_at: string;
 };
 
+type Patch = Partial<Omit<Row, "id" | "family_id" | "created_at" | "added_by">>;
+
 const toItem = (row: Row): ShoppingItem => ({
   id: row.id,
   familyId: row.family_id,
@@ -35,52 +37,97 @@ const toItem = (row: Row): ShoppingItem => ({
   createdAt: row.created_at,
 });
 
-// תור מקומי של שינויי סטטוס שנכשלו (רשת חלשה) — נשלחים שוב רק אם הם טריים,
-// כדי לא לדרוס שינויים מאוחרים יותר של בני משפחה אחרים
-type Pending = { completed: boolean; outOfStock: boolean; at: number };
-const PENDING_TTL_MS = 10 * 60 * 1000;
-const pendingKey = (familyId: string) => `shopping-pending-${familyId}`;
-const loadPending = (familyId: string | null): Record<string, Pending> => {
-  if (!familyId) return {};
-  try {
-    const parsed = JSON.parse(localStorage.getItem(pendingKey(familyId)) ?? "{}");
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
-    return {};
-  }
-};
-const savePending = (familyId: string | null, map: Record<string, Pending>) => {
-  if (!familyId) return;
-  try {
-    localStorage.setItem(pendingKey(familyId), JSON.stringify(map));
-  } catch {
-    /* אין גישה — נמשיך עם הענן בלבד */
-  }
-};
-const setPending = (familyId: string | null, id: string, value: Pending | null) => {
-  const map = loadPending(familyId);
-  if (value) map[id] = value;
-  else delete map[id];
-  savePending(familyId, map);
+// המרת שדות DB לשדות פריט מקומי
+const patchToItem = (p: Patch): Partial<ShoppingItem> => {
+  const out: Partial<ShoppingItem> = {};
+  if (p.name !== undefined) out.name = p.name;
+  if (p.completed !== undefined) out.completed = p.completed;
+  if (p.out_of_stock !== undefined) out.outOfStock = p.out_of_stock;
+  if (p.quantity !== undefined) out.quantity = p.quantity;
+  if (p.unit !== undefined) out.unit = p.unit;
+  if (p.notes !== undefined) out.notes = p.notes;
+  if (p.category !== undefined) out.category = p.category;
+  if (p.archived !== undefined) out.archived = p.archived;
+  return out;
 };
 
-// עדכון סטטוס לענן; בכישלון נשמר בתור המקומי לשליחה חוזרת
-async function sendStatus(familyId: string | null, id: string, completed: boolean, outOfStock: boolean) {
-  const { error } = await supabase.from("items").update({ completed, out_of_stock: outOfStock }).eq("id", id);
-  if (error) {
-    console.error("update status", error);
-    setPending(familyId, id, { completed, outOfStock, at: Date.now() });
-  } else setPending(familyId, id, null);
+// ===== Offline-first: תור פעולות + מטמון מקומי =====
+type Op =
+  | { type: "insert"; rows: Row[] }
+  | { type: "update"; ids: string[]; patch: Patch }
+  | { type: "delete"; ids: string[] };
+
+const cacheKey = (f: string) => `shopping-cache-${f}`;
+const queueKey = (f: string) => `shopping-queue-${f}`;
+const readJson = <T,>(key: string, fallback: T): T => {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+};
+const writeJson = (key: string, value: unknown) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* אחסון מלא/חסום */
+  }
+};
+
+// החלת פעולות ממתינות על רשימה (לשמירת שינויים מקומיים מעל נתוני הענן)
+function applyOps(items: ShoppingItem[], ops: Op[]): ShoppingItem[] {
+  let r = items;
+  for (const op of ops) {
+    if (op.type === "insert") {
+      const fresh = op.rows.filter((row) => !r.some((i) => i.id === row.id)).map(toItem);
+      r = [...fresh, ...r];
+    } else if (op.type === "update") {
+      const p = patchToItem(op.patch);
+      r = r.map((i) => (op.ids.includes(i.id) ? { ...i, ...p } : i));
+    } else {
+      r = r.filter((i) => !op.ids.includes(i.id));
+    }
+  }
+  return r;
 }
 
-// רשימת הקניות של המשפחה — שמורה ב-Cloud ומסונכרנת בזמן אמת בין המכשירים
+// שגיאת רשת (אין קליטה) — נשאיר בתור. שגיאה אחרת — נשליך כדי לא להיתקע
+const isNetworkError = (msg: string) =>
+  (typeof navigator !== "undefined" && !navigator.onLine) || /fetch|network|timeout|load failed/i.test(msg);
+
+async function sendOp(op: Op) {
+  if (op.type === "insert") return supabase.from("items").upsert(op.rows, { onConflict: "id", ignoreDuplicates: true });
+  if (op.type === "update") return supabase.from("items").update(op.patch).in("id", op.ids);
+  return supabase.from("items").delete().in("id", op.ids);
+}
+
+// רשימת הקניות של המשפחה — ענן + מטמון מקומי, עובדת גם ללא קליטה
 export function useShoppingList(familyId: string | null, userName?: string) {
   const [rows, setRows] = useState<ShoppingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [productHistory, setProductHistory] = useState<HistoryEntry[]>([]);
+  const [online, setOnline] = useState(true);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [syncing, setSyncing] = useState(false);
+  const flushingRef = useRef(false);
+
   useEffect(() => setProductHistory(loadHistory()), []);
-  // שחזור סימוני „נקנו” מקומיים פעם אחת לכל קבוצה, כדי לא להתנגד למכשירים אחרים
-  const reconciledRef = useRef<string | null>(null);
+
+  // טעינה מיידית מהמטמון
+  useEffect(() => {
+    if (!familyId) return;
+    const cached = readJson<ShoppingItem[]>(cacheKey(familyId), []);
+    const queue = readJson<Op[]>(queueKey(familyId), []);
+    setRows(applyOps(cached, queue));
+    setPendingCount(queue.length);
+    if (cached.length) setLoading(false);
+  }, [familyId]);
+
+  // שמירת מצב נוכחי למטמון
+  useEffect(() => {
+    if (familyId && !loading) writeJson(cacheKey(familyId), rows);
+  }, [familyId, rows, loading]);
 
   const refresh = useCallback(async () => {
     if (!familyId) return;
@@ -91,31 +138,57 @@ export function useShoppingList(familyId: string | null, userName?: string) {
       .order("created_at", { ascending: false });
     if (error) {
       console.error("load items", error);
+      setLoading(false);
       return;
     }
-    const loaded = ((data ?? []) as Row[]).map(toItem);
-    setRows(loaded);
+    const queue = readJson<Op[]>(queueKey(familyId), []);
+    setRows(applyOps(((data ?? []) as Row[]).map(toItem), queue));
     setLoading(false);
-
-    // שליחה חוזרת של שינויים שנכשלו — פעם אחת לכל קבוצה ורק אם לא פג תוקפם
-    if (reconciledRef.current === familyId) return;
-    reconciledRef.current = familyId;
-    const pending = loadPending(familyId);
-    savePending(familyId, {});
-    const byId = new Map(loaded.map((i) => [i.id, i]));
-    for (const [id, p] of Object.entries(pending)) {
-      const cur = byId.get(id);
-      if (!cur || Date.now() - p.at > PENDING_TTL_MS) continue;
-      if (cur.completed === p.completed && cur.outOfStock === p.outOfStock) continue;
-      void sendStatus(familyId, id, p.completed, p.outOfStock);
-      setRows((r) => r.map((i) => (i.id === id ? { ...i, completed: p.completed, outOfStock: p.outOfStock } : i)));
-    }
   }, [familyId]);
 
+  // שליחת התור לענן לפי הסדר
+  const flush = useCallback(async () => {
+    if (!familyId || flushingRef.current) return;
+    flushingRef.current = true;
+    setSyncing(true);
+    try {
+      let queue = readJson<Op[]>(queueKey(familyId), []);
+      while (queue.length) {
+        const op = queue[0]!;
+        const { error } = await sendOp(op);
+        if (error && isNetworkError(error.message)) break;
+        if (error) console.error("sync op dropped", error);
+        queue = readJson<Op[]>(queueKey(familyId), []).slice(1);
+        writeJson(queueKey(familyId), queue);
+        setPendingCount(queue.length);
+      }
+      if (!queue.length) await refresh();
+    } catch (e) {
+      console.warn("sync failed, will retry", e);
+    } finally {
+      flushingRef.current = false;
+      setSyncing(false);
+    }
+  }, [familyId, refresh]);
+
+  // הוספת פעולה: עדכון מקומי מיידי + תור + ניסיון שליחה
+  const enqueue = useCallback(
+    (op: Op) => {
+      if (!familyId) return;
+      setRows((r) => applyOps(r, [op]));
+      const queue = [...readJson<Op[]>(queueKey(familyId), []), op];
+      writeJson(queueKey(familyId), queue);
+      setPendingCount(queue.length);
+      void flush();
+    },
+    [familyId, flush],
+  );
+
+  // מנוי Realtime + האזנה לחזרת קליטה
   useEffect(() => {
     if (!familyId) return;
-    setLoading(true);
-    void refresh();
+    setOnline(navigator.onLine);
+    void flush().then(() => refresh());
 
     const channel = supabase
       .channel(`items-${familyId}`)
@@ -123,127 +196,134 @@ export function useShoppingList(familyId: string | null, userName?: string) {
         "postgres_changes",
         { event: "*", schema: "public", table: "items", filter: `family_id=eq.${familyId}` },
         (payload) => {
-          // מיזוג האירוע ל-state המקומי במקום טעינה מלאה
-          if (payload.eventType === "DELETE") {
-            const oldId = (payload.old as Partial<Row>).id;
-            setRows((r) => r.filter((i) => i.id !== oldId));
-            return;
-          }
-          const next = toItem(payload.new as Row);
+          const queue = readJson<Op[]>(queueKey(familyId), []);
           setRows((r) => {
-            const exists = r.some((i) => i.id === next.id);
-            return exists ? r.map((i) => (i.id === next.id ? next : i)) : [next, ...r];
+            let next: ShoppingItem[];
+            if (payload.eventType === "DELETE") {
+              const oldId = (payload.old as Partial<Row>).id;
+              next = r.filter((i) => i.id !== oldId);
+            } else {
+              const item = toItem(payload.new as Row);
+              next = r.some((i) => i.id === item.id) ? r.map((i) => (i.id === item.id ? item : i)) : [item, ...r];
+            }
+            // שינויים מקומיים שטרם נשלחו גוברים
+            return queue.length ? applyOps(next, queue.filter((o) => o.type !== "insert")) : next;
           });
         },
       )
       .subscribe();
 
+    const goOnline = () => {
+      setOnline(true);
+      void flush();
+    };
+    const goOffline = () => setOnline(false);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void flush().then(() => refresh());
+    };
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+    document.addEventListener("visibilitychange", onVisible);
+    // ניסיון חוזר תקופתי — navigator.onLine לא תמיד אמין בקליטה חלשה
+    const timer = setInterval(() => {
+      if (readJson<Op[]>(queueKey(familyId), []).length) void flush();
+    }, 15000);
+
     return () => {
       void supabase.removeChannel(channel);
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+      document.removeEventListener("visibilitychange", onVisible);
+      clearInterval(timer);
     };
-  }, [familyId, refresh]);
+  }, [familyId, refresh, flush]);
 
   const items = useMemo(() => rows.filter((i) => !i.archived), [rows]);
-  // מלאי — פריטים שנקנו ונוקו מהרשימה
   const inventory = useMemo(() => rows.filter((i) => i.archived), [rows]);
 
-  // היסטוריית המשפחה — לשימוש בהשלמה אוטומטית
-  const history = useMemo(() => {
-    const seen = new Set<string>();
-    for (const item of rows) seen.add(item.name);
-    return [...seen];
-  }, [rows]);
+  const history = useMemo(() => [...new Set(rows.map((i) => i.name))], [rows]);
+
+  const makeRow = useCallback(
+    (name: string, quantity: number, unit: string): Row => ({
+      id: crypto.randomUUID(),
+      family_id: familyId!,
+      name,
+      quantity,
+      unit,
+      completed: false,
+      out_of_stock: false,
+      notes: "",
+      category: "",
+      archived: false,
+      added_by: userName?.trim() || "אנונימי",
+      created_at: new Date().toISOString(),
+    }),
+    [familyId, userName],
+  );
 
   const addItem = useCallback(
     (rawName: string) => {
       const parsed = parseQuantity(rawName);
       const name = resolveName(parsed.name);
       if (!name || !familyId) return null;
-      void supabase
-        .from("items")
-        .insert({ family_id: familyId, name, quantity: parsed.quantity, unit: parsed.unit, added_by: userName?.trim() || "אנונימי" })
-        .then(({ error }) => {
-          if (error) console.error("add item", error);
-          void refresh();
-        });
+      enqueue({ type: "insert", rows: [makeRow(name, parsed.quantity, parsed.unit)] });
       const q = formatQuantity(parsed.quantity, parsed.unit);
       return q ? `${q} ${name}` : name;
     },
-    [familyId, userName, refresh],
+    [familyId, enqueue, makeRow],
   );
 
   const addMany = useCallback(
     async (names: string[]) => {
       if (!familyId) return 0;
-      const payload = names
+      const newRows = names
         .map((n) => parseQuantity(n))
         .map((p) => ({ ...p, name: resolveName(p.name) }))
         .filter((p) => p.name)
-        .map((p) => ({
-          family_id: familyId,
-          name: p.name,
-          quantity: p.quantity,
-          unit: p.unit,
-          added_by: userName?.trim() || "אנונימי",
-        }));
-      if (!payload.length) return 0;
-      const { error } = await supabase.from("items").insert(payload);
-      if (error) console.error("add many", error);
-      await refresh();
-      return payload.length;
+        .map((p) => makeRow(p.name, p.quantity, p.unit));
+      if (!newRows.length) return 0;
+      enqueue({ type: "insert", rows: newRows });
+      return newRows.length;
     },
-    [familyId, userName, refresh],
+    [familyId, enqueue, makeRow],
   );
 
-  const update = useCallback(
-    async (id: string, patch: Partial<Pick<Row, "name" | "completed" | "archived" | "quantity" | "unit" | "notes" | "category">>) => {
-      const { error } = await supabase.from("items").update(patch).eq("id", id);
-      if (error) console.error("update item", error);
-      await refresh();
-    },
-    [refresh],
-  );
+  const update = useCallback((id: string, patch: Patch) => enqueue({ type: "update", ids: [id], patch }), [enqueue]);
 
-  // הקשה: רגיל → נקנה; ממצב נקנה/חסר → חזרה לרגיל. נקנה נשמר להיסטוריה
+  // הקשה: רגיל → נקנה; ממצב נקנה/חסר → חזרה לרגיל
   const toggleItem = useCallback(
     (id: string) => {
       const item = rows.find((i) => i.id === id);
       if (!item) return;
       const next = !(item.completed || item.outOfStock);
-      setRows((r) => r.map((i) => (i.id === id ? { ...i, completed: next, outOfStock: false } : i)));
       if (next) setProductHistory(recordPurchase(item.name, item.category));
-      void sendStatus(familyId, id, next, false);
+      update(id, { completed: next, out_of_stock: false });
     },
-    [rows, familyId],
+    [rows, update],
   );
 
-  // הקשה כפולה / לחיצה ארוכה — סימון „חסר במלאי” (או ביטולו)
+  // לחיצה ארוכה — „חסר במלאי” (או ביטולו)
   const markOutOfStock = useCallback(
     (id: string) => {
       const item = rows.find((i) => i.id === id);
       if (!item) return;
-      const next = !item.outOfStock;
-      setRows((r) => r.map((i) => (i.id === id ? { ...i, outOfStock: next, completed: false } : i)));
-      void sendStatus(familyId, id, false, next);
+      update(id, { completed: false, out_of_stock: !item.outOfStock });
     },
-    [rows, familyId],
+    [rows, update],
   );
 
   const renameItem = useCallback(
     (id: string, name: string) => {
       const clean = name.trim();
-      if (!clean) return;
-      void update(id, { name: clean });
+      if (clean) update(id, { name: clean });
     },
     [update],
   );
 
-  // שינוי כמות/יחידה מהיר
   const setQuantity = useCallback(
     (id: string, quantity: number, unit?: string) => {
       if (!(quantity > 0)) return;
-      setRows((r) => r.map((i) => (i.id === id ? { ...i, quantity, unit: unit ?? i.unit } : i)));
-      void update(id, unit === undefined ? { quantity } : { quantity, unit });
+      update(id, unit === undefined ? { quantity } : { quantity, unit });
     },
     [update],
   );
@@ -251,66 +331,40 @@ export function useShoppingList(familyId: string | null, userName?: string) {
   const updateDetails = useCallback(
     (id: string, details: Pick<Row, "name" | "quantity" | "unit" | "notes" | "category">) => {
       if (!details.name.trim() || !(details.quantity > 0)) return;
-      setRows((current) => current.map((item) => (item.id === id ? { ...item, ...details, name: details.name.trim() } : item)));
-      void update(id, { ...details, name: details.name.trim() });
+      update(id, { ...details, name: details.name.trim() });
     },
     [update],
   );
 
-  const removeItem = useCallback(
-    async (id: string) => {
-      setPending(familyId, id, null);
-      const { error } = await supabase.from("items").delete().eq("id", id);
-      if (error) console.error("remove item", error);
-      await refresh();
-    },
-    [familyId, refresh],
-  );
+  const removeItem = useCallback(async (id: string) => enqueue({ type: "delete", ids: [id] }), [enqueue]);
 
-  // „סמן הכל” — סימון או ביטול סימון של כל הפריטים הפעילים
+  // „סמן הכל” — לפי מזהים כדי לעבוד גם ללא קליטה
   const markAll = useCallback(
     async (completed: boolean) => {
-      if (!familyId) return;
-      setRows((r) => r.map((i) => (i.archived ? i : { ...i, completed, outOfStock: false })));
-      const { error } = await supabase
-        .from("items")
-        .update({ completed, out_of_stock: false })
-        .eq("family_id", familyId)
-        .eq("archived", false);
-      if (error) console.error("mark all", error);
-      await refresh();
+      const ids = rows.filter((i) => !i.archived).map((i) => i.id);
+      if (ids.length) enqueue({ type: "update", ids, patch: { completed, out_of_stock: false } });
     },
-    [familyId, rows, refresh],
+    [rows, enqueue],
   );
 
-  // העברת הפריטים שהושלמו לארכיון — נשארים בהיסטוריה להשלמה אוטומטית
+  // העברת פריטים שנקנו למלאי
   const archiveCompleted = useCallback(async () => {
-    if (!familyId) return;
-    const { error } = await supabase
-      .from("items")
-      .update({ archived: true })
-      .eq("family_id", familyId)
-      .eq("completed", true)
-      .eq("archived", false);
-    if (error) console.error("archive", error);
-    await refresh();
-  }, [familyId, refresh]);
+    const ids = rows.filter((i) => i.completed && !i.archived).map((i) => i.id);
+    if (ids.length) enqueue({ type: "update", ids, patch: { archived: true } });
+  }, [rows, enqueue]);
 
-  // מלאי: החזרה לרשימה (כן) או מחיקה לצמיתות (לא)
-  const restoreFromInventory = useCallback(async (ids: string[]) => {
-    if (!ids.length) return;
-    setRows((r) => r.map((i) => (ids.includes(i.id) ? { ...i, archived: false, completed: false, outOfStock: false } : i)));
-    const { error } = await supabase.from("items").update({ archived: false, completed: false, out_of_stock: false }).in("id", ids);
-    if (error) console.error("restore", error);
-    await refresh();
-  }, [refresh]);
-  const deleteFromInventory = useCallback(async (ids: string[]) => {
-    if (!ids.length) return;
-    setRows((r) => r.filter((i) => !ids.includes(i.id)));
-    const { error } = await supabase.from("items").delete().in("id", ids);
-    if (error) console.error("delete inventory", error);
-    await refresh();
-  }, [refresh]);
+  const restoreFromInventory = useCallback(
+    async (ids: string[]) => {
+      if (ids.length) enqueue({ type: "update", ids, patch: { archived: false, completed: false, out_of_stock: false } });
+    },
+    [enqueue],
+  );
+  const deleteFromInventory = useCallback(
+    async (ids: string[]) => {
+      if (ids.length) enqueue({ type: "delete", ids });
+    },
+    [enqueue],
+  );
 
   return {
     items,
@@ -331,5 +385,8 @@ export function useShoppingList(familyId: string | null, userName?: string) {
     markAll,
     archiveCompleted,
     refresh,
+    online,
+    pendingCount,
+    syncing,
   };
 }
