@@ -90,18 +90,18 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
         <Button type="button" size="icon" variant={stt.listening ? "destructive" : "secondary"} onClick={stt.start} disabled={!stt.supported} aria-label={stt.listening ? "מקשיב, לחצו לעצירה" : "הוספה בדיבור"} title={stt.supported ? "הוספה בדיבור" : "הדפדפן אינו תומך בזיהוי דיבור"} className={`relative isolate h-11 w-11 shrink-0 rounded-full ${stt.listening ? "mic-ripple" : "text-primary"}`}>
           {stt.supported ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
         </Button>
-        <input value={value} onChange={(event) => setValue(event.target.value)} placeholder="מה חסר במקרר?" aria-label="שם הפריט" autoComplete="off" className="h-11 min-w-0 flex-1 bg-transparent px-2 text-base text-foreground outline-none placeholder:text-muted-foreground" />
+        <input ref={inputRef} value={value} onChange={(event) => setValue(event.target.value)} placeholder="מה חסר במקרר?" aria-label="שם הפריט" autoComplete="off" className="h-11 min-w-0 flex-1 bg-transparent px-2 text-base text-foreground outline-none placeholder:text-muted-foreground" />
         <Button type="submit" size="icon" className="h-11 w-11 shrink-0 rounded-full" aria-label="הוספת פריט"><Plus className="h-5 w-5" /></Button>
       </form>
 
-      <HistorySuggestions items={suggestions} onPick={(name) => { add(name); setValue(""); }} />
+      <HistorySuggestions items={suggestions} onPick={(name) => fill(name)} />
 
       <div className="min-h-2" aria-live="polite">
         {stt.listening && <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive"><span className="h-2 w-2 animate-pulse rounded-full bg-destructive" />מקשיב...</div>}
         {!stt.listening && stt.error && <p className="mt-3 rounded-xl bg-destructive/10 px-3 py-2 text-sm text-destructive">{stt.error}</p>}
       </div>
 
-      <CategoryBar onAdd={add} />
+      <CategoryBar onAdd={fill} />
 
       {/* מיקרופון וסריקת ברקוד */}
       <div className="mt-6 flex items-start justify-center gap-10">
