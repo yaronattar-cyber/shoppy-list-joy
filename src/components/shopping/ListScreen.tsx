@@ -60,7 +60,7 @@ export function ListScreen(p: Props) {
         <form className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-2" onSubmit={(event) => { event.preventDefault(); if (p.onAdd(quick)) setQuick(""); }}>
           <input value={quick} onChange={(event) => setQuick(event.target.value)} placeholder="הוספת מוצר..." aria-label="הוספה מהירה" className="h-11 min-w-0 rounded-md border border-input bg-card px-3 text-base outline-none focus:ring-2 focus:ring-ring" />
           <Button type="submit" className="h-11 px-4"><ListPlus />הוסף</Button>
-          <PhotoProductButton compact storeName="הרשימה" onAdd={(name) => { p.onAdd(name); }} />
+          <PhotoProductButton compact storeName={p.storeName || "הרשימה"} onAdd={(name) => p.onAdd(name)} />
         </form>
         <HistorySuggestions items={suggestions} onPick={(name) => { if (p.onAdd(name)) setQuick(""); }} />
       </div>
