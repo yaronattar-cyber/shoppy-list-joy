@@ -72,7 +72,7 @@ export function PhotoProductButton({ storeName, onAdd, compact }: { storeName: s
             ) : (
               <>
                 {err && <p className="text-center text-sm text-destructive">{err}</p>}
-                <input autoFocus value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") confirm(); }} placeholder="שם המוצר" aria-label="שם המוצר" className="h-11 w-full rounded-md border border-input bg-card px-3 text-base outline-none focus:ring-2 focus:ring-ring" />
+                <input value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") confirm(); }} placeholder="שם המוצר" aria-label="שם המוצר" className="h-11 w-full rounded-md border border-input bg-card px-3 text-base outline-none focus:ring-2 focus:ring-ring" />
                 <Button type="button" className="h-14 w-full text-base font-bold" disabled={!name.trim()} onClick={confirm}><Check />הוספה לרשימת {storeName}</Button>
                 <Button type="button" variant="outline" className="h-11 w-full" onClick={() => input.current?.click()}><Camera />צילום חוזר</Button>
               </>

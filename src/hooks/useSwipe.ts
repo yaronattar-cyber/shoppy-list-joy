@@ -17,6 +17,8 @@ export function useSwipe(handlers: { onLeft?: () => void; onRight?: () => void }
       const t = e.changedTouches[0];
       start.current = null;
       if (!s || !t) return;
+      // אירועי מגע מחלוניות (Portal) מבעבעים דרך React — לא מנווטים כשחלונית פתוחה
+      if (document.querySelector("[role=dialog]")) return;
       const dx = t.clientX - s.x;
       const dy = t.clientY - s.y;
       if (Math.abs(dx) < 70 || Math.abs(dy) > Math.abs(dx)) return;
