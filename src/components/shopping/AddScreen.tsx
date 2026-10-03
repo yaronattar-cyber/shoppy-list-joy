@@ -3,18 +3,21 @@ import { Mic, MicOff, Plus, ShoppingBasket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CategoryBar } from "./CategoryBar";
 import { useSpeechToText } from "@/hooks/useSpeechToText";
+import { HistorySuggestions } from "./HistorySuggestions";
+import { matchHistory, type HistoryEntry } from "@/lib/product-history";
 
 type Props = {
   userName: string;
   count: number;
   history: string[];
+  productHistory: HistoryEntry[];
   onAdd: (name: string) => string | null;
   onGoShopping: () => void;
   onOpenFamily: () => void;
   onSpeak?: (text: string) => void;
 };
 
-export function AddScreen({ history, onAdd, onSpeak }: Props) {
+export function AddScreen({ history, productHistory, onAdd, onSpeak }: Props) {
   const [value, setValue] = useState("");
   const [popup, setPopup] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -32,11 +35,7 @@ export function AddScreen({ history, onAdd, onSpeak }: Props) {
   };
 
   const stt = useSpeechToText((text) => { setValue(text); add(text); setTimeout(() => setValue(""), 500); }, setValue);
-  const suggestions = useMemo(() => {
-    const query = value.trim();
-    if (!query) return [];
-    return history.filter((name) => name !== query && name.includes(query)).slice(0, 5);
-  }, [history, value]);
+  const suggestions = useMemo(() => matchHistory(history, productHistory, value), [history, productHistory, value]);
 
   return (
     <section className="mx-auto w-full max-w-2xl px-4 pb-28 pt-4 sm:px-6">
@@ -48,9 +47,9 @@ export function AddScreen({ history, onAdd, onSpeak }: Props) {
         <Button type="submit" size="icon" className="h-12 w-12 rounded-full" aria-label="הוספת פריט"><Plus className="h-5 w-5" /></Button>
       </form>
 
-      <CategoryBar onAdd={add} />
+      <HistorySuggestions items={suggestions} onPick={(name) => { add(name); setValue(""); }} />
 
-      {suggestions.length > 0 && <ul className="mt-2 overflow-hidden rounded-lg border border-border bg-card shadow-sm">{suggestions.map((name) => <li key={name} className="border-b border-border last:border-0"><Button type="button" variant="ghost" onClick={() => { add(name); setValue(""); }} className="h-11 w-full justify-start rounded-none px-3 text-right">{name}</Button></li>)}</ul>}
+      <CategoryBar onAdd={add} />
 
       <div className="mt-4 min-h-10" aria-live="polite">
         {stt.listening && <div className="inline-flex items-center gap-2 rounded-full bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive"><span className="h-2 w-2 animate-pulse rounded-full bg-destructive" />מקשיב...</div>}

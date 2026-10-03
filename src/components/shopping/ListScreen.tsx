@@ -1,15 +1,20 @@
 import { useMemo, useState } from "react";
-import { Archive, CheckCheck, ListPlus, ShoppingCart, Tag } from "lucide-react";
+import { Archive, CheckCheck, ChevronDown, ListPlus, ShoppingCart, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { ItemEditDrawer } from "./ItemEditDrawer";
 import { ShoppingItemRow } from "./ShoppingItemRow";
+import { HistorySuggestions } from "./HistorySuggestions";
+import { matchHistory, type HistoryEntry } from "@/lib/product-history";
 import { basketTotals, formatDistance, formatPrice, STORE_DISTANCES } from "@/lib/prices";
 import { parsePastedList, type ShoppingItem } from "@/lib/shopping-list";
 
 type ItemDetails = { name: string; quantity: number; unit: string; notes: string; category: string };
 type Props = {
   items: ShoppingItem[];
+  history: string[];
+  productHistory: HistoryEntry[];
+  onOutOfStock: (id: string) => void;
   onAdd: (name: string) => string | null;
   onAddMany: (names: string[]) => Promise<number>;
   onToggle: (id: string) => void;
@@ -26,6 +31,10 @@ export function ListScreen(p: Props) {
   const [importOpen, setImportOpen] = useState(false);
   const [pricesOpen, setPricesOpen] = useState(false);
   const [pasted, setPasted] = useState("");
+  const [showDone, setShowDone] = useState(true);
+  const suggestions = useMemo(() => matchHistory(p.history, p.productHistory, quick), [p.history, p.productHistory, quick]);
+  const todo = p.items.filter((item) => !item.completed);
+  const done = p.items.filter((item) => item.completed);
   const [sort, setSort] = useState<"price" | "distance">("price");
   const doneCount = p.items.filter((item) => item.completed).length;
   const allDone = p.items.length > 0 && doneCount === p.items.length;
@@ -42,6 +51,7 @@ export function ListScreen(p: Props) {
           <input value={quick} onChange={(event) => setQuick(event.target.value)} placeholder="הוספת מוצר..." aria-label="הוספה מהירה" className="h-11 min-w-0 rounded-md border border-input bg-card px-3 text-base outline-none focus:ring-2 focus:ring-ring" />
           <Button type="submit" className="h-11 px-4"><ListPlus />הוסף</Button>
         </form>
+        <HistorySuggestions items={suggestions} onPick={(name) => { if (p.onAdd(name)) setQuick(""); }} />
       </div>
 
       <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
@@ -52,9 +62,19 @@ export function ListScreen(p: Props) {
         </div>
       </div>
 
-      <ul className="mt-3 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-        {p.items.map((item) => <ShoppingItemRow key={item.id} item={item} onToggle={p.onToggle} onOpen={setSelected} />)}
-      </ul>
+      {todo.length > 0 && <ul className="mt-3 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+        {todo.map((item) => <ShoppingItemRow key={item.id} item={item} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />)}
+      </ul>}
+      {p.items.length > 0 && <p className="mt-2 text-xs text-muted-foreground">הקשה: נקנה · הקשה כפולה או לחיצה ארוכה: חסר במלאי</p>}
+      {done.length > 0 && (
+        <section className="mt-6">
+          <Button type="button" variant="ghost" onClick={() => setShowDone((v) => !v)} aria-expanded={showDone} className="mb-2 h-9 w-full justify-between px-1 text-sm font-semibold text-muted-foreground">
+            <span>פריטים שנרכשו ({done.length})</span>
+            <ChevronDown className={`h-4 w-4 transition-transform ${showDone ? "rotate-180" : ""}`} />
+          </Button>
+          {showDone && <ul className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">{done.map((item) => <ShoppingItemRow key={item.id} item={item} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />)}</ul>}
+        </section>
+      )}
       {!p.items.length && <div className="mt-12 text-center text-muted-foreground"><ShoppingCart className="mx-auto mb-3 h-10 w-10 opacity-40" /><p>הוסיפו מוצר ראשון למעלה</p></div>}
 
       <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 mx-auto max-w-2xl space-y-2 px-4 sm:px-6">

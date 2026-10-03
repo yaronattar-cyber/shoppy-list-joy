@@ -8,11 +8,12 @@ type ItemDetails = { name: string; quantity: number; unit: string; notes: string
 type Props = {
   items: ShoppingItem[];
   onToggle: (id: string) => void;
+  onOutOfStock: (id: string) => void;
   onUpdate: (id: string, details: ItemDetails) => void;
   onRemove: (id: string) => void;
 };
 
-export function ShopScreen({ items, onToggle, onUpdate, onRemove }: Props) {
+export function ShopScreen({ items, onToggle, onOutOfStock, onUpdate, onRemove }: Props) {
   const [selected, setSelected] = useState<ShoppingItem | null>(null);
   const todo = items.filter((item) => !item.completed);
   const done = items.filter((item) => item.completed);
@@ -25,11 +26,11 @@ export function ShopScreen({ items, onToggle, onUpdate, onRemove }: Props) {
       </header>
 
       <ul className="mt-5 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-        {todo.map((item) => <ShoppingItemRow key={item.id} item={item} onToggle={onToggle} onOpen={setSelected} />)}
+        {todo.map((item) => <ShoppingItemRow key={item.id} item={item} onToggle={onToggle} onOutOfStock={onOutOfStock} onOpen={setSelected} />)}
       </ul>
       {!todo.length && <div className="py-12 text-center text-muted-foreground"><CheckCircle2 className="mx-auto mb-3 h-10 w-10 text-primary" /><p className="font-medium">הכול בעגלה</p></div>}
 
-      {done.length > 0 && <section className="mt-7"><div className="mb-2 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3"><h2 className="text-sm font-semibold text-muted-foreground">נקנו ({done.length})</h2><span className="h-px bg-border" /></div><ul className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">{done.map((item) => <ShoppingItemRow key={item.id} item={item} onToggle={onToggle} onOpen={setSelected} />)}</ul></section>}
+      {done.length > 0 && <section className="mt-7"><div className="mb-2 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3"><h2 className="text-sm font-semibold text-muted-foreground">פריטים שנרכשו ({done.length})</h2><span className="h-px bg-border" /></div><ul className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">{done.map((item) => <ShoppingItemRow key={item.id} item={item} onToggle={onToggle} onOutOfStock={onOutOfStock} onOpen={setSelected} />)}</ul></section>}
 
       <ItemEditDrawer item={selected} onClose={() => setSelected(null)} onSave={onUpdate} onDelete={onRemove} />
     </section>
