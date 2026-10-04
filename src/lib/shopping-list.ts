@@ -16,7 +16,7 @@ export type ShoppingItem = {
   familyId: string;
   storeId?: string | null; // חנות שהפריט שייך אליה
   expiryDate?: string | null; // YYYY-MM-DD
-  stockStatus?: "full" | "half" | "low";
+  stockStatus?: "full" | "half" | "low" | undefined;
 };
 
 // DD/MM/YYYY HH:mm
