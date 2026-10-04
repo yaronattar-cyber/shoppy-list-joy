@@ -1,3 +1,4 @@
+import { RecipesDrawer } from "./RecipesDrawer";
 import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { INV_CATEGORIES, STOCK_STATUS, inventoryCategoryOf } from "@/lib/inventory-categories";
@@ -22,13 +23,14 @@ type Props = {
   onRestore: (ids: string[]) => void;
   onDelete: (ids: string[]) => void;
   onAddPreparedMeal: (name: string) => boolean;
+  onAddMissing: (names: string[]) => void;
   onUpdate: (id: string, d: { expiryDate: string | null; stockStatus: string; quantity: number; unit: string; category: string }) => void;
 };
 
 const daysLeft = (d?: string | null) => (d ? Math.ceil((new Date(d).getTime() - Date.now()) / 86400000) : null);
 
 // מסך מלאי — מוצרים שנקנו; מחיקה שואלת אם להחזיר לרשימת הקניות
-export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal, onUpdate }: Props) {
+export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal, onUpdate, onAddMissing }: Props) {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [editing, setEditing] = useState<ShoppingItem | null>(null);
   const [draft, setDraft] = useState({ expiryDate: "", stockStatus: "full", quantity: 1, unit: "", category: "other" });
@@ -66,6 +68,8 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
         <CookingPot className="h-5 w-5" />
         הוספת מנה מוכנה למלאי
       </Button>
+
+      <RecipesDrawer names={items.map((i) => i.name)} onAddMissing={onAddMissing} />
 
       <div className="mt-4 space-y-3">
         {groups.map((g) => {

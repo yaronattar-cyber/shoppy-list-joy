@@ -19,6 +19,7 @@ import { StoreChips } from "@/components/shopping/StoreChips";
 import { StoreSelector } from "@/components/shopping/StoreSelector";
 import { EventBar } from "@/components/shopping/EventBar";
 import { useEvents } from "@/hooks/useEvents";
+import { MembersContext, useFamilyMembers } from "@/hooks/useFamilyMembers";
 import { requestBadgePermission, useAppBadge } from "@/hooks/useAppBadge";
 
 export const Route = createFileRoute("/")({
@@ -74,6 +75,8 @@ function Index() {
   // רשימת אירוע משותפת פועלת כרשימה עצמאית עם קוד משלה
   const eventList = useShoppingList(events.activeId, family.userName ?? undefined, null);
   const shown = events.active ? eventList : list;
+  const fam = useFamilyMembers(family.familyId, family.userName);
+  const roleMap = Object.fromEntries(fam.members.map((m) => [m.name, m.role]));
   useAppBadge([...list.allActive, ...list.inventory, ...eventList.allActive], family.userName);
   useEffect(() => {
     const ask = () => requestBadgePermission();
@@ -150,6 +153,7 @@ function Index() {
   }
 
   return (
+    <MembersContext.Provider value={roleMap}>
     <main className="min-h-screen bg-background pb-[calc(4.5rem+env(safe-area-inset-bottom))]" {...swipe}>
       {family.previousFamilyId && (
         <MergeFamilyDialog from={family.previousFamilyId} to={family.familyId} onDone={onMergeDone} />
@@ -283,6 +287,7 @@ function Index() {
           onDelete={(ids) => void list.deleteFromInventory(ids)}
           onAddPreparedMeal={list.addPreparedMeal}
           onUpdate={list.updateInventory}
+          onAddMissing={(names) => { const home = stores.stores.find((x) => x.is_default)?.id ?? null; names.forEach((n) => list.addItem(n, home)); }}
         />
       )}
       {screen === "family" && (
@@ -294,8 +299,11 @@ function Index() {
           onJoin={family.joinFamily}
           onCreate={family.createFamily}
           onBack={() => setScreen("home")}
+          members={fam.members}
+          onSetRole={(n, r) => void fam.setRole(n, r)}
         />
       )}
     </main>
+    </MembersContext.Provider>
   );
 }

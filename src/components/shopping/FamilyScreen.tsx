@@ -2,6 +2,7 @@ import { useState } from "react";
 import { inviteLink, whatsappInvite } from "@/lib/family";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { ROLES, ROLE_EMOJI, type Member } from "@/hooks/useFamilyMembers";
 
 type Props = {
   familyId: string;
@@ -11,6 +12,8 @@ type Props = {
   onJoin: (id: string) => Promise<void>;
   onCreate: () => Promise<string>;
   onBack: () => void;
+  members: Member[];
+  onSetRole: (name: string, role: string) => void;
 };
 
 const box = "rounded-lg border border-border bg-card p-5 shadow-sm";
@@ -31,6 +34,28 @@ export function FamilyScreen(p: Props) {
           הצטרפתם לקבוצה {p.familyId} דרך קישור הזמנה 🎉
         </p>
       )}
+
+      <div className={box}>
+        <p className="mb-3 font-bold text-foreground">בני המשפחה ({p.members.length})</p>
+        <ul className="space-y-3">
+          {p.members.map((m) => {
+            const online = Date.now() - new Date(m.lastSeen).getTime() < 10 * 60 * 1000;
+            return (
+              <li key={m.name}>
+                <p className="flex items-center gap-2 font-semibold text-foreground">
+                  <span className="text-xl">{ROLE_EMOJI[m.role] ?? "🙂"}</span>{m.name}{m.name === p.userName && <span className="text-xs text-muted-foreground">(אני)</span>}
+                  <span className={cn("h-2 w-2 rounded-full", online ? "bg-primary" : "bg-muted-foreground/40")} title={online ? "פעיל לאחרונה" : "לא פעיל"} />
+                </p>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {ROLES.map((r) => (
+                    <Button key={r} type="button" size="sm" variant={m.role === r ? "default" : "outline"} className="h-8 rounded-full px-3" onClick={() => p.onSetRole(m.name, m.role === r ? "" : r)}>{ROLE_EMOJI[r]} {r}</Button>
+                  ))}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
 
       <div className={box}>
         <p className="text-sm text-muted-foreground">קוד הקבוצה</p>
