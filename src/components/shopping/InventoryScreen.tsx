@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { ChevronDown } from "lucide-react";
+import { INV_CATEGORIES, STOCK_STATUS, inventoryCategoryOf } from "@/lib/inventory-categories";
 import { CookingPot, Package, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,10 +22,18 @@ type Props = {
   onRestore: (ids: string[]) => void;
   onDelete: (ids: string[]) => void;
   onAddPreparedMeal: (name: string) => boolean;
+  onUpdate: (id: string, d: { expiryDate: string | null; stockStatus: string; quantity: number; unit: string; category: string }) => void;
 };
 
+const daysLeft = (d?: string | null) => (d ? Math.ceil((new Date(d).getTime() - Date.now()) / 86400000) : null);
+
 // מסך מלאי — מוצרים שנקנו; מחיקה שואלת אם להחזיר לרשימת הקניות
-export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal }: Props) {
+export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal, onUpdate }: Props) {
+  const [open, setOpen] = useState<Record<string, boolean>>({});
+  const [editing, setEditing] = useState<ShoppingItem | null>(null);
+  const [draft, setDraft] = useState({ expiryDate: "", stockStatus: "full", quantity: 1, unit: "", category: "other" });
+  const groups = useMemo(() => INV_CATEGORIES.map((c) => ({ ...c, items: items.filter((i) => inventoryCategoryOf(i.name, i.category) === c.id) })).filter((g) => g.items.length || g.id === "prepared-meal"), [items]);
+  const openItem = (i: ShoppingItem) => { setEditing(i); setDraft({ expiryDate: i.expiryDate ?? "", stockStatus: i.stockStatus ?? "full", quantity: i.quantity, unit: i.unit, category: inventoryCategoryOf(i.name, i.category) }); };
   const [pending, setPending] = useState<string[] | null>(null);
   const [addingMeal, setAddingMeal] = useState(false);
   const [mealName, setMealName] = useState("");
@@ -57,24 +67,86 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal 
         הוספת מנה מוכנה למלאי
       </Button>
 
-      {items.length > 0 ? (
-        <ul className="mt-4 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-          {items.map((item) => (
-            <li key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 border-b border-border px-3 py-2.5 last:border-b-0">
-              <span className="min-w-0 text-right">
-                <span className="block break-words text-base font-semibold leading-6 text-foreground">{item.name}</span>
-                <span className="block text-xs text-muted-foreground">{item.addedBy} · {formatDateTime(item.createdAt)}</span>
-              </span>
-              <span className="text-sm font-medium text-muted-foreground">{formatQuantity(item.quantity, item.unit) || "×1"}</span>
-              <Button type="button" size="icon" variant="ghost" aria-label={`מחיקת ${item.name}`} onClick={() => setPending([item.id])} className="h-9 w-9 text-muted-foreground hover:text-destructive">
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <div className="mt-12 text-center text-muted-foreground"><Package className="mx-auto mb-3 h-10 w-10 opacity-40" /><p>מוצרים שנקנו או מנות מוכנות יופיעו כאן</p></div>
-      )}
+      <div className="mt-4 space-y-3">
+        {groups.map((g) => {
+          const isOpen = open[g.id] ?? true;
+          return (
+            <div key={g.id} className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+              <button type="button" onClick={() => setOpen((o) => ({ ...o, [g.id]: !isOpen }))} className="flex w-full items-center gap-2 px-3 py-2.5 text-right">
+                <span className="text-xl" aria-hidden>{g.emoji}</span>
+                <span className="flex-1 font-bold text-foreground">{g.label}</span>
+                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{g.items.length}</span>
+                {g.id === "prepared-meal" && (
+                  <span role="button" tabIndex={0} aria-label="הוספת מנה מוכנה" onClick={(e) => { e.stopPropagation(); setAddingMeal(true); }} className="grid h-8 w-8 place-items-center rounded-full bg-primary text-primary-foreground"><Plus className="h-4 w-4" /></span>
+                )}
+                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`} />
+              </button>
+              {isOpen && g.items.length > 0 && (
+                <ul className="border-t border-border">
+                  {g.items.map((item) => {
+                    const st = STOCK_STATUS.find((x) => x.id === (item.stockStatus ?? "full")) ?? STOCK_STATUS[0];
+                    const dl = daysLeft(item.expiryDate);
+                    return (
+                      <li key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 border-b border-border px-3 py-2.5 last:border-b-0">
+                        <button type="button" onClick={() => openItem(item)} className="min-w-0 text-right">
+                          <span className="flex items-center gap-2"><span className={`h-2.5 w-2.5 shrink-0 rounded-full ${st.dot}`} title={st.label} /><span className="break-words text-base font-semibold leading-6 text-foreground">{item.name}</span></span>
+                          <span className="block text-xs text-muted-foreground">{st.label}{dl !== null && <span className={dl <= 2 ? " font-semibold text-destructive" : ""}> · {dl < 0 ? "פג תוקף" : dl === 0 ? "פג היום" : `תפוגה בעוד ${dl} ימים`}</span>}</span>
+                        </button>
+                        <span className="text-sm font-medium text-muted-foreground">{formatQuantity(item.quantity, item.unit) || "×1"}</span>
+                        <Button type="button" size="icon" variant="ghost" aria-label={`מחיקת ${item.name}`} onClick={() => setPending([item.id])} className="h-9 w-9 text-muted-foreground hover:text-destructive">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          );
+        })}
+        {!items.length && <div className="mt-8 text-center text-muted-foreground"><Package className="mx-auto mb-3 h-10 w-10 opacity-40" /><p>מוצרים שנקנו או מנות מוכנות יופיעו כאן</p></div>}
+      </div>
+
+      <Drawer open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DrawerContent dir="rtl" className="mx-auto max-w-xl rounded-t-2xl border-border bg-card">
+          <DrawerHeader className="text-right sm:text-right">
+            <DrawerTitle className="text-xl">{editing?.name}</DrawerTitle>
+            <DrawerDescription>נכנס למלאי: {editing ? formatDateTime(editing.createdAt) : ""} · {editing?.addedBy}</DrawerDescription>
+          </DrawerHeader>
+          <div className="space-y-4 px-4 pb-2">
+            <div>
+              <p className="mb-1.5 text-sm font-medium text-foreground">סטטוס</p>
+              <div className="grid grid-cols-3 gap-2">
+                {STOCK_STATUS.map((x) => (
+                  <Button key={x.id} type="button" variant={draft.stockStatus === x.id ? "default" : "outline"} onClick={() => setDraft((d) => ({ ...d, stockStatus: x.id }))}>
+                    <span className={`h-2.5 w-2.5 rounded-full ${x.dot}`} />{x.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block space-y-1.5 text-sm font-medium text-foreground">כמות
+                <input type="number" min={0} step="any" value={draft.quantity} onChange={(e) => setDraft((d) => ({ ...d, quantity: Number(e.target.value) }))} className="h-11 w-full rounded-md border border-input bg-background px-3 text-base" />
+              </label>
+              <label className="block space-y-1.5 text-sm font-medium text-foreground">יחידה
+                <input value={draft.unit} onChange={(e) => setDraft((d) => ({ ...d, unit: e.target.value }))} placeholder="יח׳, ק״ג..." className="h-11 w-full rounded-md border border-input bg-background px-3 text-base" />
+              </label>
+            </div>
+            <label className="block space-y-1.5 text-sm font-medium text-foreground">תאריך תפוגה
+              <input type="date" value={draft.expiryDate} onChange={(e) => setDraft((d) => ({ ...d, expiryDate: e.target.value }))} className="h-11 w-full rounded-md border border-input bg-background px-3 text-base" />
+            </label>
+            <label className="block space-y-1.5 text-sm font-medium text-foreground">קטגוריה
+              <select value={draft.category} onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))} className="h-11 w-full rounded-md border border-input bg-background px-3 text-base">
+                {INV_CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.emoji} {c.label}</option>)}
+              </select>
+            </label>
+          </div>
+          <DrawerFooter className="grid grid-cols-[auto_minmax(0,1fr)] gap-3">
+            <DrawerClose asChild><Button type="button" variant="ghost">ביטול</Button></DrawerClose>
+            <Button type="button" size="lg" onClick={() => { if (editing) onUpdate(editing.id, { ...draft, expiryDate: draft.expiryDate || null }); setEditing(null); }}>שמירה</Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
 
       <Drawer open={addingMeal} onOpenChange={(open) => { setAddingMeal(open); if (!open) setMealName(""); }}>
         <DrawerContent dir="rtl" className="mx-auto max-w-xl rounded-t-2xl border-border bg-card">

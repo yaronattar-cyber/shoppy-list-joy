@@ -19,6 +19,8 @@ type Row = {
   added_by: string;
   created_at: string;
   store_id: string | null;
+  expiry_date?: string | null;
+  stock_status?: string;
 };
 
 type Patch = Partial<Omit<Row, "id" | "family_id" | "created_at" | "added_by">>;
@@ -37,6 +39,8 @@ const toItem = (row: Row): ShoppingItem => ({
   addedBy: row.added_by,
   createdAt: row.created_at,
   storeId: row.store_id ?? null,
+  expiryDate: row.expiry_date ?? null,
+  stockStatus: (row.stock_status as ShoppingItem["stockStatus"]) ?? "full",
 });
 
 // המרת שדות DB לשדות פריט מקומי
@@ -50,6 +54,8 @@ const patchToItem = (p: Patch): Partial<ShoppingItem> => {
   if (p.notes !== undefined) out.notes = p.notes;
   if (p.category !== undefined) out.category = p.category;
   if (p.archived !== undefined) out.archived = p.archived;
+  if (p.expiry_date !== undefined) out.expiryDate = p.expiry_date;
+  if (p.stock_status !== undefined) out.stockStatus = p.stock_status as ShoppingItem["stockStatus"];
   return out;
 };
 
@@ -395,6 +401,13 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
     [update],
   );
 
+  // עדכון פרטי מלאי: תפוגה, סטטוס, כמות, קטגוריה
+  const updateInventory = useCallback(
+    (id: string, d: { expiryDate: string | null; stockStatus: string; quantity: number; unit: string; category: string }) =>
+      update(id, { expiry_date: d.expiryDate || null, stock_status: d.stockStatus, quantity: d.quantity > 0 ? d.quantity : 1, unit: d.unit, category: d.category }),
+    [update],
+  );
+
   const removeItem = useCallback(async (id: string) => enqueue({ type: "delete", ids: [id] }), [enqueue]);
 
   // „סמן הכל” — לפי מזהים כדי לעבוד גם ללא קליטה
@@ -442,6 +455,7 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
     renameItem,
     setQuantity,
     updateDetails,
+    updateInventory,
     removeItem,
     markAll,
     archiveCompleted,

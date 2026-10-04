@@ -19,6 +19,7 @@ import { StoreChips } from "@/components/shopping/StoreChips";
 import { StoreSelector } from "@/components/shopping/StoreSelector";
 import { EventBar } from "@/components/shopping/EventBar";
 import { useEvents } from "@/hooks/useEvents";
+import { requestBadgePermission, useAppBadge } from "@/hooks/useAppBadge";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -73,6 +74,12 @@ function Index() {
   // רשימת אירוע משותפת פועלת כרשימה עצמאית עם קוד משלה
   const eventList = useShoppingList(events.activeId, family.userName ?? undefined, null);
   const shown = events.active ? eventList : list;
+  useAppBadge([...list.allActive, ...list.inventory, ...eventList.allActive], family.userName);
+  useEffect(() => {
+    const ask = () => requestBadgePermission();
+    window.addEventListener("pointerdown", ask, { once: true });
+    return () => window.removeEventListener("pointerdown", ask);
+  }, []);
   // מוצר שממתין להוספה לאירוע שעדיין נטען
   const [pendingEvent, setPendingEvent] = useState<{ id: string; name: string } | null>(null);
   useEffect(() => {
@@ -275,6 +282,7 @@ function Index() {
           onRestore={(ids) => void list.restoreFromInventory(ids)}
           onDelete={(ids) => void list.deleteFromInventory(ids)}
           onAddPreparedMeal={list.addPreparedMeal}
+          onUpdate={list.updateInventory}
         />
       )}
       {screen === "family" && (
