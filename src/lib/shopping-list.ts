@@ -15,6 +15,8 @@ export type ShoppingItem = {
   createdAt: string; // ISO
   familyId: string;
   storeId?: string | null; // חנות שהפריט שייך אליה
+  expiryDate?: string | null; // YYYY-MM-DD
+  stockStatus?: "full" | "half" | "low";
 };
 
 // DD/MM/YYYY HH:mm
