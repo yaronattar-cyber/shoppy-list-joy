@@ -1,4 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+// מתג הרשאת התראות בנייד — בקשה מפורשת בלחיצה
+function NotifyToggle() {
+  const [perm, setPerm] = useState<string>("unsupported");
+  useEffect(() => { if ("Notification" in window) setPerm(Notification.permission); }, []);
+  const label = perm === "granted" ? "התראות פעילות ✓" : perm === "denied" ? "התראות חסומות – יש לאפשר בהגדרות הדפדפן" : perm === "unsupported" ? "המכשיר לא תומך בהתראות (באייפון: הוסיפו למסך הבית)" : "הפעלת התראות בנייד";
+  return (
+    <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
+      <p className="mb-2 font-bold text-foreground">🔔 התראות על שינויים</p>
+      <Button type="button" className="w-full" variant={perm === "granted" ? "outline" : "default"} disabled={perm !== "default"}
+        onClick={async () => { const r = await Notification.requestPermission(); setPerm(r); }}>
+        {label}
+      </Button>
+    </div>
+  );
+}
 import { inviteLink, whatsappInvite } from "@/lib/family";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -56,6 +72,8 @@ export function FamilyScreen(p: Props) {
           })}
         </ul>
       </div>
+
+      <NotifyToggle />
 
       <div className={box}>
         <p className="text-sm text-muted-foreground">קוד הקבוצה</p>
