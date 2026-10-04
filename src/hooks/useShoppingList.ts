@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { resolveName } from "@/lib/categories";
 import { formatQuantity, parseQuantity } from "@/lib/quantity";
 import type { ShoppingItem } from "@/lib/shopping-list";
@@ -123,6 +124,8 @@ async function sendOp(op: Op): Promise<{ error: { message: string } | null }> {
 // רשימת הקניות של המשפחה — ענן + מטמון מקומי, עובדת גם ללא קליטה
 export function useShoppingList(familyId: string | null, userName?: string, storeId: string | null = null) {
   const [rows, setRows] = useState<ShoppingItem[]>([]);
+  const userNameRef = useRef(userName);
+  userNameRef.current = userName;
   const [loading, setLoading] = useState(true);
   const [productHistory, setProductHistory] = useState<HistoryEntry[]>([]);
   const [online, setOnline] = useState(true);
@@ -233,6 +236,15 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
         { event: "*", schema: "public", table: "items", filter: `family_id=eq.${familyId}` },
         (payload) => {
           const queue = readJson<Op[]>(queueKey(familyId), []);
+          // חיווי חי: פריט חדש שבן משפחה אחר הוסיף
+          if (payload.eventType === "INSERT") {
+            const n = payload.new as Row;
+            const me = userNameRef.current?.trim();
+            if (n.added_by && n.added_by !== me && Date.now() - new Date(n.created_at).getTime() < 120000) {
+              toast(`${n.added_by} הוסיף/ה: ${n.name}`, { icon: "🛒" });
+              navigator.vibrate?.([80, 40, 80]);
+            }
+          }
           setRows((r) => {
             let next: ShoppingItem[];
             if (payload.eventType === "DELETE") {
