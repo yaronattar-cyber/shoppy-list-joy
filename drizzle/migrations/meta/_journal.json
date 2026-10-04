@@ -71,6 +71,13 @@
       "when": 1791047619875,
       "tag": "0009_clear_bulk_inventory",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791089598110,
+      "tag": "0010_inventory_details",
+      "breakpoints": true
     }
   ]
 }

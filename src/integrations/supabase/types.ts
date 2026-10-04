@@ -110,12 +110,14 @@ export type Database = {
           category: string
           completed: boolean
           created_at: string
+          expiry_date: string | null
           family_id: string
           id: string
           name: string
           notes: string
           out_of_stock: boolean
           quantity: number
+          stock_status: string
           store_id: string | null
           unit: string
         }
@@ -125,12 +127,14 @@ export type Database = {
           category?: string
           completed?: boolean
           created_at?: string
+          expiry_date?: string | null
           family_id: string
           id?: string
           name: string
           notes?: string
           out_of_stock?: boolean
           quantity?: number
+          stock_status?: string
           store_id?: string | null
           unit?: string
         }
@@ -140,12 +144,14 @@ export type Database = {
           category?: string
           completed?: boolean
           created_at?: string
+          expiry_date?: string | null
           family_id?: string
           id?: string
           name?: string
           notes?: string
           out_of_stock?: boolean
           quantity?: number
+          stock_status?: string
           store_id?: string | null
           unit?: string
         }
