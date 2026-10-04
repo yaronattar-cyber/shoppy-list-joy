@@ -78,6 +78,13 @@
       "when": 1791089598110,
       "tag": "0010_inventory_details",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791090252751,
+      "tag": "0011_family_members",
+      "breakpoints": true
     }
   ]
 }

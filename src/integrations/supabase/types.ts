@@ -71,6 +71,35 @@ export type Database = {
         }
         Relationships: []
       }
+      family_members: {
+        Row: {
+          family_id: string
+          last_seen: string
+          name: string
+          role: string
+        }
+        Insert: {
+          family_id: string
+          last_seen?: string
+          name: string
+          role?: string
+        }
+        Update: {
+          family_id?: string
+          last_seen?: string
+          name?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_members_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       family_product_history: {
         Row: {
           category: string

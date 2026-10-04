@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { formatQuantity } from "@/lib/quantity";
 import type { ShoppingItem } from "@/lib/shopping-list";
 import { haptic } from "@/lib/shopping-tools";
+import { ROLE_EMOJI, useMemberRole } from "@/hooks/useFamilyMembers";
 
 type Props = {
   item: ShoppingItem;
@@ -22,6 +23,7 @@ export function ShoppingItemRow({ item, onToggle, onOutOfStock, onOpen, storeLab
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressed = useRef(false);
   const missing = item.outOfStock && !item.completed;
+  const role = useMemberRole(item.addedBy);
 
   useEffect(() => () => { if (pressTimer.current) clearTimeout(pressTimer.current); }, []);
 
@@ -59,6 +61,7 @@ export function ShoppingItemRow({ item, onToggle, onOutOfStock, onOpen, storeLab
         <span className="min-w-0 flex-1 text-right">
           <span className={`break-words text-base font-semibold leading-6 ${item.completed ? "text-foreground line-through opacity-50" : "text-foreground"}`}>{item.name}</span>
           {storeLabel && <span className={`mr-2 inline-block rounded-full px-2 py-0.5 align-middle text-[11px] font-medium ${storeTone ? "" : "bg-muted text-muted-foreground"}`} style={storeTone ? { backgroundColor: `var(--store-${storeTone})`, color: `var(--store-${storeTone}-fg)` } : undefined}>{storeLabel}</span>}
+          {item.addedBy && <span className="mr-2 inline-block rounded-full bg-muted px-2 py-0.5 align-middle text-[11px] font-medium text-muted-foreground">{ROLE_EMOJI[role] ?? "🙂"} {role ? `${role} · ` : ""}{item.addedBy}</span>}
           {missing && <span className="block text-xs font-medium text-destructive">חסר במלאי</span>}
           {item.notes && <span className="block break-words text-xs font-normal text-muted-foreground">{item.notes}</span>}
         </span>
