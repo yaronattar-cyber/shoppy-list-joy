@@ -523,6 +523,7 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
     allActive,
     inventory,
     restoreFromInventory,
+    addToInventory,
     deleteFromInventory,
     history,
     productHistory,
