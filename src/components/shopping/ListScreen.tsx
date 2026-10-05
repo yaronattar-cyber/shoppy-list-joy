@@ -8,7 +8,7 @@ import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerHeader, Dr
 import { AiRequestDrawer } from "./AiRequestDrawer";
 import { ItemEditDrawer } from "./ItemEditDrawer";
 import { TargetPicker, type AddTarget } from "./TargetPicker";
-import { ShoppingItemRow } from "./ShoppingItemRow";
+import { LongPressHint, ShoppingItemRow } from "./ShoppingItemRow";
 import { storeTone } from "./StoreChips";
 import { HistorySuggestions } from "./HistorySuggestions";
 import { matchHistory, type HistoryEntry } from "@/lib/product-history";
