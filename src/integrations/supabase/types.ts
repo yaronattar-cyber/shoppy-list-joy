@@ -245,6 +245,24 @@ export type Database = {
           },
         ]
       }
+      join_attempts: {
+        Row: {
+          count: number
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          user_id: string
+          window_start?: string
+        }
+        Update: {
+          count?: number
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           display_name: string
@@ -312,7 +330,7 @@ export type Database = {
         Args: { _event_id: string; _family_id: string }
         Returns: string
       }
-      join_family: { Args: { _id: string; _name?: string }; Returns: undefined }
+      join_family: { Args: { _id: string; _name: string }; Returns: undefined }
       merge_family_items: {
         Args: { _from: string; _to: string }
         Returns: number
