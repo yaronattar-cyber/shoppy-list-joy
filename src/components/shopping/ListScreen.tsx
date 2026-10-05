@@ -110,6 +110,8 @@ export function ListScreen(p: Props) {
         </DropdownMenu>
       </div>
 
+      <LongPressHint />
+
       {allDone && <div className="mt-4 animate-scale-in rounded-lg border border-primary/30 bg-primary/10 p-4 text-center">
         <PartyPopper className="mx-auto mb-1 h-8 w-8 text-primary" />
         <p className="font-bold text-foreground">כל הכבוד, הסל הושלם!</p>
