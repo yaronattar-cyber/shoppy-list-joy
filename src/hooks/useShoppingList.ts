@@ -105,6 +105,10 @@ function applyOps(items: ShoppingItem[], ops: Op[]): ShoppingItem[] {
 const isNetworkError = (msg: string) =>
   (typeof navigator !== "undefined" && !navigator.onLine) || /fetch|network|timeout|load failed/i.test(msg);
 
+// שגיאת אימות/הרשאות — התור נשאר שלם; ננסה שוב אחרי שהכניסה האנונימית וההצטרפות למשפחה הסתיימו
+const isAuthError = (msg: string) =>
+  /401|42501|jwt expired|permission denied|pgrst301|unauthorized|forbidden/i.test(msg);
+
 // שליחה במנות של 50 כדי שבקשות גדולות לא ייחסמו (URL ארוך מדי)
 const CHUNK = 50;
 async function sendOp(op: Op): Promise<{ error: { message: string } | null }> {
