@@ -84,13 +84,13 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
         </div>
       </header>
 
-      <Button type="button" variant="outline" className="mt-4 h-12 w-full justify-start border-primary/30 bg-card text-primary shadow-sm hover:bg-primary/5 hover:text-primary" onClick={() => setAddingMeal(true)}>
+      <Button type="button" variant="outline" className="mt-4 h-[41px] w-full justify-start border-primary/30 bg-card px-2 text-primary shadow-sm hover:bg-primary/5 hover:text-primary" onClick={() => setAddingMeal(true)}>
         <CookingPot className="h-5 w-5" />
         הוספת מנה מוכנה למלאי
       </Button>
 
       {/* אקורדיון "הוספת מוצר/ים": סגור כברירת מחדל, זהה בעיצובו לכרטיסיות השכנות */}
-      <Button type="button" variant="outline" aria-expanded={addingProducts} onClick={() => setAddingProducts((v) => !v)} className="mt-3 h-12 w-full justify-start border-primary/30 bg-card text-primary shadow-sm hover:bg-primary/5 hover:text-primary">
+      <Button type="button" variant="outline" aria-expanded={addingProducts} onClick={() => setAddingProducts((v) => !v)} className="mt-3 h-[41px] w-full justify-start border-primary/30 bg-card px-2 text-primary shadow-sm hover:bg-primary/5 hover:text-primary">
         <Package className="h-5 w-5" />הוספת מוצר/ים
         {drafts.length > 0 && <span className="mr-auto rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{drafts.length}</span>}
       </Button>
@@ -125,11 +125,11 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
 
       <BarcodeScanner open={scanning} onClose={() => setScanning(false)} onResult={(n) => { appendText(n); setScanning(false); }} />
 
-      <RecipesDrawer names={items.map((i) => i.name)} onAddMissing={onAddMissing} />
+      {/* כרטיסיית המתכונים נשמרת ברכיב שבחוץ — הכיווץ כאן שומר על אחידות שלוש הכרטיסיות */}
+      <div className="[&>button]:h-[41px] [&>button]:px-2">
+        <RecipesDrawer names={items.map((i) => i.name)} onAddMissing={onAddMissing} />
+      </div>
 
-      <Button type="button" variant="ghost" size="sm" className="mt-2 text-primary" onClick={() => setAddingCat(true)}>
-        <Plus className="h-4 w-4" />קטגוריה
-      </Button>
 
       <div className="mt-4 space-y-3">
         {groups.map((g) => {
@@ -170,6 +170,12 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
         })}
         {!items.length && <div className="mt-8 text-center text-muted-foreground"><Package className="mx-auto mb-3 h-10 w-10 opacity-40" /><p>מוצרים שנקנו או מנות מוכנות יופיעו כאן</p></div>}
       </div>
+
+      {/* "+ קטגוריה" הועבר לתחתית רשימת המלאי, מתחת לכל הקטגוריות */}
+      <Button type="button" variant="ghost" size="sm" className="mt-3 text-primary" onClick={() => setAddingCat(true)}>
+        <Plus className="h-4 w-4" />קטגוריה
+      </Button>
+
 
       <Drawer open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DrawerContent dir="rtl" className="mx-auto max-w-xl rounded-t-2xl border-border bg-card">
