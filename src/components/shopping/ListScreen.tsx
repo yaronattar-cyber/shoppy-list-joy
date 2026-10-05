@@ -1,7 +1,7 @@
 import { PhotoProductButton } from "./PhotoProductButton";
 import { FullScreenShopping } from "./FullScreenShopping";
 import { useEffect, useMemo, useState } from "react";
-import { Archive, CheckCheck, ChevronDown, ClipboardList, Eye, Globe2, Layers, Maximize2, PartyPopper, Plus, Send, Share2, ShoppingCart, SlidersHorizontal, Sun, Tag, Wand2 } from "lucide-react";
+import { Archive, CheckCheck, ChevronDown, ClipboardList, Eye, Globe2, Layers, Maximize2, PackageCheck, PartyPopper, Plus, Send, Share2, ShoppingCart, SlidersHorizontal, Sun, Tag, Wand2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { atStoreText, groupByCategory, listAsText, openWhatsApp, setWakeLock, wakeLockSupported } from "@/lib/shopping-tools";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,9 @@ import { HistorySuggestions } from "./HistorySuggestions";
 import { matchHistory, type HistoryEntry } from "@/lib/product-history";
 import { basketTotals, formatDistance, formatPrice, STORE_DISTANCES } from "@/lib/prices";
 import { parsePastedList, type ShoppingItem } from "@/lib/shopping-list";
+import { formatDateTime } from "@/lib/shopping-list";
+import type { OnlineOrder } from "@/hooks/useOnlineOrders";
+import { toast } from "sonner";
 
 type ItemDetails = { name: string; quantity: number; unit: string; notes: string; category: string; storeId?: string | null };
 type Props = {
@@ -31,7 +34,11 @@ type Props = {
   onArchive: () => void;
   storeName?: string | undefined;
   stores?: { id: string; name: string; isOnlineOnly?: boolean }[];
-  activeStore?: { name: string; url: string; isOnlineOnly: boolean } | null;
+  activeStore?: { id: string; name: string; url: string; isOnlineOnly: boolean } | null;
+  onlineOrders?: OnlineOrder[];
+  onlineOrderWorking?: boolean;
+  onOnlineOrderPlaced?: () => Promise<boolean>;
+  onOnlineOrderReceived?: (orderId: string) => Promise<number>;
   targets?: AddTarget[];
   onAddTo?: (name: string, target: AddTarget) => string | null;
   isGeneral?: boolean;
@@ -55,6 +62,7 @@ export function ListScreen(p: Props) {
   const [showDone, setShowDone] = useState(true);
   const [awake, setAwake] = useState(false);
   const [grouped, setGrouped] = useState(false);
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [canWake, setCanWake] = useState(false);
   const onlineOnly = !!p.activeStore?.isOnlineOnly;
   useEffect(() => setCanWake(wakeLockSupported()), []);
@@ -81,6 +89,21 @@ export function ListScreen(p: Props) {
   const sortedTotals = [...totals].sort((a, b) => sort === "price" ? a.total - b.total : STORE_DISTANCES[a.store] - STORE_DISTANCES[b.store]);
   // רשימת פריטים משותפת לכל אופן תצוגה
   const rows = (list: ShoppingItem[]) => list.map((item) => <ShoppingItemRow key={item.id} item={item} storeLabel={tag(item)} storeTone={general ? storeTone(p.stores ?? [], item.storeId) : undefined} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />);
+  const placeOnlineOrder = async () => {
+    try {
+      if (await p.onOnlineOrderPlaced?.()) toast.success("ההזמנה נשמרה בהיסטוריה");
+    } catch {
+      toast.error("לא הצלחנו לעדכן את ההזמנה");
+    }
+  };
+  const receiveOnlineOrder = async (orderId: string) => {
+    try {
+      const count = await p.onOnlineOrderReceived?.(orderId);
+      if (count) toast.success(`${count} מוצרים הועברו למלאי`);
+    } catch {
+      toast.error("לא הצלחנו להעביר את ההזמנה למלאי");
+    }
+  };
 
   return (
     <section className="mx-auto w-full max-w-2xl px-3 pb-40 pt-0 sm:px-6">
@@ -130,7 +153,13 @@ export function ListScreen(p: Props) {
 
       {onlineOnly && <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground"><Globe2 className="h-3.5 w-3.5" />סמנו מוצר לאחר שהוספתם אותו לסל באתר.</p>}
 
-      {allDone && (
+      {onlineOnly && (
+        <Button type="button" className="mt-2 h-9 w-full" disabled={!done.length || p.onlineOrderWorking} onClick={() => void placeOnlineOrder()}>
+          <PackageCheck className="h-4 w-4" />עדכן שההזמנה בוצעה{done.length ? ` (${done.length})` : ""}
+        </Button>
+      )}
+
+      {allDone && !onlineOnly && (
         <div className="mt-2 flex items-center gap-2 rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5">
           <PartyPopper className="h-4 w-4 shrink-0 text-primary" />
           <p className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">הסל הושלם</p>
@@ -163,6 +192,44 @@ export function ListScreen(p: Props) {
 
       {!p.items.length && <div className="mt-10 text-center text-muted-foreground"><ShoppingCart className="mx-auto mb-2 h-8 w-8 opacity-40" /><p className="text-sm">הוסיפו מוצר ראשון למעלה</p></div>}
 
+      {onlineOnly && !!p.onlineOrders?.length && (
+        <section className="mt-5 border-t border-border pt-3">
+          <h2 className="mb-2 text-sm font-semibold text-foreground">היסטוריית הזמנות</h2>
+          <ul className="overflow-hidden rounded-md border border-border bg-card">
+            {p.onlineOrders.map((order) => {
+              const open = expandedOrder === order.id;
+              const received = order.status === "received";
+              return (
+                <li key={order.id} className="border-b border-border last:border-0">
+                  <div className="flex min-h-10 items-center gap-1 px-2">
+                    <Button type="button" variant="ghost" className="h-9 min-w-0 flex-1 justify-start px-1 text-xs" aria-expanded={open} onClick={() => setExpandedOrder(open ? null : order.id)}>
+                      <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
+                      <span className="truncate">הזמנה מ־{formatDateTime(order.orderedAt)}</span>
+                      {received && <span className="ms-auto shrink-0 text-muted-foreground">במלאי</span>}
+                    </Button>
+                    {!received && (
+                      <Button type="button" variant="ghost" size="icon" className="h-9 w-9 shrink-0" disabled={p.onlineOrderWorking} title="ההזמנה הגיעה" aria-label="ההזמנה הגיעה" onClick={() => void receiveOnlineOrder(order.id)}>
+                        <span aria-hidden="true">📦</span>
+                      </Button>
+                    )}
+                  </div>
+                  {open && (
+                    <ul className="border-t border-border bg-muted/40 px-3 py-1.5">
+                      {order.items.map((item) => (
+                        <li key={item.id} className="flex items-center justify-between gap-2 py-1 text-xs">
+                          <span className="min-w-0 truncate">{item.name}</span>
+                          <span className="shrink-0 text-muted-foreground">{item.quantity}{item.unit ? ` ${item.unit}` : ""}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
       {/* סל מוזל: שורה רזה אחת עם אייקון, ולצידה פעולת ניקוי */}
       <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 mx-auto max-w-2xl space-y-1.5 px-3 sm:px-6">
         {cheapest && nearest && todo.some((i) => !i.outOfStock) && (
@@ -171,7 +238,7 @@ export function ListScreen(p: Props) {
             <span className="min-w-0 flex-1 truncate text-right"><strong className="font-semibold">{cheapest.store} ₪{formatPrice(cheapest.total)}</strong><span className="text-muted-foreground"> · קרוב: {nearest.store}</span></span>
           </Button>
         )}
-        <Button type="button" className="h-9 w-full text-sm" disabled={!doneCount} onClick={p.onArchive}><Archive className="h-4 w-4" />ניקוי פריטים שנקנו{doneCount ? ` (${doneCount})` : ""}</Button>
+        {!onlineOnly && <Button type="button" className="h-9 w-full text-sm" disabled={!doneCount} onClick={p.onArchive}><Archive className="h-4 w-4" />ניקוי פריטים שנקנו{doneCount ? ` (${doneCount})` : ""}</Button>}
       </div>
 
       <ItemEditDrawer item={selected} stores={p.stores ?? []} onClose={() => setSelected(null)} onSave={p.onUpdate} onDelete={p.onRemove} onOutOfStock={p.onOutOfStock} />

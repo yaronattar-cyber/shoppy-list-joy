@@ -14,6 +14,7 @@ import { useFamily } from "@/hooks/useFamily";
 import { useShoppingList } from "@/hooks/useShoppingList";
 import { useSpeech } from "@/hooks/useSpeech";
 import { useStores } from "@/hooks/useStores";
+import { useOnlineOrders } from "@/hooks/useOnlineOrders";
 import { StoreChips } from "@/components/shopping/StoreChips";
 import { StoreSelector } from "@/components/shopping/StoreSelector";
 import { EventBar } from "@/components/shopping/EventBar";
@@ -69,6 +70,7 @@ function Index() {
   const family = useFamily();
   const stores = useStores(family.familyId);
   const list = useShoppingList(family.familyId, family.userName ?? undefined, stores.activeId);
+  const onlineOrders = useOnlineOrders(family.familyId, stores.active?.isOnlineOnly ? stores.active.id : null);
   const events = useEvents(family.familyId);
   // רשימת אירוע משותפת פועלת כרשימה עצמאית עם קוד משלה
   const eventList = useShoppingList(events.activeId, family.userName ?? undefined, null);
@@ -271,6 +273,18 @@ function Index() {
           onArchive={() => void shown.archiveCompleted()}
           storeName={events.active ? events.active.name : stores.active?.name}
           activeStore={events.active ? null : stores.active}
+          onlineOrders={events.active ? [] : onlineOrders.orders}
+          onlineOrderWorking={onlineOrders.working}
+          onOnlineOrderPlaced={async () => {
+            const created = await onlineOrders.createOrder();
+            if (created) await list.refresh();
+            return created;
+          }}
+          onOnlineOrderReceived={async (orderId) => {
+            const count = await onlineOrders.receiveOrder(orderId);
+            if (count) await list.refresh();
+            return count;
+          }}
           stores={events.active ? [] : stores.stores}
           targets={targets}
           onAddTo={addTo}
