@@ -59,7 +59,7 @@ function ComicButton({
       title={cat.label}
       {...rest}
       variant="outline"
-      className="h-9 shrink-0 gap-2 rounded-full border-primary/15 bg-accent px-3 text-sm font-medium text-primary transition-colors hover:bg-primary/10 hover:text-primary"
+      className="h-9 shrink-0 gap-2 rounded-full border border-primary/10 bg-accent/70 px-3 text-sm font-medium text-primary transition-all duration-150 hover:bg-accent hover:shadow-soft active:scale-95"
     >
       <Icon className="h-4 w-4" strokeWidth={2.4} aria-hidden />
       <span>{cat.label}</span>
