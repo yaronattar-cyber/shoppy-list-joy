@@ -124,18 +124,18 @@ export function FullScreenShopping({ items, onToggle, onOutOfStock, onAdd, onExi
             </h2>
             <ul className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
               {rows.map((item) => (
-                <li key={item.id} className="flex items-center gap-3 border-b border-border px-3 py-2.5 last:border-0">
-                  {/* צ'קבוקס גדול ונוח לאצבע */}
+                <li key={item.id} className="flex items-center gap-2 border-b border-border px-2 py-1.5 last:border-0">
+                  {/* צ'קבוקס מרובע וקטן, בפרופורציה לגודל הפונט של שם המוצר */}
                   <button
                     type="button"
-                    className="grid h-12 w-12 shrink-0 place-items-center rounded-full border-2 border-input text-transparent transition-colors active:bg-muted hover:border-primary hover:text-primary"
+                    className="grid h-5 w-5 shrink-0 place-items-center rounded-[4px] border-2 border-input text-transparent transition-colors active:bg-muted hover:border-primary hover:text-primary"
                     aria-label={`סימון ${item.name} כנקנה`}
                     onClick={() => onToggle(item.id)}
                   >
-                    <Check className="h-6 w-6" />
+                    <Check className="h-3.5 w-3.5" />
                   </button>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-base font-semibold text-foreground">{item.name}</p>
+                    <p className="truncate text-sm font-semibold leading-5 text-foreground">{item.name}</p>
                     {formatQuantity(item.quantity, item.unit) && (
                       <p className="text-xs text-muted-foreground">{formatQuantity(item.quantity, item.unit)}</p>
                     )}
@@ -164,16 +164,16 @@ export function FullScreenShopping({ items, onToggle, onOutOfStock, onAdd, onExi
             <h2 className="mb-1 px-1 text-sm font-semibold text-muted-foreground">נקנו ({done.length})</h2>
             <ul className="overflow-hidden rounded-lg border border-border bg-card/60 shadow-sm">
               {done.map((item) => (
-                <li key={item.id} className="flex items-center gap-3 border-b border-border px-3 py-2.5 last:border-0 opacity-70">
+                <li key={item.id} className="flex items-center gap-2 border-b border-border px-2 py-1.5 last:border-0 opacity-70">
                   <button
                     type="button"
-                    className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground"
+                    className="grid h-5 w-5 shrink-0 place-items-center rounded-[4px] bg-primary text-primary-foreground"
                     aria-label={`ביטול סימון ${item.name}`}
                     onClick={() => onToggle(item.id)}
                   >
-                    <Check className="h-6 w-6" />
+                    <Check className="h-3.5 w-3.5" />
                   </button>
-                  <p className="min-w-0 flex-1 truncate text-base text-muted-foreground line-through">{item.name}</p>
+                  <p className="min-w-0 flex-1 truncate text-sm leading-5 text-muted-foreground line-through">{item.name}</p>
                 </li>
               ))}
             </ul>

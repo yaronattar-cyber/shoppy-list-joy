@@ -45,7 +45,8 @@ export const ShoppingItemRow = memo(function ShoppingItemRow({ item, onToggle, o
   const label = item.completed ? `בטל סימון ${item.name}` : missing ? `בטל „חסר במלאי” עבור ${item.name}` : `סמן את ${item.name} כנקנה (לחיצה ארוכה: חסר במלאי)`;
 
   return (
-    <li className={`grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 border-b border-border px-3 py-2.5 transition-colors last:border-b-0 ${item.completed ? "bg-muted/50" : missing ? "bg-destructive/5" : "bg-card"}`}>
+    <li className={`grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 border-b border-border px-2 py-1.5 transition-colors last:border-b-0 ${item.completed ? "bg-muted/50" : missing ? "bg-destructive/5" : "bg-card"}`}>
+      {/* צ'קבוקס מרובע וקטן, בפרופורציה לגודל הפונט של שם המוצר */}
       <Button
         type="button"
         size="icon"
@@ -57,19 +58,22 @@ export const ShoppingItemRow = memo(function ShoppingItemRow({ item, onToggle, o
         onContextMenu={(e) => e.preventDefault()}
         aria-label={label}
         title="הקשה: נקנה · לחיצה ארוכה: חסר במלאי"
-        className={`h-11 w-11 shrink-0 select-none touch-manipulation rounded-full border ${item.completed ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90" : missing ? "border-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90" : "border-input bg-card text-transparent hover:text-muted-foreground"}`}
+        className={`h-5 w-5 shrink-0 select-none touch-manipulation rounded-[4px] border ${item.completed ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90" : missing ? "border-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90" : "border-input bg-card text-transparent hover:text-muted-foreground"}`}
       >
-        {missing ? <X className="h-5 w-5" strokeWidth={3} /> : <Check className="h-5 w-5" strokeWidth={3} />}
+        {missing ? <X className="h-3.5 w-3.5" strokeWidth={3} /> : <Check className="h-3.5 w-3.5" strokeWidth={3} />}
       </Button>
       {/* אזור לחיץ אחד לעריכה: שם + כמות + חץ */}
-      <Button type="button" variant="ghost" onClick={() => onOpen(item)} aria-label={`עריכת ${item.name}`} className="h-auto min-w-0 justify-between gap-2 whitespace-normal rounded-md px-0 py-1 text-right hover:bg-transparent">
+      <Button type="button" variant="ghost" onClick={() => onOpen(item)} aria-label={`עריכת ${item.name}`} className="h-auto min-w-0 justify-between gap-2 whitespace-normal rounded-md px-0 py-0.5 text-right hover:bg-transparent">
         <span className="min-w-0 flex-1 text-right">
-          <span className={`break-words text-base font-semibold leading-6 ${item.completed ? "text-foreground line-through opacity-50" : "text-foreground"}`}>{item.name}</span>
-          {storeLabel && <span className={`mr-2 inline-block rounded-full px-2 py-0.5 align-middle text-xs font-medium ${storeTone ? "" : "bg-muted text-muted-foreground"}`} style={storeTone ? { backgroundColor: `var(--store-${storeTone})`, color: `var(--store-${storeTone}-fg)` } : undefined}>{storeLabel}</span>}
-          {showAdder && <span className="mr-2 inline-block rounded-full bg-muted px-2 py-0.5 align-middle text-xs font-medium text-muted-foreground">{ROLE_EMOJI[role] ?? "🙂"} {role ? `${role} · ` : ""}{item.addedBy}</span>}
+          {/* שם + תגיות בשורה אחת: השם נחתך עם ... ולא יורד שורה */}
+          <span className="flex min-w-0 items-center gap-1">
+            <span className={`min-w-0 flex-1 truncate text-sm font-semibold leading-5 ${item.completed ? "text-foreground line-through opacity-50" : "text-foreground"}`}>{item.name}</span>
+            {storeLabel && <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${storeTone ? "" : "bg-muted text-muted-foreground"}`} style={storeTone ? { backgroundColor: `var(--store-${storeTone})`, color: `var(--store-${storeTone}-fg)` } : undefined}>{storeLabel}</span>}
+            {showAdder && <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">{ROLE_EMOJI[role] ?? "🙂"} {role ? `${role} · ` : ""}{item.addedBy}</span>}
+          </span>
           {item.completed && <span className="flex items-center gap-1 text-xs font-medium text-primary"><Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />נקנה</span>}
           {missing && <span className="flex items-center gap-1 text-xs font-medium text-destructive"><AlertTriangle className="h-3.5 w-3.5" aria-hidden />חסר במלאי</span>}
-          {item.notes && <span className="block break-words text-xs font-normal text-muted-foreground">{item.notes}</span>}
+          {item.notes && <span className="block truncate text-xs font-normal text-muted-foreground">{item.notes}</span>}
         </span>
         <span className="flex shrink-0 items-center gap-1 text-muted-foreground" aria-hidden>
           <span className="text-sm font-medium">{quantity}</span>
