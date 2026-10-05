@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_rate_limits: {
+        Row: {
+          count: number
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          user_id: string
+          window_start?: string
+        }
+        Update: {
+          count?: number
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       event_members: {
         Row: {
           event_id: string
@@ -288,6 +306,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consume_ai_quota: { Args: { _limit?: number }; Returns: boolean }
       is_family_member: { Args: { _fid: string }; Returns: boolean }
       join_event: {
         Args: { _event_id: string; _family_id: string }
