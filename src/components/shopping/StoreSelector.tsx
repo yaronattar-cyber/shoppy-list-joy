@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Copy, ExternalLink, Globe2, Pencil, Plus, Star, Store, Trash2 } from "lucide-react";
+import { ArrowRight, Copy, ExternalLink, Globe2, Pencil, Plus, Star, Store, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
@@ -180,6 +180,9 @@ export function StoreSelector(p: Props) {
                 <Globe2 className="h-4 w-4 text-primary" />חנות אונליין בלבד
               </label>
               <div className="flex gap-2 pt-2">
+                <Button type="button" variant="outline" className="h-11" onClick={() => { if (editing.name.trim()) p.onSave(editing); setEditing(null); }}>
+                  <ArrowRight />חזרה
+                </Button>
                 <Button type="submit" className="h-11 flex-1">שמירה</Button>
                 {editing.id && (
                   <Button type="button" variant="outline" className="h-11 text-destructive" onClick={() => { if (editing.id) p.onRemove(editing.id); setEditing(null); }}>
