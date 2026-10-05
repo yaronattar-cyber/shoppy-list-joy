@@ -20,12 +20,14 @@ export function saveFamilyId(id: string) {
   }
 }
 
-// מזהה קריא לבני משפחה: 6 תווים ללא אותיות מבלבלות
+// מזהה קריא לבני משפחה: 8 תווים ללא אותיות מבלבלות, מבוסס crypto מאובטח
 export function newFamilyCode(): string {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = new Uint32Array(8);
+  crypto.getRandomValues(bytes);
   let out = "";
-  for (let i = 0; i < 6; i++) {
-    out += alphabet[Math.floor(Math.random() * alphabet.length)];
+  for (let i = 0; i < 8; i++) {
+    out += alphabet[bytes[i] % alphabet.length];
   }
   return out;
 }
