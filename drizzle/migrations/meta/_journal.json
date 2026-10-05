@@ -85,6 +85,13 @@
       "when": 1791090252751,
       "tag": "0011_family_members",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1791196907182,
+      "tag": "0012_family_memberships_rls",
+      "breakpoints": true
     }
   ]
 }
