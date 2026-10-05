@@ -46,12 +46,11 @@ export function useEvents(familyId: string | null) {
     const fromUrl = eventIdFromUrl();
     const boot = async () => {
       if (fromUrl) {
-        const { data: ev } = await supabase.from("families").select("id,name").eq("id", fromUrl).eq("kind", "event").maybeSingle();
-        if (ev) {
-          await supabase.from("event_members").upsert({ event_id: ev.id, family_id: familyId }, { onConflict: "event_id,family_id", ignoreDuplicates: true });
-          setActiveId(ev.id);
-          sessionStorage.setItem(activeKey(familyId), ev.id);
-          setJoinedName(ev.name);
+        const { data: name } = await supabase.rpc("join_event", { _event_id: fromUrl, _family_id: familyId });
+        if (name) {
+          setActiveId(fromUrl);
+          sessionStorage.setItem(activeKey(familyId), fromUrl);
+          setJoinedName(name);
         }
         const u = new URL(window.location.href);
         u.searchParams.delete("eventId");

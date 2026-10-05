@@ -8,14 +8,19 @@ import {
 } from "@/lib/family";
 import { loadUserName, saveUserName } from "@/lib/user-name";
 
-// מוודא שקבוצת המשפחה קיימת במסד; התעלמות משגיאת כפילות היא מצב תקין
+// כניסה אנונימית שקופה — נדרשת כדי שההרשאות יזהו את המכשיר
+async function ensureSession() {
+  const { data } = await supabase.auth.getSession();
+  if (data.session) return;
+  const { error } = await supabase.auth.signInAnonymously();
+  if (error) console.error("signInAnonymously", error);
+}
+
+// יוצר את המשפחה אם צריך ורושם את המשתמש כחבר בה (גם למשפחות קיימות — מעבר ללא איבוד נתונים)
 async function ensureFamily(id: string, name?: string) {
-  const { error } = await supabase
-    .from("families")
-    .insert({ id, ...(name ? { name } : {}) });
-  if (error && !/duplicate|already exists|23505/i.test(error.message)) {
-    console.error("ensureFamily", error);
-  }
+  await ensureSession();
+  const { error } = await supabase.rpc("join_family", { _id: id, _name: name ?? undefined });
+  if (error) console.error("ensureFamily", error);
 }
 
 // זהות המשתמש והקבוצה: קישור הזמנה > שמור מקומית > יצירת קבוצה חדשה
