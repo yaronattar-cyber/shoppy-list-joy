@@ -159,7 +159,7 @@ export function ListScreen(p: Props) {
         </Button>
       )}
 
-      {allDone && (
+      {allDone && !onlineOnly && (
         <div className="mt-2 flex items-center gap-2 rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5">
           <PartyPopper className="h-4 w-4 shrink-0 text-primary" />
           <p className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">הסל הושלם</p>
@@ -238,7 +238,7 @@ export function ListScreen(p: Props) {
             <span className="min-w-0 flex-1 truncate text-right"><strong className="font-semibold">{cheapest.store} ₪{formatPrice(cheapest.total)}</strong><span className="text-muted-foreground"> · קרוב: {nearest.store}</span></span>
           </Button>
         )}
-        <Button type="button" className="h-9 w-full text-sm" disabled={!doneCount} onClick={p.onArchive}><Archive className="h-4 w-4" />ניקוי פריטים שנקנו{doneCount ? ` (${doneCount})` : ""}</Button>
+        {!onlineOnly && <Button type="button" className="h-9 w-full text-sm" disabled={!doneCount} onClick={p.onArchive}><Archive className="h-4 w-4" />ניקוי פריטים שנקנו{doneCount ? ` (${doneCount})` : ""}</Button>}
       </div>
 
       <ItemEditDrawer item={selected} stores={p.stores ?? []} onClose={() => setSelected(null)} onSave={p.onUpdate} onDelete={p.onRemove} onOutOfStock={p.onOutOfStock} />
