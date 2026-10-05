@@ -105,6 +105,10 @@ function applyOps(items: ShoppingItem[], ops: Op[]): ShoppingItem[] {
 const isNetworkError = (msg: string) =>
   (typeof navigator !== "undefined" && !navigator.onLine) || /fetch|network|timeout|load failed/i.test(msg);
 
+// שגיאת אימות/הרשאות — התור נשאר שלם; ננסה שוב אחרי שהכניסה האנונימית וההצטרפות למשפחה הסתיימו
+const isAuthError = (msg: string) =>
+  /401|42501|jwt expired|permission denied|pgrst301|unauthorized|forbidden/i.test(msg);
+
 // שליחה במנות של 50 כדי שבקשות גדולות לא ייחסמו (URL ארוך מדי)
 const CHUNK = 50;
 async function sendOp(op: Op): Promise<{ error: { message: string } | null }> {
@@ -132,6 +136,7 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
   const [pendingCount, setPendingCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
   const flushingRef = useRef(false);
+  const waitingSyncToastRef = useRef(false); // מונע הצפת toast „ממתין לסנכרון" בניסיונות חוזרים
 
   // היסטוריה: מקומית מיד, ואז מיזוג עם היסטוריית המשפחה בענן + Realtime
   useEffect(() => {
@@ -196,12 +201,28 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
         const op = queue[0]!;
         const { error } = await sendOp(op);
         if (error && isNetworkError(error.message)) break;
-        if (error) console.error("sync op dropped", error);
+        // אימות/הרשאות: לא זורקים את הפעולה — התור נשאר שלם, וננסה שוב אחרי שהכניסה האנונימית
+        // וההצטרפות למשפחה הסתיימו (המנויים, הטיימר וחזרת המסך לחזית מפעילים flush מחדש)
+        if (error && isAuthError(error.message)) {
+          if (!waitingSyncToastRef.current) {
+            waitingSyncToastRef.current = true;
+            toast("ממתין לסנכרון", { description: "השינויים שלך יישלחו ברגע שהחיבור יושלם" });
+          }
+          break;
+        }
+        if (error) {
+          // שגיאה שאינה קשורה להרשאות (נתונים לא תקינים וכדומה) — מוותרים על הפעולה
+          console.error("sync op dropped", error);
+          toast.error("שמירת שינוי נכשלה בענן", { description: error.message });
+        }
         queue = readJson<Op[]>(queueKey(familyId), []).slice(1);
         writeJson(queueKey(familyId), queue);
         setPendingCount(queue.length);
       }
-      if (!queue.length) await refresh();
+      if (!queue.length) {
+        waitingSyncToastRef.current = false;
+        await refresh();
+      }
     } catch (e) {
       console.warn("sync failed, will retry", e);
     } finally {
