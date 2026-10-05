@@ -446,13 +446,43 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
     [update],
   );
 
-  const removeItem = useCallback(async (id: string) => enqueue({ type: "delete", ids: [id] }), [enqueue]);
+  // toast עם „בטל” ל־5 שניות — הביטול עובר דרך אותו תור
+  const undoToast = (msg: string, undo: () => void) =>
+    toast(msg, { duration: 5000, action: { label: "בטל", onClick: undo } });
+
+  const removeItem = useCallback(
+    async (id: string) => {
+      const prev = rows.find((i) => i.id === id);
+      enqueue({ type: "delete", ids: [id] });
+      if (!prev) return;
+      const row: Row = {
+        id: prev.id, family_id: prev.familyId, name: prev.name, completed: prev.completed,
+        out_of_stock: prev.outOfStock, quantity: prev.quantity, unit: prev.unit, notes: prev.notes,
+        category: prev.category, archived: prev.archived, added_by: prev.addedBy, created_at: prev.createdAt,
+        store_id: prev.storeId ?? null, expiry_date: prev.expiryDate ?? null, stock_status: prev.stockStatus,
+      };
+      undoToast(`„${prev.name}” נמחק`, () => enqueue({ type: "insert", rows: [row] }));
+    },
+    [rows, enqueue],
+  );
 
   // „סמן הכל” — לפי מזהים כדי לעבוד גם ללא קליטה
   const markAll = useCallback(
     async (completed: boolean) => {
       const ids = items.map((i) => i.id);
-      if (ids.length) enqueue({ type: "update", ids, patch: { completed, out_of_stock: false } });
+      if (!ids.length) return;
+      // קיבוץ לפי המצב הקודם לשחזור מדויק
+      const groups = new Map<string, string[]>();
+      for (const i of items) {
+        const k = `${i.completed ? 1 : 0}${i.outOfStock ? 1 : 0}`;
+        groups.set(k, [...(groups.get(k) ?? []), i.id]);
+      }
+      enqueue({ type: "update", ids, patch: { completed, out_of_stock: false } });
+      undoToast(completed ? "כל הפריטים סומנו" : "הסימון בוטל לכל הפריטים", () =>
+        groups.forEach((gIds, k) =>
+          enqueue({ type: "update", ids: gIds, patch: { completed: k[0] === "1", out_of_stock: k[1] === "1" } }),
+        ),
+      );
     },
     [items, enqueue],
   );
@@ -460,7 +490,9 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
   // העברת פריטים שנקנו למלאי
   const archiveCompleted = useCallback(async () => {
     const ids = items.filter((i) => i.completed).map((i) => i.id);
-    if (ids.length) enqueue({ type: "update", ids, patch: { archived: true } });
+    if (!ids.length) return;
+    enqueue({ type: "update", ids, patch: { archived: true } });
+    undoToast(`${ids.length} פריטים הועברו למלאי`, () => enqueue({ type: "update", ids, patch: { archived: false } }));
   }, [items, enqueue]);
 
   const restoreFromInventory = useCallback(
