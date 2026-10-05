@@ -122,5 +122,5 @@ export function useOnlineOrders(familyId: string | null, storeId: string | null)
     }
   }, [working, refresh]);
 
-  return { orders, working, createOrder, receiveOrder };
+  return { orders, working, createOrder, receiveOrder, refresh };
 }
