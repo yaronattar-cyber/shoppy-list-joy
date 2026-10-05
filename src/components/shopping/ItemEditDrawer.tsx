@@ -3,6 +3,7 @@ import { Minus, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { CATEGORIES } from "@/lib/categories";
+import { useInvCategories } from "@/lib/inventory-categories";
 import { UNITS, stepFor } from "@/lib/quantity";
 import { formatDateTime, type ShoppingItem } from "@/lib/shopping-list";
 
@@ -23,6 +24,7 @@ export function ItemEditDrawer({ item, stores = [], onClose, onSave, onDelete, o
   const [unit, setUnit] = useState("");
   const [notes, setNotes] = useState("");
   const [category, setCategory] = useState("");
+  const customCats = useInvCategories().filter((c) => c.id.startsWith("custom-"));
   const [storeId, setStoreId] = useState("");
 
   useEffect(() => {
@@ -68,6 +70,7 @@ export function ItemEditDrawer({ item, stores = [], onClose, onSave, onDelete, o
             <select className={field} value={category} onChange={(e) => setCategory(e.target.value)}>
               <option value="">ללא קטגוריה</option>
               {CATEGORIES.map((cat) => <option key={cat.id} value={cat.id}>{cat.label}</option>)}
+              {customCats.map((cat) => <option key={cat.id} value={cat.id}>{cat.emoji} {cat.label}</option>)}
             </select>
           </label>
           <label className="block space-y-1.5 text-sm font-medium text-foreground">שיוך לחנות

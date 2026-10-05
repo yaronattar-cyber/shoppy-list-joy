@@ -1,7 +1,7 @@
 import { RecipesDrawer } from "./RecipesDrawer";
 import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { INV_CATEGORIES, STOCK_STATUS, inventoryCategoryOf } from "@/lib/inventory-categories";
+import { STOCK_STATUS, addCustomCategory, inventoryCategoryOf, useInvCategories } from "@/lib/inventory-categories";
 import { CookingPot, Package, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,12 +34,17 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [editing, setEditing] = useState<ShoppingItem | null>(null);
   const [draft, setDraft] = useState({ expiryDate: "", stockStatus: "full", quantity: 1, unit: "", category: "other" });
-  const groups = useMemo(() => INV_CATEGORIES.map((c) => ({ ...c, items: items.filter((i) => inventoryCategoryOf(i.name, i.category) === c.id) })).filter((g) => g.items.length || g.id === "prepared-meal"), [items]);
+  const cats = useInvCategories();
+  const groups = useMemo(() => cats.map((c) => ({ ...c, items: items.filter((i) => inventoryCategoryOf(i.name, i.category) === c.id) })).filter((g) => g.items.length || g.id === "prepared-meal" || g.id.startsWith("custom-")), [items, cats]);
   const openItem = (i: ShoppingItem) => { setEditing(i); setDraft({ expiryDate: i.expiryDate ?? "", stockStatus: i.stockStatus ?? "full", quantity: i.quantity, unit: i.unit, category: inventoryCategoryOf(i.name, i.category) }); };
   const [pending, setPending] = useState<string[] | null>(null);
   const [addingMeal, setAddingMeal] = useState(false);
   const [mealName, setMealName] = useState("");
+  const [addingCat, setAddingCat] = useState(false);
+  const [catName, setCatName] = useState("");
+  const [catEmoji, setCatEmoji] = useState("🏷️");
   const many = (pending?.length ?? 0) > 1;
+  const saveCat = () => { if (addCustomCategory(catName, catEmoji)) { setCatName(""); setCatEmoji("🏷️"); setAddingCat(false); } };
 
   const addMeal = () => {
     if (!onAddPreparedMeal(mealName)) return;
@@ -70,6 +75,10 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
       </Button>
 
       <RecipesDrawer names={items.map((i) => i.name)} onAddMissing={onAddMissing} />
+
+      <Button type="button" variant="ghost" size="sm" className="mt-2 text-primary" onClick={() => setAddingCat(true)}>
+        <Plus className="h-4 w-4" />קטגוריה
+      </Button>
 
       <div className="mt-4 space-y-3">
         {groups.map((g) => {
@@ -141,7 +150,7 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
             </label>
             <label className="block space-y-1.5 text-sm font-medium text-foreground">קטגוריה
               <select value={draft.category} onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value }))} className="h-11 w-full rounded-md border border-input bg-background px-3 text-base">
-                {INV_CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.emoji} {c.label}</option>)}
+                {cats.map((c) => <option key={c.id} value={c.id}>{c.emoji} {c.label}</option>)}
               </select>
             </label>
           </div>
@@ -169,6 +178,29 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
             <DrawerFooter className="grid grid-cols-[auto_minmax(0,1fr)] gap-3">
               <DrawerClose asChild><Button type="button" variant="ghost">ביטול</Button></DrawerClose>
               <Button type="submit" size="lg" disabled={!mealName.trim()}>הוספה למלאי</Button>
+            </DrawerFooter>
+          </form>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer open={addingCat} onOpenChange={setAddingCat}>
+        <DrawerContent dir="rtl" className="mx-auto max-w-xl rounded-t-2xl border-border bg-card">
+          <DrawerHeader className="text-right sm:text-right">
+            <DrawerTitle className="text-xl">קטגוריה חדשה</DrawerTitle>
+            <DrawerDescription>הקטגוריה תישמר במכשיר ותהיה זמינה לשיוך מוצרים.</DrawerDescription>
+          </DrawerHeader>
+          <form onSubmit={(e) => { e.preventDefault(); saveCat(); }}>
+            <div className="space-y-3 px-4 pb-2">
+              <input autoFocus value={catName} onChange={(e) => setCatName(e.target.value)} maxLength={30} placeholder="שם הקטגוריה" className="h-12 w-full rounded-md border border-input bg-background px-3 text-base text-foreground outline-none focus:ring-2 focus:ring-ring" />
+              <div className="flex flex-wrap gap-2">
+                {["🏷️", "🍼", "🐶", "🍷", "🥜", "🍣", "🧁", "💊", "🎉", "🌶️"].map((e) => (
+                  <button key={e} type="button" onClick={() => setCatEmoji(e)} className={`grid h-10 w-10 place-items-center rounded-md border text-xl ${catEmoji === e ? "border-primary bg-primary/10" : "border-border"}`}>{e}</button>
+                ))}
+              </div>
+            </div>
+            <DrawerFooter className="grid grid-cols-[auto_minmax(0,1fr)] gap-3">
+              <DrawerClose asChild><Button type="button" variant="ghost">ביטול</Button></DrawerClose>
+              <Button type="submit" size="lg" disabled={!catName.trim()}>הוספה</Button>
             </DrawerFooter>
           </form>
         </DrawerContent>
