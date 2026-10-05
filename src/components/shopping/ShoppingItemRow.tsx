@@ -63,14 +63,17 @@ export const ShoppingItemRow = memo(function ShoppingItemRow({ item, onToggle, o
         {missing ? <X className="h-3.5 w-3.5" strokeWidth={3} /> : <Check className="h-3.5 w-3.5" strokeWidth={3} />}
       </Button>
       {/* אזור לחיץ אחד לעריכה: שם + כמות + חץ */}
-      <Button type="button" variant="ghost" onClick={() => onOpen(item)} aria-label={`עריכת ${item.name}`} className="h-auto min-w-0 justify-between gap-2 whitespace-normal rounded-md px-0 py-1 text-right hover:bg-transparent">
+      <Button type="button" variant="ghost" onClick={() => onOpen(item)} aria-label={`עריכת ${item.name}`} className="h-auto min-w-0 justify-between gap-2 whitespace-normal rounded-md px-0 py-0.5 text-right hover:bg-transparent">
         <span className="min-w-0 flex-1 text-right">
-          <span className={`break-words text-base font-semibold leading-6 ${item.completed ? "text-foreground line-through opacity-50" : "text-foreground"}`}>{item.name}</span>
-          {storeLabel && <span className={`mr-2 inline-block rounded-full px-2 py-0.5 align-middle text-xs font-medium ${storeTone ? "" : "bg-muted text-muted-foreground"}`} style={storeTone ? { backgroundColor: `var(--store-${storeTone})`, color: `var(--store-${storeTone}-fg)` } : undefined}>{storeLabel}</span>}
-          {showAdder && <span className="mr-2 inline-block rounded-full bg-muted px-2 py-0.5 align-middle text-xs font-medium text-muted-foreground">{ROLE_EMOJI[role] ?? "🙂"} {role ? `${role} · ` : ""}{item.addedBy}</span>}
+          {/* שם + תגיות בשורה אחת: השם נחתך עם ... ולא יורד שורה */}
+          <span className="flex min-w-0 items-center gap-1">
+            <span className={`min-w-0 flex-1 truncate text-sm font-semibold leading-5 ${item.completed ? "text-foreground line-through opacity-50" : "text-foreground"}`}>{item.name}</span>
+            {storeLabel && <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${storeTone ? "" : "bg-muted text-muted-foreground"}`} style={storeTone ? { backgroundColor: `var(--store-${storeTone})`, color: `var(--store-${storeTone}-fg)` } : undefined}>{storeLabel}</span>}
+            {showAdder && <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">{ROLE_EMOJI[role] ?? "🙂"} {role ? `${role} · ` : ""}{item.addedBy}</span>}
+          </span>
           {item.completed && <span className="flex items-center gap-1 text-xs font-medium text-primary"><Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />נקנה</span>}
           {missing && <span className="flex items-center gap-1 text-xs font-medium text-destructive"><AlertTriangle className="h-3.5 w-3.5" aria-hidden />חסר במלאי</span>}
-          {item.notes && <span className="block break-words text-xs font-normal text-muted-foreground">{item.notes}</span>}
+          {item.notes && <span className="block truncate text-xs font-normal text-muted-foreground">{item.notes}</span>}
         </span>
         <span className="flex shrink-0 items-center gap-1 text-muted-foreground" aria-hidden>
           <span className="text-sm font-medium">{quantity}</span>
