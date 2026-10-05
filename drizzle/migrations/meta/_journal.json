@@ -113,6 +113,13 @@
       "when": 1791206516523,
       "tag": "0015_add_online_only_to_stores",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1791206670682,
+      "tag": "0016_add_online_order_history",
+      "breakpoints": true
     }
   ]
 }

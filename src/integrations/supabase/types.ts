@@ -263,6 +263,86 @@ export type Database = {
         }
         Relationships: []
       }
+      online_order_items: {
+        Row: {
+          category: string
+          id: string
+          name: string
+          notes: string
+          order_id: string
+          quantity: number
+          unit: string
+        }
+        Insert: {
+          category?: string
+          id?: string
+          name: string
+          notes?: string
+          order_id: string
+          quantity?: number
+          unit?: string
+        }
+        Update: {
+          category?: string
+          id?: string
+          name?: string
+          notes?: string
+          order_id?: string
+          quantity?: number
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "online_order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "online_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      online_orders: {
+        Row: {
+          family_id: string
+          id: string
+          ordered_at: string
+          received_at: string | null
+          status: string
+          store_id: string
+        }
+        Insert: {
+          family_id: string
+          id?: string
+          ordered_at?: string
+          received_at?: string | null
+          status?: string
+          store_id: string
+        }
+        Update: {
+          family_id?: string
+          id?: string
+          ordered_at?: string
+          received_at?: string | null
+          status?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "online_orders_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "online_orders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           display_name: string
@@ -328,6 +408,7 @@ export type Database = {
     }
     Functions: {
       consume_ai_quota: { Args: { _limit?: number }; Returns: boolean }
+      create_online_order: { Args: { _store_id: string }; Returns: string }
       is_family_member: { Args: { _fid: string }; Returns: boolean }
       join_event: {
         Args: { _event_id: string; _family_id: string }
@@ -338,6 +419,7 @@ export type Database = {
         Args: { _from: string; _to: string }
         Returns: number
       }
+      receive_online_order: { Args: { _order_id: string }; Returns: number }
       record_family_purchase: {
         Args: { _category: string; _family_id: string; _name: string }
         Returns: undefined
