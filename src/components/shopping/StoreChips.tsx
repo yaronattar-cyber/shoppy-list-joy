@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, PartyPopper } from "lucide-react";
+import { ChevronLeft, Globe2, PartyPopper } from "lucide-react";
 import type { ShoppingItem } from "@/lib/shopping-list";
 
 type Props = {
-  stores: { id: string; name: string }[];
+  stores: { id: string; name: string; isOnlineOnly?: boolean }[];
   activeId: string | null;
   items: ShoppingItem[];
   onSelect: (id: string | null) => void;
@@ -51,7 +51,7 @@ export function StoreChips({ stores, activeId, items, onSelect, events = [], act
           return (
             <button key={s.id} type="button" onClick={() => onSelect(s.id)} className={`${base} ${a ? on : off}`}>
               {tone && !a && <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: `var(--store-${tone}-fg)` }} />}
-              {s.name}{badge(a, count(s.id))}
+               {s.name}{s.isOnlineOnly && <span className="flex items-center gap-0.5 text-xs font-medium"><Globe2 className="h-3 w-3" />אונליין</span>}{badge(a, count(s.id))}
             </button>
           );
         })}

@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Shared shopping-item UI belongs in reusable row and bottom-sheet components so List and In-Store stay behaviorally consistent.
+- Store records persist whether they are online-only; physical shopping controls must only appear for non-online stores.
