@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { suggestRecipes, type Recipe } from "@/lib/ai/recipes.functions";
 
-type Props = { names: string[]; onAddMissing: (names: string[]) => void };
+type Props = { names: string[]; onAddMissing: (names: string[]) => void; label?: string; triggerClassName?: string };
 
 // מתכונים חכמים לפי המלאי + הוספת חוסרים לסופר הבית
-export function RecipesDrawer({ names, onAddMissing }: Props) {
+export function RecipesDrawer({ names, onAddMissing, label, triggerClassName }: Props) {
   const fetchRecipes = useServerFn(suggestRecipes);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -31,8 +31,9 @@ export function RecipesDrawer({ names, onAddMissing }: Props) {
 
   return (
     <>
-      <Button type="button" variant="outline" disabled={!names.length} onClick={() => void run()} className="mt-2 h-12 w-full justify-start border-primary/30 bg-card text-primary shadow-sm hover:bg-primary/5 hover:text-primary">
-        <ChefHat className="h-5 w-5" />מה מבשלים היום? מתכונים מהמלאי
+      <Button type="button" variant="outline" disabled={!names.length} onClick={() => void run()} className={triggerClassName ?? "mt-2 h-12 w-full justify-start border-primary/30 bg-card text-primary shadow-sm hover:bg-primary/5 hover:text-primary"}>
+        <ChefHat className="h-5 w-5" />
+        {label ?? "מה מבשלים היום? מתכונים מהמלאי"}
       </Button>
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerContent dir="rtl" className="mx-auto max-h-[88vh] max-w-xl rounded-t-2xl border-border bg-card">
