@@ -124,18 +124,18 @@ export function FullScreenShopping({ items, onToggle, onOutOfStock, onAdd, onExi
             </h2>
             <ul className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
               {rows.map((item) => (
-                <li key={item.id} className="flex items-center gap-3 border-b border-border px-3 py-2.5 last:border-0">
-                  {/* צ'קבוקס גדול ונוח לאצבע */}
+                <li key={item.id} className="flex items-center gap-2 border-b border-border px-2 py-1.5 last:border-0">
+                  {/* צ'קבוקס מרובע וקטן, בפרופורציה לגודל הפונט של שם המוצר */}
                   <button
                     type="button"
-                    className="grid h-12 w-12 shrink-0 place-items-center rounded-full border-2 border-input text-transparent transition-colors active:bg-muted hover:border-primary hover:text-primary"
+                    className="grid h-5 w-5 shrink-0 place-items-center rounded-[4px] border-2 border-input text-transparent transition-colors active:bg-muted hover:border-primary hover:text-primary"
                     aria-label={`סימון ${item.name} כנקנה`}
                     onClick={() => onToggle(item.id)}
                   >
-                    <Check className="h-6 w-6" />
+                    <Check className="h-3.5 w-3.5" />
                   </button>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-base font-semibold text-foreground">{item.name}</p>
+                    <p className="truncate text-sm font-semibold leading-5 text-foreground">{item.name}</p>
                     {formatQuantity(item.quantity, item.unit) && (
                       <p className="text-xs text-muted-foreground">{formatQuantity(item.quantity, item.unit)}</p>
                     )}

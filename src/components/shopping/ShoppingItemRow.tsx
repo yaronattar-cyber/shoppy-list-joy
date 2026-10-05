@@ -45,7 +45,8 @@ export const ShoppingItemRow = memo(function ShoppingItemRow({ item, onToggle, o
   const label = item.completed ? `בטל סימון ${item.name}` : missing ? `בטל „חסר במלאי” עבור ${item.name}` : `סמן את ${item.name} כנקנה (לחיצה ארוכה: חסר במלאי)`;
 
   return (
-    <li className={`grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 border-b border-border px-3 py-2.5 transition-colors last:border-b-0 ${item.completed ? "bg-muted/50" : missing ? "bg-destructive/5" : "bg-card"}`}>
+    <li className={`grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 border-b border-border px-2 py-1.5 transition-colors last:border-b-0 ${item.completed ? "bg-muted/50" : missing ? "bg-destructive/5" : "bg-card"}`}>
+      {/* צ'קבוקס מרובע וקטן, בפרופורציה לגודל הפונט של שם המוצר */}
       <Button
         type="button"
         size="icon"
@@ -57,9 +58,9 @@ export const ShoppingItemRow = memo(function ShoppingItemRow({ item, onToggle, o
         onContextMenu={(e) => e.preventDefault()}
         aria-label={label}
         title="הקשה: נקנה · לחיצה ארוכה: חסר במלאי"
-        className={`h-11 w-11 shrink-0 select-none touch-manipulation rounded-full border ${item.completed ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90" : missing ? "border-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90" : "border-input bg-card text-transparent hover:text-muted-foreground"}`}
+        className={`h-5 w-5 shrink-0 select-none touch-manipulation rounded-[4px] border ${item.completed ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90" : missing ? "border-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90" : "border-input bg-card text-transparent hover:text-muted-foreground"}`}
       >
-        {missing ? <X className="h-5 w-5" strokeWidth={3} /> : <Check className="h-5 w-5" strokeWidth={3} />}
+        {missing ? <X className="h-3.5 w-3.5" strokeWidth={3} /> : <Check className="h-3.5 w-3.5" strokeWidth={3} />}
       </Button>
       {/* אזור לחיץ אחד לעריכה: שם + כמות + חץ */}
       <Button type="button" variant="ghost" onClick={() => onOpen(item)} aria-label={`עריכת ${item.name}`} className="h-auto min-w-0 justify-between gap-2 whitespace-normal rounded-md px-0 py-1 text-right hover:bg-transparent">
