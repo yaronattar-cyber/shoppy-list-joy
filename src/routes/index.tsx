@@ -13,7 +13,6 @@ import { Onboarding } from "@/components/shopping/Onboarding";
 import { useFamily } from "@/hooks/useFamily";
 import { useShoppingList } from "@/hooks/useShoppingList";
 import { useSpeech } from "@/hooks/useSpeech";
-import { useSwipe } from "@/hooks/useSwipe";
 import { useStores } from "@/hooks/useStores";
 import { StoreChips } from "@/components/shopping/StoreChips";
 import { StoreSelector } from "@/components/shopping/StoreSelector";
@@ -133,7 +132,6 @@ function Index() {
     const next = ORDER[i === -1 ? 0 : Math.min(ORDER.length - 1, Math.max(0, i + dir))];
     if (next) setScreen(next);
   };
-  const swipe = useSwipe({ onLeft: () => step(1), onRight: () => step(-1) });
 
   // מסך הבית תמיד מוסיף לסופר הבית
   const { resetToDefault } = stores;
@@ -158,7 +156,7 @@ function Index() {
 
   return (
     <MembersContext.Provider value={roleMap}>
-    <main className="min-h-screen bg-background pb-[calc(4.5rem+env(safe-area-inset-bottom))]" {...swipe}>
+    <main className="min-h-screen bg-background pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
       {family.previousFamilyId && (
         <MergeFamilyDialog from={family.previousFamilyId} to={family.familyId} onDone={onMergeDone} />
       )}
