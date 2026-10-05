@@ -75,13 +75,15 @@ export function ListScreen(p: Props) {
   return (
     <section className="mx-auto w-full max-w-2xl px-4 pb-44 pt-1 sm:px-6">
       <TargetPicker name={picking} targets={p.targets ?? []} onCancel={() => setPicking(null)} onPick={(t) => { const n = picking ?? ""; setPicking(null); if (p.onAddTo?.(n, t)) setQuick(""); }} />
+      <h1 className="pt-2 text-xl font-bold text-foreground">רשימת קניות</h1>
+      {/* רק שורת ההוספה דביקה */}
       <div className="sticky top-0 z-30 -mx-4 border-b border-border bg-background/95 px-4 pb-3 pt-2 backdrop-blur sm:-mx-6 sm:px-6">
-        <h1 className="mb-2 text-xl font-bold text-foreground">רשימת קניות</h1>
         <div className="flex gap-2">
           <form className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] gap-2" onSubmit={(event) => { event.preventDefault(); submitQuick(); }}>
             <input value={quick} onChange={(event) => setQuick(event.target.value)} placeholder="הוספת מוצר..." aria-label="הוספה מהירה" className="h-11 min-w-0 rounded-md border border-input bg-card px-3 text-base outline-none focus:ring-2 focus:ring-ring" />
             <Button type="submit" className="h-11 px-4"><ListPlus />הוסף</Button>
           </form>
+          <Button type="button" variant="outline" size="icon" className="h-11 w-11 shrink-0" aria-label="בקשה חופשית" title="בקשה חופשית" onClick={() => setAiOpen(true)}><Wand2 /></Button>
           <PhotoProductButton compact storeName={p.storeName || "הרשימה"} onAdd={(name) => p.onAdd(name)} />
         </div>
         <HistorySuggestions items={suggestions} onPick={(name) => setQuick(name)} />
@@ -89,6 +91,9 @@ export function ListScreen(p: Props) {
 
       <div className="mt-4 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
         <p className="min-w-0 text-sm text-muted-foreground">{p.items.length ? `${doneCount} מתוך ${p.items.length} הושלמו` : "הרשימה ריקה"}</p>
+        <div className="flex flex-wrap justify-end gap-2">
+        <Button type="button" variant="outline" size="sm" onClick={() => openWhatsApp(atStoreText(p.storeName))}><Share2 />אני בסופר</Button>
+        <Button type="button" variant="outline" size="sm" disabled={!todo.length} onClick={() => openWhatsApp(listAsText(p.items, p.storeName))}><Send />שלח רשימה</Button>
         {/* תפריט אפשרויות מרוכז */}
         <DropdownMenu dir="rtl">
           <DropdownMenuTrigger asChild>
@@ -102,12 +107,10 @@ export function ListScreen(p: Props) {
             <DropdownMenuSeparator />
             <DropdownMenuLabel>פעולות</DropdownMenuLabel>
             <DropdownMenuItem disabled={!p.items.length} onSelect={() => p.onMarkAll(!allDone)}><CheckCheck />{allDone ? "בטל הכל" : "סמן הכל"}</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => setAiOpen(true)}><Wand2 />בקשה חופשית</DropdownMenuItem>
             <DropdownMenuItem onSelect={() => setImportOpen(true)}><ClipboardList />ייבוא מ־Keep</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => openWhatsApp(atStoreText(p.storeName))}><Share2 />אני בסופר</DropdownMenuItem>
-            <DropdownMenuItem disabled={!todo.length} onSelect={() => openWhatsApp(listAsText(p.items, p.storeName))}><Send />שלח רשימה</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        </div>
       </div>
 
       <LongPressHint />
@@ -115,7 +118,7 @@ export function ListScreen(p: Props) {
       {allDone && <div className="mt-4 animate-scale-in rounded-lg border border-primary/30 bg-primary/10 p-4 text-center">
         <PartyPopper className="mx-auto mb-1 h-8 w-8 text-primary" />
         <p className="font-bold text-foreground">כל הכבוד, הסל הושלם!</p>
-        <p className="text-sm text-muted-foreground">אפשר להמשיך לקופה</p>
+        <Button type="button" className="mt-2" onClick={p.onArchive}><Archive />העבר למלאי</Button>
       </div>}
 
       {todo.length > 0 && (byStore

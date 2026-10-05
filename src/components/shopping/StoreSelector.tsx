@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Check, ChevronDown, Copy, ExternalLink, Pencil, Plus, Star, Store, Trash2 } from "lucide-react";
+import { Copy, ExternalLink, Pencil, Plus, Star, Store, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { estimateForStore, formatPrice, type BasketLine } from "@/lib/prices";
 import type { ShoppingItem } from "@/lib/shopping-list";
@@ -20,6 +20,7 @@ type Props = {
   activeEvent?: EventList | null;
   onSelectEvent?: (id: string | null) => void;
   onCreateEvent?: (name: string) => void;
+  chips?: React.ReactNode;
 };
 
 const host = (url: string) => {
@@ -48,33 +49,17 @@ export function StoreSelector(p: Props) {
   const total = estimateForStore(p.lines, p.active?.name ?? "");
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-4 pt-3 sm:px-6">
-      {/* תפריט נפתח לבחירת חנות או אירוע */}
-      <div className="pb-2">
+    <div className="mx-auto w-full max-w-2xl px-4 pt-1 sm:px-6">
+      {/* בורר אחד: צ'יפים + כפתור "+" ליצירת חנות/אירוע */}
+      <div className="-mx-4 flex items-center gap-1 pb-2 sm:-mx-6">
+        <div className="min-w-0 flex-1">{p.chips}</div>
         <DropdownMenu dir="rtl">
           <DropdownMenuTrigger asChild>
-            <Button type="button" variant="outline" size="sm"><Store />חנויות ואירועים<ChevronDown className="h-4 w-4" /></Button>
+            <Button type="button" variant="outline" size="icon" className="ml-4 h-9 w-9 shrink-0 rounded-full sm:ml-6" aria-label="הוספת חנות או אירוע"><Plus /></Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="max-h-80 w-60 overflow-y-auto text-right">
-            <DropdownMenuLabel className="text-xs text-muted-foreground">רשימות ביתיות</DropdownMenuLabel>
-            <DropdownMenuItem onSelect={() => p.onSelect(null)} className={!p.active && !p.activeEvent ? "font-bold text-primary" : ""}>
-              {!p.active && !p.activeEvent && <Check />}כללי
-            </DropdownMenuItem>
-            {p.stores.map((s) => (
-              <DropdownMenuItem key={s.id} onSelect={() => p.onSelect(s.id)} className={p.active?.id === s.id && !p.activeEvent ? "font-bold text-primary" : ""}>
-                {p.active?.id === s.id && !p.activeEvent && <Check />}{s.name}{s.is_default && <Star className="fill-current" aria-label="סופר הבית" />}
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel className="text-xs text-muted-foreground">רשימות אירוע</DropdownMenuLabel>
-            {p.events?.map((e) => (
-              <DropdownMenuItem key={e.id} onSelect={() => p.onSelectEvent?.(e.id)} className={p.activeEvent?.id === e.id ? "font-bold text-primary" : ""}>
-                {p.activeEvent?.id === e.id && <Check />}🎉 {e.name}
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuItem onSelect={() => setCreatingEvent(true)} className="text-primary"><Plus />אירוע חדש</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => setEditing({ name: "", url: "" })} className="text-primary"><Plus />הוספת חנות</DropdownMenuItem>
+          <DropdownMenuContent align="end" className="w-48 text-right">
+            <DropdownMenuItem onSelect={() => setEditing({ name: "", url: "" })}><Store />הוספת חנות</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setCreatingEvent(true)}><Plus />אירוע חדש</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

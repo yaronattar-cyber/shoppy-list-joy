@@ -30,6 +30,8 @@ type Props = {
   onBack: () => void;
   members: Member[];
   onSetRole: (name: string, role: string) => void;
+  startScreen?: string;
+  onSetStart?: (screen: string) => void;
 };
 
 const box = "rounded-lg border border-border bg-card p-5 shadow-sm";
@@ -49,6 +51,19 @@ export function FamilyScreen(p: Props) {
         <p className="rounded-2xl bg-accent p-3 text-sm font-bold text-accent-foreground">
           הצטרפתם לקבוצה {p.familyId} דרך קישור הזמנה 🎉
         </p>
+      )}
+
+      {/* הגדרה: מסך הפתיחה של האפליקציה */}
+      {p.onSetStart && (
+        <label className={`${box} flex items-center justify-between gap-3`}>
+          <span className="font-bold text-foreground">מסך פתיחה</span>
+          <select value={p.startScreen ?? "home"} onChange={(e) => p.onSetStart?.(e.target.value)} className="h-10 rounded-md border border-input bg-background px-3 text-base outline-none focus:ring-2 focus:ring-ring">
+            <option value="home">בית</option>
+            <option value="list">רשימה</option>
+            <option value="inventory">מלאי</option>
+            <option value="family">משפחה</option>
+          </select>
+        </label>
       )}
 
       <div className={box}>

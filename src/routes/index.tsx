@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Home, ListChecks, Package, Pin, PinOff, Users } from "lucide-react";
+import { Home, ListChecks, Package, Users } from "lucide-react";
 import { toast } from "sonner";
 import type { AddTarget } from "@/components/shopping/TargetPicker";
 import { Button } from "@/components/ui/button";
@@ -50,11 +50,10 @@ function Index() {
   const [screen, setScreen] = useState<Screen>("home");
   const [restored, setRestored] = useState(false);
   const [startScreen, setStartScreen] = useState<Screen>("home");
-  const toggleStart = () => {
-    const next = startScreen === screen ? "home" : screen;
+  const chooseStart = (next: Screen) => {
     localStorage.setItem("start-screen", next);
     setStartScreen(next);
-    toast.success(next === screen ? "המסך נקבע כמסך הפתיחה" : "מסך הפתיחה חזר להיות הבית");
+    toast.success("מסך הפתיחה עודכן");
   };
   // שחזור המסך הפעיל אם הדפדפן רוענן (למשל אחרי פתיחת המצלמה)
   useEffect(() => {
@@ -207,19 +206,6 @@ function Index() {
         </div>
       </nav>
 
-      {/* קביעת המסך הנוכחי כמסך הפתיחה */}
-      <div className="mx-auto flex w-full max-w-2xl justify-end px-4 pt-2 sm:px-6">
-        <Button
-          type="button"
-          size="sm"
-          variant={startScreen === screen ? "default" : "outline"}
-          onClick={toggleStart}
-          className="h-7 rounded-full px-2.5 text-xs font-semibold"
-        >
-          {startScreen === screen ? <Pin className="h-3.5 w-3.5 fill-current" /> : <PinOff className="h-3.5 w-3.5" />}
-          {startScreen === screen ? "מסך פתיחה קבוע" : "קבע כמסך פתיחה"}
-        </Button>
-      </div>
       {screen === "list" && events.active && (
         <EventBar
           familyId={family.familyId}
@@ -228,17 +214,6 @@ function Index() {
           joinedName={events.joinedName}
           onClearJoined={events.clearJoined}
           onClose={(ev) => void events.close(ev)}
-        />
-      )}
-      {screen === "list" && (
-        <StoreChips
-          stores={stores.stores}
-          activeId={stores.activeId}
-          items={list.allActive}
-          onSelect={(id) => { events.select(null); stores.select(id); }}
-          events={events.events}
-          activeEventId={events.activeId}
-          onSelectEvent={events.select}
         />
       )}
       {screen === "list" && (
@@ -253,6 +228,17 @@ function Index() {
           activeEvent={events.active}
           onSelectEvent={events.select}
           onCreateEvent={(n) => void events.create(n)}
+          chips={
+        <StoreChips
+          stores={stores.stores}
+          activeId={stores.activeId}
+          items={list.allActive}
+          onSelect={(id) => { events.select(null); stores.select(id); }}
+          events={events.events}
+          activeEventId={events.activeId}
+          onSelectEvent={events.select}
+        />
+          }
         />
       )}
       {screen === "home" && (
@@ -311,6 +297,8 @@ function Index() {
           onBack={() => setScreen("home")}
           members={fam.members}
           onSetRole={(n, r) => void fam.setRole(n, r)}
+          startScreen={startScreen}
+          onSetStart={(v) => chooseStart(v as Screen)}
         />
       )}
     </main>
