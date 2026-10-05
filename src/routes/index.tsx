@@ -144,7 +144,15 @@ function Index() {
   }, [family.joinedFromLink]);
 
 
-  if (!family.ready || !family.familyId) return <main className="min-h-screen bg-background" />;
+  if (!family.ready || !family.familyId)
+    return (
+      <main className="min-h-screen bg-background p-4 space-y-3" aria-busy="true">
+        <div className="h-8 w-40 rounded-md bg-muted animate-pulse" />
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="h-12 rounded-lg bg-muted animate-pulse" />
+        ))}
+      </main>
+    );
 
   if (!family.userName) {
     return (

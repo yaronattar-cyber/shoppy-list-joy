@@ -39,7 +39,9 @@ export function useFamily() {
       const stored = loadFamilyId();
       const id = fromUrl ?? stored ?? newFamilyCode();
       saveFamilyId(id);
-      await ensureFamily(id);
+      // קישור הזמנה: ממתינים להצטרפות כמו קודם; אחרת מציגים מיד ומצטרפים ברקע
+      if (fromUrl) await ensureFamily(id);
+      else void ensureFamily(id).catch((e) => console.error("ensureFamily", e));
       if (!active) return;
       setFamilyId(id);
       setUserName(loadUserName());
