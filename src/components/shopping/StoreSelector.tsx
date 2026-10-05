@@ -151,13 +151,15 @@ export function StoreSelector(p: Props) {
 
       <Drawer open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DrawerContent dir="rtl">
-          <DrawerHeader className="text-right">
-            <DrawerTitle>{editing?.id ? "עריכת חנות" : "חנות חדשה"}</DrawerTitle>
-            <DrawerDescription>לכל חנות רשימה משלה. כתובת האתר תשמש לחישוב מחירים.</DrawerDescription>
-          </DrawerHeader>
-          {editing && (
-            <form
-              className="space-y-3 px-4 pb-6"
+          {/* מיכל גלילה: מגביל את הגובה ומאפשר לגלול כדי שהכפתורים למטה יישארו נגישים גם כשהמקלדת פתוחה */}
+          <div className="max-h-[80dvh] overflow-y-auto overscroll-contain">
+            <DrawerHeader className="text-right">
+              <DrawerTitle>{editing?.id ? "עריכת חנות" : "חנות חדשה"}</DrawerTitle>
+              <DrawerDescription>לכל חנות רשימה משלה. כתובת האתר תשמש לחישוב מחירים.</DrawerDescription>
+            </DrawerHeader>
+            {editing && (
+              <form
+                className="space-y-3 px-4 pb-6"
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!editing.name.trim()) return;
