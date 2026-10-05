@@ -278,7 +278,7 @@ function Index() {
           onlineOrderWorking={onlineOrders.working}
           onOnlineOrderPlaced={async () => {
             const created = await onlineOrders.createOrder();
-            if (created) await list.refresh();
+            if (created) { await list.refresh(); void pendingOrders.refresh().catch(() => {}); }
             return created;
           }}
           onOnlineOrderReceived={async (orderId) => {

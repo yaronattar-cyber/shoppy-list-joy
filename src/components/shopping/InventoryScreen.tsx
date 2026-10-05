@@ -143,7 +143,7 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
 
       {/* הזמנות אונליין ממתינות — "ההזמנה הגיעה" מעביר למלאי ומסיר את השורה */}
       <Button type="button" variant="outline" aria-expanded={ordersOpen} onClick={() => setOrdersOpen((v) => !v)} className="mt-[8.4px] h-[41px] w-full justify-start border-primary/30 bg-card px-2 text-primary shadow-sm hover:bg-primary/5 hover:text-primary">
-        <span aria-hidden="true">📦</span>הזמנות
+        <span aria-hidden="true">🚚</span>הזמנות בדרך
         {orders.length > 0 && <span className="mr-auto rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{orders.length}</span>}
       </Button>
       {ordersOpen && (
@@ -156,6 +156,7 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
                 <button type="button" aria-expanded={isOpen} onClick={() => setExpandedOrder(isOpen ? null : o.id)} className="flex min-h-10 w-full items-center gap-2 px-3 text-right text-sm">
                   <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
                   <span className="min-w-0 flex-1 truncate font-semibold text-foreground">{storeNames[o.storeId] ?? "חנות"}</span>
+                  <span className="shrink-0 text-muted-foreground">|</span>
                   <span className="shrink-0 text-xs text-muted-foreground">{formatDateTime(o.orderedAt)}</span>
                 </button>
                 {isOpen && (
