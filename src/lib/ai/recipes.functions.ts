@@ -1,12 +1,16 @@
 // הצעת מתכונים לפי המלאי הקיים באמצעות Lovable AI Gateway (צד שרת בלבד)
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { consumeAiQuota, RATE_LIMIT_MSG } from "./rate-limit.server";
 
 export type Recipe = { title: string; time: string; have: string[]; missing: string[]; steps: string[] };
 
 export const suggestRecipes = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ items: z.array(z.string().trim().min(1).max(80)).min(1).max(200) }).parse(d))
-  .handler(async ({ data }): Promise<{ recipes: Recipe[]; error?: string }> => {
+  .handler(async ({ data, context }): Promise<{ recipes: Recipe[]; error?: string }> => {
+    if (!(await consumeAiQuota(context.supabase))) return { recipes: [], error: RATE_LIMIT_MSG };
     const apiKey = process.env['LOVABLE_API_KEY'];
     if (!apiKey) return { recipes: [], error: "שירות ה-AI אינו מוגדר" };
     const { createOpenAI } = await import("@ai-sdk/openai");

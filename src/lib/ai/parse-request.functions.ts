@@ -1,14 +1,18 @@
 // פירוק בקשת קנייה חופשית לפריטים באמצעות Lovable AI Gateway (צד שרת בלבד)
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { consumeAiQuota, RATE_LIMIT_MSG } from "./rate-limit.server";
 
 const UNITS = ["", "יח׳", "ק״ג", "גרם", "ליטר", "חבילה", "בקבוק", "קרטון"];
 
 export type AiItem = { name: string; quantity: number; unit: string };
 
 export const parseShoppingRequest = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ text: z.string().trim().min(1).max(2000) }).parse(d))
-  .handler(async ({ data }): Promise<{ items: AiItem[]; error?: string }> => {
+  .handler(async ({ data, context }): Promise<{ items: AiItem[]; error?: string }> => {
+    if (!(await consumeAiQuota(context.supabase))) return { items: [], error: RATE_LIMIT_MSG };
     const apiKey = process.env['LOVABLE_API_KEY'];
     if (!apiKey) return { items: [], error: "שירות ה-AI אינו מוגדר" };
     const { createOpenAI } = await import("@ai-sdk/openai");
