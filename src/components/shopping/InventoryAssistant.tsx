@@ -15,9 +15,9 @@ const CHIPS = ["מה אפשר לבשל?", "כמה קמח יש?", "מוצרים �
 type Phase = "idle" | "listening" | "processing" | "speaking";
 const PHASE_LABEL: Record<Phase, string> = { idle: "לחצו על המיקרופון ודברו", listening: "מקשיב...", processing: "מעבד...", speaking: "מדבר..." };
 
-type Props = { open: boolean; onOpenChange: (o: boolean) => void; items: ShoppingItem[] };
+type Props = { open: boolean; onOpenChange: (o: boolean) => void; items: ShoppingItem[]; onItemFound?: (itemId: string) => void };
 
-export function InventoryAssistant({ open, onOpenChange, items }: Props) {
+export function InventoryAssistant({ open, onOpenChange, items, onItemFound }: Props) {
   const ask = useServerFn(askInventoryAssistant);
   const { speak } = useSpeech();
   const [heard, setHeard] = useState("");
@@ -48,6 +48,12 @@ export function InventoryAssistant({ open, onOpenChange, items }: Props) {
     setAnswer(text);
     speak(text);
     setSpeaking(true);
+    // אם השאלה מתייחסת למוצר קיים — מפנים למיקומו במלאי אחרי שהתשובה מתחילה
+    const match = items.find((i) => i.name.length > 1 && question.includes(i.name))
+      ?? items.find((i) => i.name.length > 1 && i.name.includes(question));
+    if (match && onItemFound) {
+      window.setTimeout(() => onItemFound(match.id), 1500);
+    }
   };
 
   const stt = useSpeechToText((t) => void send(t), (t) => setHeard(t));

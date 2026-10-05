@@ -71,6 +71,19 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
   const [ordersOpen, setOrdersOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [recipesOpen, setRecipesOpen] = useState(false);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+  // העוזרת מצאה מוצר: סוגרים את החלונית, פותחים את הקטגוריה, גוללים ומדגישים
+  const focusItem = (id: string) => {
+    const item = items.find((i) => i.id === id);
+    if (!item) return;
+    setAssistantOpen(false);
+    setOpen((o) => ({ ...o, [inventoryCategoryOf(item.name, item.category)]: true }));
+    setHighlightId(id);
+    window.setTimeout(() => {
+      document.querySelector(`[data-inv-item="${id}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 350);
+    window.setTimeout(() => setHighlightId(null), 3200);
+  };
   // הטאב הפעיל הוא תמיד מה שבאמת פתוח — נקי אוטומטי כשחלונית נסגרת
   const activeTab = addingMeal ? "meal" : recipesOpen ? "recipes" : addingProducts ? "products" : ordersOpen ? "orders" : null;
   // טאב אחד פתוח בכל רגע
@@ -227,7 +240,7 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
                     const st = STOCK_STATUS.find((x) => x.id === (item.stockStatus ?? "full")) ?? STOCK_STATUS[0];
                     const dl = daysLeft(item.expiryDate);
                     return (
-                      <li key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 border-b border-border px-3 py-2.5 last:border-b-0">
+                      <li key={item.id} data-inv-item={item.id} className={cn("grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 border-b border-border px-3 py-2.5 last:border-b-0 transition-colors", highlightId === item.id && "animate-pulse bg-primary/15 ring-1 ring-inset ring-primary")}>
                         <button type="button" onClick={() => openItem(item)} className="min-w-0 text-right">
                           <span className="flex items-center gap-2"><span className={`h-2.5 w-2.5 shrink-0 rounded-full ${st.dot}`} title={st.label} /><span className="break-words text-base font-semibold leading-6 text-foreground">{item.name}</span></span>
                           <span className="block text-xs text-muted-foreground">{st.label}{dl !== null && <span className={dl <= 2 ? " font-semibold text-destructive" : ""}> · {dl < 0 ? "פג תוקף" : dl === 0 ? "פג היום" : `תפוגה בעוד ${dl} ימים`}</span>}</span>
@@ -253,7 +266,7 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
       </Button>
 
 
-      <InventoryAssistant open={assistantOpen} onOpenChange={setAssistantOpen} items={items} />
+      <InventoryAssistant open={assistantOpen} onOpenChange={setAssistantOpen} items={items} onItemFound={focusItem} />
 
       <Drawer open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DrawerContent dir="rtl" className="mx-auto max-w-xl rounded-t-2xl border-border bg-card">
