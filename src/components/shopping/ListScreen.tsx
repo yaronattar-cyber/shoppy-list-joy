@@ -89,7 +89,7 @@ export function ListScreen(p: Props) {
   const rows = (list: ShoppingItem[]) => list.map((item) => <ShoppingItemRow key={item.id} item={item} storeLabel={tag(item)} storeTone={general ? storeTone(p.stores ?? [], item.storeId) : undefined} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />);
   const placeOnlineOrder = async () => {
     try {
-      if (await p.onOnlineOrderPlaced?.()) toast.success("ההזמנה נשמרה בהיסטוריה");
+      if (await p.onOnlineOrderPlaced?.()) toast.success("ההזמנה הועברה להזמנות בדרך במלאי");
     } catch {
       toast.error("לא הצלחנו לעדכן את ההזמנה");
     }
@@ -145,7 +145,7 @@ export function ListScreen(p: Props) {
 
       {onlineOnly && (
         <Button type="button" className="mt-2 h-9 w-full" disabled={!done.length || p.onlineOrderWorking} onClick={() => void placeOnlineOrder()}>
-          <PackageCheck className="h-4 w-4" />עדכן שההזמנה בוצעה{done.length ? ` (${done.length})` : ""}
+          <PackageCheck className="h-4 w-4" />הזמנה בוצעה - העבר להזמנות במלאי{done.length ? ` (${done.length})` : ""}
         </Button>
       )}
 
