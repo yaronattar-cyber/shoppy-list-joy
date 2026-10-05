@@ -20,6 +20,7 @@ import {
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { formatQuantity } from "@/lib/quantity";
 import { formatDateTime, type ShoppingItem } from "@/lib/shopping-list";
+import type { OnlineOrder } from "@/hooks/useOnlineOrders";
 
 type Props = {
   items: ShoppingItem[];
@@ -29,6 +30,10 @@ type Props = {
   onAddMissing: (names: string[]) => void;
   onUpdate: (id: string, d: { expiryDate: string | null; stockStatus: string; quantity: number; unit: string; category: string }) => void;
   onAddToInventory: (name: string, category: string) => boolean;
+  orders?: OnlineOrder[];
+  storeNames?: Record<string, string>;
+  orderWorking?: boolean;
+  onOrderReceived?: (orderId: string) => Promise<number>;
 };
 
 const daysLeft = (d?: string | null) => (d ? Math.ceil((new Date(d).getTime() - Date.now()) / 86400000) : null);
@@ -36,7 +41,7 @@ const daysLeft = (d?: string | null) => (d ? Math.ceil((new Date(d).getTime() - 
 const splitItems = (s: string) => s.split(/[,،\n]+/).map((x) => x.trim()).filter(Boolean);
 
 // מסך מלאי — מוצרים שנקנו; מחיקה שואלת אם להחזיר לרשימת הקניות
-export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal, onUpdate, onAddMissing, onAddToInventory }: Props) {
+export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal, onUpdate, onAddMissing, onAddToInventory, orders = [], storeNames = {}, orderWorking, onOrderReceived }: Props) {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [editing, setEditing] = useState<ShoppingItem | null>(null);
   const [draft, setDraft] = useState({ expiryDate: "", stockStatus: "full", quantity: 1, unit: "", category: "other" });
@@ -54,6 +59,12 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
   const [text, setText] = useState("");
   const [scanning, setScanning] = useState(false);
   const [addingProducts, setAddingProducts] = useState(false); // אקורדיון "הוספת מוצר/ים" סגור כברירת מחדל
+  const [ordersOpen, setOrdersOpen] = useState(false);
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const receive = async (id: string) => {
+    try { const n = await onOrderReceived?.(id); if (n) toast.success(`${n} מוצרים הועברו למלאי`); }
+    catch { toast.error("לא הצלחנו להעביר את ההזמנה למלאי"); }
+  };
   const [drafts, setDrafts] = useState<{ name: string; category: string }[]>([]);
 
   const appendText = (s: string) => setText((t) => (t.trim() ? `${t.trim()}\n${s}` : s));
@@ -129,6 +140,44 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
       <div className="mt-[8.4px] [&>button]:h-[41px] [&>button]:mt-0 [&>button]:px-2">
         <RecipesDrawer names={items.map((i) => i.name)} onAddMissing={onAddMissing} />
       </div>
+
+      {/* הזמנות אונליין ממתינות — "ההזמנה הגיעה" מעביר למלאי ומסיר את השורה */}
+      <Button type="button" variant="outline" aria-expanded={ordersOpen} onClick={() => setOrdersOpen((v) => !v)} className="mt-[8.4px] h-[41px] w-full justify-start border-primary/30 bg-card px-2 text-primary shadow-sm hover:bg-primary/5 hover:text-primary">
+        <span aria-hidden="true">📦</span>הזמנות
+        {orders.length > 0 && <span className="mr-auto rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{orders.length}</span>}
+      </Button>
+      {ordersOpen && (
+        <div className="mt-2 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+          {!orders.length && <p className="p-3 text-center text-sm text-muted-foreground">אין הזמנות ממתינות</p>}
+          {orders.map((o) => {
+            const isOpen = expandedOrder === o.id;
+            return (
+              <div key={o.id} className="border-b border-border last:border-0">
+                <button type="button" aria-expanded={isOpen} onClick={() => setExpandedOrder(isOpen ? null : o.id)} className="flex min-h-10 w-full items-center gap-2 px-3 text-right text-sm">
+                  <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+                  <span className="min-w-0 flex-1 truncate font-semibold text-foreground">{storeNames[o.storeId] ?? "חנות"}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground">{formatDateTime(o.orderedAt)}</span>
+                </button>
+                {isOpen && (
+                  <div className="border-t border-border bg-muted/40 px-3 py-1.5">
+                    <ul>
+                      {o.items.map((it) => (
+                        <li key={it.id} className="flex items-center justify-between gap-2 py-1 text-sm">
+                          <span className="min-w-0 truncate">{it.name}</span>
+                          <span className="shrink-0 text-xs text-muted-foreground">{it.quantity}{it.unit ? ` ${it.unit}` : ""}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <Button type="button" size="sm" className="mt-1.5 w-full" disabled={orderWorking} onClick={() => void receive(o.id)}>
+                      <span aria-hidden="true">📦</span>ההזמנה הגיעה
+                    </Button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
 
       <div className="mt-4 space-y-3">

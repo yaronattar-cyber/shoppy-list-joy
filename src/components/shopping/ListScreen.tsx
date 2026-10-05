@@ -15,7 +15,6 @@ import { HistorySuggestions } from "./HistorySuggestions";
 import { matchHistory, type HistoryEntry } from "@/lib/product-history";
 import { basketTotals, formatDistance, formatPrice, STORE_DISTANCES } from "@/lib/prices";
 import { parsePastedList, type ShoppingItem } from "@/lib/shopping-list";
-import { formatDateTime } from "@/lib/shopping-list";
 import type { OnlineOrder } from "@/hooks/useOnlineOrders";
 import { toast } from "sonner";
 
@@ -62,7 +61,6 @@ export function ListScreen(p: Props) {
   const [showDone, setShowDone] = useState(true);
   const [awake, setAwake] = useState(false);
   const [grouped, setGrouped] = useState(false);
-  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [canWake, setCanWake] = useState(false);
   const onlineOnly = !!p.activeStore?.isOnlineOnly;
   useEffect(() => setCanWake(wakeLockSupported()), []);
@@ -94,14 +92,6 @@ export function ListScreen(p: Props) {
       if (await p.onOnlineOrderPlaced?.()) toast.success("ההזמנה נשמרה בהיסטוריה");
     } catch {
       toast.error("לא הצלחנו לעדכן את ההזמנה");
-    }
-  };
-  const receiveOnlineOrder = async (orderId: string) => {
-    try {
-      const count = await p.onOnlineOrderReceived?.(orderId);
-      if (count) toast.success(`${count} מוצרים הועברו למלאי`);
-    } catch {
-      toast.error("לא הצלחנו להעביר את ההזמנה למלאי");
     }
   };
 
