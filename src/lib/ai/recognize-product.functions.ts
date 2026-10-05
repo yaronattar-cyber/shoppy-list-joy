@@ -1,12 +1,17 @@
 // זיהוי שם מוצר מתמונה באמצעות Lovable AI Gateway (צד שרת בלבד)
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { consumeAiQuota, RATE_LIMIT_MSG } from "./rate-limit.server";
 
 export const recognizeProduct = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d) =>
-    z.object({ image: z.string().startsWith("data:image/").max(4_000_000) }).parse(d),
+    z.object({ image: z.string().startsWith("data:image/").max(8_000_000) }).parse(d),
   )
-  .handler(async ({ data }): Promise<{ name: string; error?: string }> => {
+  .handler(async ({ data, context }): Promise<{ name: string; error?: string }> => {
+    if (data.image.length > 1_500_000) return { name: "", error: "התמונה גדולה מדי (מעל 1.5MB), נסו לצלם שוב ברזולוציה נמוכה יותר" };
+    if (!(await consumeAiQuota(context.supabase))) return { name: "", error: RATE_LIMIT_MSG };
     const apiKey = process.env["LOVABLE_API_KEY"];
     if (!apiKey) return { name: "", error: "שירות ה-AI אינו מוגדר" };
     const { createOpenAI } = await import("@ai-sdk/openai");

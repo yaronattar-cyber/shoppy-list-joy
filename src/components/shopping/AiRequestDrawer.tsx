@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { parseShoppingRequest, type AiItem } from "@/lib/ai/parse-request.functions";
 import { formatQuantity, toEntryText } from "@/lib/quantity";
@@ -21,7 +22,7 @@ export function AiRequestDrawer({ open, onOpenChange, storeName, onAddMany }: Pr
     setBusy(true); setError("");
     try {
       const res = await parse({ data: { text } });
-      if (res.error) setError(res.error);
+      if (res.error) { setError(res.error); toast.error(res.error); }
       else if (!res.items.length) setError("לא זוהו מוצרים בבקשה");
       else setItems(res.items);
     } catch { setError("אין חיבור לשרת, נסו שוב"); }
