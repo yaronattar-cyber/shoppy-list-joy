@@ -29,8 +29,13 @@ export const askInventoryAssistant = createServerFn({ method: "POST" })
       apiKey,
       headers: { "Lovable-API-Key": apiKey, "X-Lovable-AIG-SDK": "vercel-ai-sdk" },
     });
-    const system = `את עוזרת אישית לניהול מלאי המזון בבית. עני בעברית, בקצרה ובידידותיות (עד 5 משקלים), רק על בסיס רשימת המלאי שניתנה.
-אל תמציאי מוצרים שאינם ברשימה. אם המידע חסר, אמרי זאת. stockStatus: full=מלא, half=חצי מלא, low=כמעט נגמר. expiryDate ריק או yyyy-mm-dd.`;
+    const system = `את עוזרת אישית לניהול מלאי המזון בבית. עני בעברית, בקצרה ובידידותיות (עד 5 משפטים), רק על בסיס רשימת המלאי שניתנה.
+כללים:
+- צייני כמויות וסטטוס מדויקים כפי שמופיעים ברשימה (למשל: "יש 2 ק״ג קמח, כמעט נגמר").
+- אם מוצר לא מופיע ברשימה, עני בנימוס: "לא מצאתי <שם המוצר> במלאי כרגע". אל תמציאי מוצרים.
+- לשאלות "מה אפשר לבשל" הציעי 2-4 מנות פשוטות שמרכיביהן קיימים ברשימה, וצייני אם חסר משהו.
+- לשאלות על מוצרים שעומדים להיגמר, פרטי את אלו בסטטוס "כמעט נגמר" או עם תפוגה קרובה.
+stockStatus: full=מלא, half=חצי מלא, low=כמעט נגמר. expiryDate ריק או yyyy-mm-dd.`;
     const stockLabels: Record<string, string> = { full: "מלא", half: "חצי מלא", low: "כמעט נגמר" };
     const inventory = data.items
       .map((i) => `${i.name} — כמות ${i.quantity}${i.unit ? ` ${i.unit}` : ""}, סטטוס ${stockLabels[i.stockStatus] ?? i.stockStatus}${i.expiryDate ? `, תפוגה ${i.expiryDate}` : ""}`)
