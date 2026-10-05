@@ -2,3 +2,5 @@
 - [x] Add shared item editing sheet with notes and category persistence
 - [x] Move store comparison to List with sortable details sheet
 - [x] Validate responsive layouts and interactions
+- [ ] Add persistent online order history for online-only stores
+- [ ] Move received online orders into inventory and verify the flow
