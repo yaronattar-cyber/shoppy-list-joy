@@ -27,7 +27,7 @@ export function newFamilyCode(): string {
   crypto.getRandomValues(bytes);
   let out = "";
   for (let i = 0; i < 8; i++) {
-    out += alphabet[bytes[i] % alphabet.length];
+    out += alphabet[bytes[i]! % alphabet.length];
   }
   return out;
 }

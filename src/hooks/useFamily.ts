@@ -19,7 +19,7 @@ async function ensureSession() {
 // יוצר את המשפחה אם צריך ורושם את המשתמש כחבר בה (גם למשפחות קיימות — מעבר ללא איבוד נתונים)
 async function ensureFamily(id: string, name?: string) {
   await ensureSession();
-  const { error } = await supabase.rpc("join_family", name ? { _id: id, _name: name } : { _id: id });
+  const { error } = await supabase.rpc("join_family", { _id: id, _name: name ?? "" });
   if (error) console.error("ensureFamily", error);
 }
 
