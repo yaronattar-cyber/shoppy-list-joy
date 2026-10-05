@@ -145,7 +145,7 @@ export function ListScreen(p: Props) {
         {cheapest && nearest && todo.some((i) => !i.outOfStock) && (
           <Button type="button" variant="outline" onClick={() => setPricesOpen(true)} className="h-auto w-full justify-start whitespace-normal rounded-full border-border bg-card px-4 py-2.5 text-right shadow-lg">
             <Tag className="h-4 w-4 shrink-0 text-primary" />
-            <span className="min-w-0 flex-1 text-sm"><strong>סל זול: {cheapest.store} (₪{formatPrice(cheapest.total)})</strong><span className="text-muted-foreground"> · קרוב: {nearest.store} ({formatDistance(STORE_DISTANCES[nearest.store])})</span></span>
+            <span className="min-w-0 flex-1 text-sm"><strong>סל זול: {cheapest.store} (₪{formatPrice(cheapest.total)})</strong><span className="text-muted-foreground"> · הערכה בלבד · קרוב: {nearest.store} ({formatDistance(STORE_DISTANCES[nearest.store])})</span></span>
           </Button>
         )}
         <Button type="button" className="w-full" disabled={!doneCount} onClick={p.onArchive}><Archive />ניקוי פריטים שנקנו{doneCount ? ` (${doneCount})` : ""}</Button>
@@ -165,10 +165,10 @@ export function ListScreen(p: Props) {
 
       <Drawer open={pricesOpen} onOpenChange={setPricesOpen}>
         <DrawerContent dir="rtl" className="mx-auto max-w-xl rounded-t-2xl bg-card">
-          <DrawerHeader className="text-right sm:text-right"><DrawerTitle>השוואת סל</DrawerTitle><DrawerDescription>מחירים ומרחקים משוערים בלבד.</DrawerDescription></DrawerHeader>
+          <DrawerHeader className="text-right sm:text-right"><DrawerTitle>השוואת סל</DrawerTitle><DrawerDescription>המחירים משוערים ואינם מתעדכנים מהרשתות.</DrawerDescription></DrawerHeader>
           <div className="px-4 pb-6">
             <div className="mb-3 grid grid-cols-2 rounded-md bg-muted p-1"><Button type="button" size="sm" variant={sort === "price" ? "default" : "ghost"} onClick={() => setSort("price")}>לפי מחיר</Button><Button type="button" size="sm" variant={sort === "distance" ? "default" : "ghost"} onClick={() => setSort("distance")}>לפי מרחק</Button></div>
-            <ul className="overflow-hidden rounded-lg border border-border">{sortedTotals.map((total, index) => <li key={total.store} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-3 py-3 last:border-0"><span className="grid h-7 w-7 place-items-center rounded-full bg-muted text-xs font-semibold">{index + 1}</span><span className="font-semibold">{total.store}<small className="block font-normal text-muted-foreground">{formatDistance(STORE_DISTANCES[total.store])}</small></span><strong>₪{formatPrice(total.total)}</strong></li>)}</ul>
+            <ul className="overflow-hidden rounded-lg border border-border">{sortedTotals.map((total, index) => <li key={total.store} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-3 py-3 last:border-0"><span className="grid h-7 w-7 place-items-center rounded-full bg-muted text-xs font-semibold">{index + 1}</span><span className="font-semibold">{total.store}<small className="block font-normal text-muted-foreground">{formatDistance(STORE_DISTANCES[total.store])}</small></span><strong className="text-left">₪{formatPrice(total.total)}<small className="block text-[10px] font-normal text-muted-foreground">הערכה בלבד</small></strong></li>)}</ul>
           </div>
         </DrawerContent>
       </Drawer>
