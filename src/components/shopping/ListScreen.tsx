@@ -192,43 +192,6 @@ export function ListScreen(p: Props) {
 
       {!p.items.length && <div className="mt-10 text-center text-muted-foreground"><ShoppingCart className="mx-auto mb-2 h-8 w-8 opacity-40" /><p className="text-sm">הוסיפו מוצר ראשון למעלה</p></div>}
 
-      {onlineOnly && !!p.onlineOrders?.length && (
-        <section className="mt-5 border-t border-border pt-3">
-          <h2 className="mb-2 text-sm font-semibold text-foreground">היסטוריית הזמנות</h2>
-          <ul className="overflow-hidden rounded-md border border-border bg-card">
-            {p.onlineOrders.map((order) => {
-              const open = expandedOrder === order.id;
-              const received = order.status === "received";
-              return (
-                <li key={order.id} className="border-b border-border last:border-0">
-                  <div className="flex min-h-10 items-center gap-1 px-2">
-                    <Button type="button" variant="ghost" className="h-9 min-w-0 flex-1 justify-start px-1 text-xs" aria-expanded={open} onClick={() => setExpandedOrder(open ? null : order.id)}>
-                      <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />
-                      <span className="truncate">הזמנה מ־{formatDateTime(order.orderedAt)}</span>
-                      {received && <span className="ms-auto shrink-0 text-muted-foreground">במלאי</span>}
-                    </Button>
-                    {!received && (
-                      <Button type="button" variant="ghost" size="icon" className="h-9 w-9 shrink-0" disabled={p.onlineOrderWorking} title="ההזמנה הגיעה" aria-label="ההזמנה הגיעה" onClick={() => void receiveOnlineOrder(order.id)}>
-                        <span aria-hidden="true">📦</span>
-                      </Button>
-                    )}
-                  </div>
-                  {open && (
-                    <ul className="border-t border-border bg-muted/40 px-3 py-1.5">
-                      {order.items.map((item) => (
-                        <li key={item.id} className="flex items-center justify-between gap-2 py-1 text-xs">
-                          <span className="min-w-0 truncate">{item.name}</span>
-                          <span className="shrink-0 text-muted-foreground">{item.quantity}{item.unit ? ` ${item.unit}` : ""}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
 
       {/* סל מוזל: שורה רזה אחת עם אייקון, ולצידה פעולת ניקוי */}
       <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 mx-auto max-w-2xl space-y-1.5 px-3 sm:px-6">

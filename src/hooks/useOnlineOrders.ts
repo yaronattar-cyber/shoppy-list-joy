@@ -12,6 +12,7 @@ export type OnlineOrderItem = {
 
 export type OnlineOrder = {
   id: string;
+  storeId: string;
   orderedAt: string;
   status: "pending" | "received";
   receivedAt: string | null;
@@ -20,6 +21,7 @@ export type OnlineOrder = {
 
 type OrderRow = {
   id: string;
+  store_id: string;
   ordered_at: string;
   status: string;
   received_at: string | null;
@@ -49,6 +51,7 @@ function readCache(key: string): OnlineOrder[] {
 function mapOrder(row: OrderRow): OnlineOrder {
   return {
     id: row.id,
+    storeId: row.store_id,
     orderedAt: row.ordered_at,
     status: row.status === "received" ? "received" : "pending",
     receivedAt: row.received_at,
@@ -65,12 +68,13 @@ export function useOnlineOrders(familyId: string | null, storeId: string | null)
       setOrders([]);
       return;
     }
-    const { data, error } = await supabase
+    // storeId "*" = כל ההזמנות הממתינות של המשפחה (למסך המלאי)
+    let q = supabase
       .from("online_orders")
-      .select("id,ordered_at,status,received_at,online_order_items(id,name,quantity,unit,notes,category)")
-      .eq("family_id", familyId)
-      .eq("store_id", storeId)
-      .order("ordered_at", { ascending: false });
+      .select("id,store_id,ordered_at,status,received_at,online_order_items(id,name,quantity,unit,notes,category)")
+      .eq("family_id", familyId);
+    q = storeId === "*" ? q.eq("status", "pending") : q.eq("store_id", storeId);
+    const { data, error } = await q.order("ordered_at", { ascending: false });
     if (error) throw error;
     const next = ((data ?? []) as OrderRow[]).map(mapOrder);
     setOrders(next);
@@ -86,7 +90,7 @@ export function useOnlineOrders(familyId: string | null, storeId: string | null)
     void refresh().catch(() => {});
     const channel = supabase
       .channel(`online-orders-${storeId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "online_orders", filter: `store_id=eq.${storeId}` }, () => void refresh())
+      .on("postgres_changes", { event: "*", schema: "public", table: "online_orders", filter: storeId === "*" ? `family_id=eq.${familyId}` : `store_id=eq.${storeId}` }, () => void refresh())
       .on("postgres_changes", { event: "*", schema: "public", table: "online_order_items" }, () => void refresh())
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
