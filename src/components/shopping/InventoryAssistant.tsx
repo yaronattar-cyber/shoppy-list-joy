@@ -1,68 +1,100 @@
-// חלונית "עוזרת אישית למלאי": צ'אט עם שאלות מהירות על המלאי
-import { useEffect, useRef, useState } from "react";
+// חלונית "עוזרת אישית למלאי": ממשק קולי עם אפשרות הקלדה
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Bot, Loader2, Send } from "lucide-react";
+import { Bot, Keyboard, Mic, Send } from "lucide-react";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { askInventoryAssistant } from "@/lib/ai/inventory-assistant.functions";
+import { useSpeech } from "@/hooks/useSpeech";
+import { useSpeechToText } from "@/hooks/useSpeechToText";
 import type { ShoppingItem } from "@/lib/shopping-list";
 import { cn } from "@/lib/utils";
 
-type Msg = { role: "user" | "assistant"; text: string };
-const WELCOME: Msg = { role: "assistant", text: "שלום! במה אוכל לעזור לך במלאי היום?" };
+const WELCOME = "שלום! במה אוכל לעזור לך במלאי היום?";
 const CHIPS = ["מה אפשר לבשל?", "כמה קמח יש?", "מוצרים שעומדים להיגמר"];
+type Phase = "idle" | "listening" | "processing" | "speaking";
+const PHASE_LABEL: Record<Phase, string> = { idle: "לחצו על המיקרופון ודברו", listening: "מקשיב...", processing: "מעבד...", speaking: "מדבר..." };
 
 type Props = { open: boolean; onOpenChange: (o: boolean) => void; items: ShoppingItem[] };
 
 export function InventoryAssistant({ open, onOpenChange, items }: Props) {
   const ask = useServerFn(askInventoryAssistant);
-  const [msgs, setMsgs] = useState<Msg[]>([WELCOME]);
-  const [input, setInput] = useState("");
+  const { speak } = useSpeech();
+  const [heard, setHeard] = useState("");
+  const [answer, setAnswer] = useState(WELCOME);
   const [busy, setBusy] = useState(false);
-  const endRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [msgs, busy]);
+  const [speaking, setSpeaking] = useState(false);
+  const [typing, setTyping] = useState(false);
+  const [input, setInput] = useState("");
 
   const send = async (q: string) => {
     const question = q.trim();
     if (!question || busy) return;
     setInput("");
-    setMsgs((m) => [...m, { role: "user", text: question }]);
+    setHeard(question);
     setBusy(true);
+    let text = "";
     try {
       const res = await ask({ data: {
         question,
         items: items.slice(0, 200).map((i) => ({ name: i.name, quantity: i.quantity, unit: i.unit ?? "", stockStatus: i.stockStatus ?? "full", expiryDate: i.expiryDate ?? "" })),
       } });
-      setMsgs((m) => [...m, { role: "assistant", text: res.answer || res.error || "לא קיבלתי תשובה, נסו שוב" }]);
+      text = res.answer || res.error || "לא קיבלתי תשובה, נסו שוב";
     } catch {
-      setMsgs((m) => [...m, { role: "assistant", text: "אין חיבור לשרת, נסו שוב" }]);
+      text = "אין חיבור לשרת, נסו שוב";
     } finally {
       setBusy(false);
     }
+    setAnswer(text);
+    speak(text);
+    setSpeaking(true);
+  };
+
+  const stt = useSpeechToText((t) => void send(t), (t) => setHeard(t));
+
+  // מעקב אחר סיום ההקראה
+  useEffect(() => {
+    if (!speaking) return;
+    const id = window.setInterval(() => {
+      if (!window.speechSynthesis?.speaking) setSpeaking(false);
+    }, 300);
+    return () => window.clearInterval(id);
+  }, [speaking]);
+
+  const phase: Phase = stt.listening ? "listening" : busy ? "processing" : speaking ? "speaking" : "idle";
+
+  const toggleMic = () => {
+    if (busy) return;
+    try { window.speechSynthesis?.cancel(); } catch { /* noop */ }
+    setSpeaking(false);
+    if (!stt.listening) setHeard("");
+    stt.start();
+  };
+
+  const reset = () => {
+    try { window.speechSynthesis?.cancel(); } catch { /* noop */ }
+    setHeard(""); setAnswer(WELCOME); setSpeaking(false); setTyping(false); setInput("");
   };
 
   return (
-    <Drawer open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) setMsgs([WELCOME]); }}>
-      <DrawerContent dir="rtl" className="mx-auto flex max-w-xl flex-col rounded-t-2xl border-border bg-card">
-        <DrawerHeader className="text-right sm:text-right">
+    <Drawer open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) reset(); }}>
+      <DrawerContent dir="rtl" className="mx-auto flex h-[82dvh] max-w-xl flex-col rounded-t-2xl border-border bg-card">
+        <DrawerHeader className="pb-1 text-right sm:text-right">
           <DrawerTitle className="flex items-center gap-2 text-xl"><Bot className="h-5 w-5 text-primary" />עוזרת אישית למלאי</DrawerTitle>
-          <DrawerDescription>שאלי כל דבר על המלאי שבבית — כמויות, מתכונים ומה שכמעט נגמר.</DrawerDescription>
+          <DrawerDescription>שאלו בקול על כמויות, מתכונים ומה שכמעט נגמר.</DrawerDescription>
         </DrawerHeader>
-        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4" style={{ maxHeight: "48vh" }}>
-          {msgs.map((m, i) => (
-            <div key={i} className={cn("flex", m.role === "user" ? "justify-start" : "justify-end")}>
-              <p className={cn(
-                "max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm leading-6",
-                m.role === "user" ? "rounded-bl-sm bg-muted text-foreground" : "rounded-br-sm bg-primary/10 text-foreground",
-              )}>{m.text}</p>
-            </div>
-          ))}
-          {busy && <p className="flex items-center justify-end gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />חושבת...</p>}
-          <div ref={endRef} />
+
+        <div className="flex min-h-0 flex-1 flex-col items-center gap-4 overflow-y-auto px-5 pt-2 text-center">
+          <p className={cn("text-2xl font-bold transition-colors", phase === "idle" ? "text-muted-foreground" : "text-primary")} aria-live="polite">
+            {PHASE_LABEL[phase]}
+          </p>
+          {heard && <p className="text-base italic leading-7 text-muted-foreground">״{heard}״</p>}
+          <p className="whitespace-pre-wrap text-xl font-medium leading-9 text-foreground">{answer}</p>
+          {stt.error && <p className="text-sm text-destructive">{stt.error}</p>}
         </div>
-        <div className="px-4 pb-2 pt-3">
-          <div className="mb-2 flex flex-wrap gap-1.5">
+
+        <div className="space-y-3 px-4 pb-6 pt-3">
+          <div className="flex flex-wrap justify-center gap-1.5">
             {CHIPS.map((c) => (
               <button key={c} type="button" disabled={busy} onClick={() => void send(c)}
                 className="rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/10 disabled:opacity-50">
@@ -70,13 +102,36 @@ export function InventoryAssistant({ open, onOpenChange, items }: Props) {
               </button>
             ))}
           </div>
-          <form onSubmit={(e) => { e.preventDefault(); void send(input); }} className="flex items-center gap-2">
-            <input value={input} onChange={(e) => setInput(e.target.value)} maxLength={500} placeholder="שאל/י אותי משהו על המלאי..."
-              className="h-11 min-w-0 flex-1 rounded-full border border-input bg-background px-4 text-base text-foreground outline-none focus:ring-2 focus:ring-ring" />
-            <Button type="submit" size="icon" className="h-11 w-11 shrink-0 rounded-full" disabled={busy || !input.trim()} aria-label="שליחה">
-              <Send className="h-4 w-4" />
-            </Button>
-          </form>
+
+          <div className="relative flex items-center justify-center py-2">
+            {phase === "listening" && (
+              <>
+                <span className="absolute h-20 w-20 animate-ping rounded-full bg-primary/30" />
+                <span className="absolute h-28 w-28 animate-pulse rounded-full bg-primary/10" />
+              </>
+            )}
+            <button type="button" onClick={toggleMic} disabled={busy} aria-label={stt.listening ? "עצירת הקשבה" : "התחלת הקשבה"}
+              className={cn(
+                "relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-lg ring-4 ring-primary/20 transition-transform active:scale-95 disabled:opacity-60",
+                phase === "processing" && "animate-pulse",
+              )}>
+              <Mic className="h-9 w-9" />
+            </button>
+            <button type="button" onClick={() => setTyping((t) => !t)} aria-label="הקלדה"
+              className={cn("absolute left-2 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition-colors", typing && "border-primary text-primary")}>
+              <Keyboard className="h-4 w-4" />
+            </button>
+          </div>
+
+          {typing && (
+            <form onSubmit={(e) => { e.preventDefault(); void send(input); }} className="flex items-center gap-2">
+              <input autoFocus value={input} onChange={(e) => setInput(e.target.value)} maxLength={500} placeholder="שאל/י אותי משהו על המלאי..."
+                className="h-11 min-w-0 flex-1 rounded-full border border-input bg-background px-4 text-base text-foreground outline-none focus:ring-2 focus:ring-ring" />
+              <Button type="submit" size="icon" className="h-11 w-11 shrink-0 rounded-full" disabled={busy || !input.trim()} aria-label="שליחה">
+                <Send className="h-4 w-4" />
+              </Button>
+            </form>
+          )}
         </div>
       </DrawerContent>
     </Drawer>
