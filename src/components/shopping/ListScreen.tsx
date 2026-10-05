@@ -1,6 +1,7 @@
 import { PhotoProductButton } from "./PhotoProductButton";
+import { FullScreenShopping } from "./FullScreenShopping";
 import { useEffect, useMemo, useState } from "react";
-import { Archive, CheckCheck, ChevronDown, ClipboardList, Eye, Layers, ListPlus, PartyPopper, Send, Share2, ShoppingCart, SlidersHorizontal, Sun, Tag, Wand2 } from "lucide-react";
+import { Archive, CheckCheck, ChevronDown, ClipboardList, Eye, Layers, ListPlus, Maximize2, PartyPopper, Send, Share2, ShoppingCart, SlidersHorizontal, Sun, Tag, Wand2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { atStoreText, groupByCategory, listAsText, openWhatsApp, setWakeLock, wakeLockSupported } from "@/lib/shopping-tools";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,8 @@ export function ListScreen(p: Props) {
   const [importOpen, setImportOpen] = useState(false);
   const [pricesOpen, setPricesOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
+  // מצב "אני בסופר": קניות במסך מלא
+  const [fullScreen, setFullScreen] = useState(false);
   const [pasted, setPasted] = useState("");
   const [showDone, setShowDone] = useState(true);
   const [awake, setAwake] = useState(false);
@@ -75,7 +78,11 @@ export function ListScreen(p: Props) {
   return (
     <section className="mx-auto w-full max-w-2xl px-4 pb-44 pt-1 sm:px-6">
       <TargetPicker name={picking} targets={p.targets ?? []} onCancel={() => setPicking(null)} onPick={(t) => { const n = picking ?? ""; setPicking(null); if (p.onAddTo?.(n, t)) setQuick(""); }} />
-      <h1 className="pt-2 text-xl font-bold text-foreground">רשימת קניות</h1>
+      <div className="flex items-center justify-between gap-2 pt-2">
+        <h1 className="min-w-0 truncate text-xl font-bold text-foreground">רשימת קניות</h1>
+        {/* כניסה למצב קניות במסך מלא */}
+        <Button type="button" variant="outline" size="sm" className="shrink-0" disabled={!p.items.length} onClick={() => setFullScreen(true)}><Maximize2 />מסך קניות</Button>
+      </div>
       {/* רק שורת ההוספה דביקה */}
       <div className="sticky top-0 z-30 -mx-4 border-b border-border bg-background/95 px-4 pb-3 pt-2 backdrop-blur sm:-mx-6 sm:px-6">
         <div className="flex gap-2">
@@ -177,6 +184,16 @@ export function ListScreen(p: Props) {
           </div>
         </DrawerContent>
       </Drawer>
+
+      {fullScreen && (
+        <FullScreenShopping
+          items={p.items}
+          onToggle={p.onToggle}
+          onOutOfStock={p.onOutOfStock}
+          onAdd={p.onAdd}
+          onExit={() => setFullScreen(false)}
+        />
+      )}
     </section>
   );
 }
