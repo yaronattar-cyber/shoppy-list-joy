@@ -270,6 +270,7 @@ function Index() {
           onMarkAll={(c) => void shown.markAll(c)}
           onArchive={() => void shown.archiveCompleted()}
           storeName={events.active ? events.active.name : stores.active?.name}
+          activeStore={events.active ? null : stores.active}
           stores={events.active ? [] : stores.stores}
           targets={targets}
           onAddTo={addTo}

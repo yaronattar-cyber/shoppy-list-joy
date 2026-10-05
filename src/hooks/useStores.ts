@@ -2,7 +2,17 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 // חנות משפחתית: שם + כתובת אתר (לחישוב/שליפת מחירים בעתיד)
-export type StoreInfo = { id: string; name: string; url: string; is_default?: boolean };
+export type StoreInfo = { id: string; name: string; url: string; is_default?: boolean; isOnlineOnly: boolean };
+
+type StoreRow = { id: string; name: string; url: string; is_default: boolean | null; is_online_only: boolean };
+
+const fromRow = (store: StoreRow): StoreInfo => ({
+  id: store.id,
+  name: store.name,
+  url: store.url,
+  is_default: store.is_default ?? false,
+  isOnlineOnly: store.is_online_only,
+});
 
 const cacheKey = (f: string) => `stores-cache-${f}`;
 const activeKey = (f: string) => `stores-active-${f}`;
@@ -35,10 +45,11 @@ export function useStores(familyId: string | null) {
     setActiveId(saved ?? undefined);
     let alive = true;
     const pull = async () => {
-      const { data } = await supabase.from("stores").select("id,name,url,is_default").eq("family_id", familyId).order("created_at");
+      const { data } = await supabase.from("stores").select("id,name,url,is_default,is_online_only").eq("family_id", familyId).order("created_at");
       if (!alive || !data) return;
-      setStores(data);
-      localStorage.setItem(cacheKey(familyId), JSON.stringify(data));
+      const next = data.map(fromRow);
+      setStores(next);
+      localStorage.setItem(cacheKey(familyId), JSON.stringify(next));
     };
     void pull();
     const ch = supabase
@@ -66,9 +77,10 @@ export function useStores(familyId: string | null) {
   }, [familyId]);
 
   const save = useCallback(
-    async (store: { id?: string; name: string; url: string; is_default?: boolean }) => {
+    async (store: { id?: string; name: string; url: string; is_default?: boolean; isOnlineOnly?: boolean }) => {
       if (!familyId || !store.name.trim()) return;
-      const payload = { name: store.name.trim(), url: normalizeUrl(store.url), is_default: !!store.is_default };
+      const payload = { name: store.name.trim(), url: normalizeUrl(store.url), is_default: !!store.is_default, isOnlineOnly: !!store.isOnlineOnly };
+      const databasePayload = { name: payload.name, url: payload.url, is_default: payload.is_default, is_online_only: payload.isOnlineOnly };
       const id = store.id ?? crypto.randomUUID();
       setStores((s) => {
         const next = store.id ? s.map((x) => (x.id === id ? { ...x, ...payload } : x)) : [...s, { id, ...payload }];
@@ -78,8 +90,8 @@ export function useStores(familyId: string | null) {
       });
       if (!store.id) select(id);
       if (payload.is_default) await supabase.from("stores").update({ is_default: false }).eq("family_id", familyId).neq("id", id);
-      if (store.id) await supabase.from("stores").update(payload).eq("id", id);
-      else await supabase.from("stores").insert({ id, family_id: familyId, ...payload });
+      if (store.id) await supabase.from("stores").update(databasePayload).eq("id", id);
+      else await supabase.from("stores").insert({ id, family_id: familyId, ...databasePayload });
     },
     [familyId, select],
   );

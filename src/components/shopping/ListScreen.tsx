@@ -1,7 +1,7 @@
 import { PhotoProductButton } from "./PhotoProductButton";
 import { FullScreenShopping } from "./FullScreenShopping";
 import { useEffect, useMemo, useState } from "react";
-import { Archive, CheckCheck, ChevronDown, ClipboardList, Eye, Layers, Maximize2, PartyPopper, Plus, Send, Share2, ShoppingCart, SlidersHorizontal, Sun, Tag, Wand2 } from "lucide-react";
+import { Archive, CheckCheck, ChevronDown, ClipboardList, Eye, Globe2, Layers, Maximize2, PartyPopper, Plus, Send, Share2, ShoppingCart, SlidersHorizontal, Sun, Tag, Wand2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { atStoreText, groupByCategory, listAsText, openWhatsApp, setWakeLock, wakeLockSupported } from "@/lib/shopping-tools";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,8 @@ type Props = {
   onMarkAll: (completed: boolean) => void;
   onArchive: () => void;
   storeName?: string | undefined;
-  stores?: { id: string; name: string }[];
+  stores?: { id: string; name: string; isOnlineOnly?: boolean }[];
+  activeStore?: { name: string; url: string; isOnlineOnly: boolean } | null;
   targets?: AddTarget[];
   onAddTo?: (name: string, target: AddTarget) => string | null;
   isGeneral?: boolean;
@@ -55,6 +56,7 @@ export function ListScreen(p: Props) {
   const [awake, setAwake] = useState(false);
   const [grouped, setGrouped] = useState(false);
   const [canWake, setCanWake] = useState(false);
+  const onlineOnly = !!p.activeStore?.isOnlineOnly;
   useEffect(() => setCanWake(wakeLockSupported()), []);
   useEffect(() => () => { void setWakeLock(false); }, []);
   const suggestions = useMemo(() => matchHistory(p.history, p.productHistory, quick), [p.history, p.productHistory, quick]);
@@ -89,8 +91,8 @@ export function ListScreen(p: Props) {
         <h1 className="min-w-0 truncate text-sm font-semibold text-muted-foreground">רשימת קניות</h1>
         {p.items.length > 0 && <span className="shrink-0 text-xs text-muted-foreground">{doneCount}/{p.items.length}</span>}
         <div className="ms-auto flex shrink-0 items-center">
-          <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" disabled={!p.items.length} title="מצב קניות במסך מלא" aria-label="מצב קניות במסך מלא" onClick={() => setFullScreen(true)}><Maximize2 className="h-4 w-4" /></Button>
-          <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" title="אני בסופר" aria-label="אני בסופר" onClick={() => openWhatsApp(atStoreText(p.storeName))}><Share2 className="h-4 w-4" /></Button>
+          {!onlineOnly && <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" disabled={!p.items.length} title="מצב קניות במסך מלא" aria-label="מצב קניות במסך מלא" onClick={() => setFullScreen(true)}><Maximize2 className="h-4 w-4" /></Button>}
+          {!onlineOnly && <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" title="אני בסופר" aria-label="אני בסופר" onClick={() => openWhatsApp(atStoreText(p.storeName))}><Share2 className="h-4 w-4" /></Button>}
           <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" disabled={!todo.length} title="שלח רשימה" aria-label="שלח רשימה" onClick={() => openWhatsApp(listAsText(p.items, p.storeName))}><Send className="h-4 w-4" /></Button>
           <DropdownMenu dir="rtl">
             <DropdownMenuTrigger asChild>
@@ -125,6 +127,8 @@ export function ListScreen(p: Props) {
       </div>
 
       <LongPressHint />
+
+      {onlineOnly && <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground"><Globe2 className="h-3.5 w-3.5" />סמנו מוצר לאחר שהוספתם אותו לסל באתר.</p>}
 
       {allDone && (
         <div className="mt-2 flex items-center gap-2 rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5">

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Copy, ExternalLink, Pencil, Plus, Star, Store, Trash2 } from "lucide-react";
+import { Copy, ExternalLink, Globe2, Pencil, Plus, Star, Store, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
@@ -13,7 +13,7 @@ type Props = {
   active: StoreInfo | null;
   lines: BasketLine[];
   onSelect: (id: string | null) => void;
-  onSave: (s: { id?: string; name: string; url: string; is_default?: boolean }) => void;
+  onSave: (s: { id?: string; name: string; url: string; is_default?: boolean; isOnlineOnly?: boolean }) => void;
   onRemove: (id: string) => void;
   onAdd?: (name: string) => void;
   events?: EventList[];
@@ -33,7 +33,7 @@ const host = (url: string) => {
 
 // בורר חנויות ואירועים: תפריט נגלל אחד לחנויות ולרשימות אירוע + כרטיס חנות פעילה + עורך
 export function StoreSelector(p: Props) {
-  const [editing, setEditing] = useState<{ id?: string; name: string; url: string; is_default?: boolean } | null>(null);
+  const [editing, setEditing] = useState<{ id?: string; name: string; url: string; is_default?: boolean; isOnlineOnly?: boolean } | null>(null);
   const [msg, setMsg] = useState("");
   const [copyOpen, setCopyOpen] = useState(false);
   const [onlyTodo, setOnlyTodo] = useState(true);
@@ -45,6 +45,12 @@ export function StoreSelector(p: Props) {
   const text = copyItems.length ? copyItems.map((i) => i.name).join("\n") : "אין פריטים להעתקה";
   const copyText = async (t: string) => {
     try { await navigator.clipboard.writeText(t); return true; } catch { return false; }
+  };
+  const openOnlineStore = async () => {
+    const url = p.active?.url;
+    if (!url || !copyItems.length) return;
+    window.open(/^https?:\/\//.test(url) ? url : `https://${url}`, "_blank", "noopener");
+    await copyText(text);
   };
   const total = estimateForStore(p.lines, p.active?.name ?? "");
 
@@ -78,7 +84,10 @@ export function StoreSelector(p: Props) {
           <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2 shadow-sm">
             <Store className="h-5 w-5 shrink-0 text-primary" />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-foreground">{p.active?.name ?? "רשימה כללית"}</p>
+              <p className="flex min-w-0 items-center gap-1.5 text-sm font-semibold text-foreground">
+                <span className="truncate">{p.active?.name ?? "רשימה כללית"}</span>
+                {p.active?.isOnlineOnly && <span className="flex shrink-0 items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"><Globe2 className="h-3 w-3" />אונליין</span>}
+              </p>
               {p.active?.url ? (
                 <a href={p.active.url} target="_blank" rel="noreferrer" className="flex items-center gap-1 truncate text-xs text-muted-foreground hover:text-primary" dir="ltr">
                   {host(p.active.url)}<ExternalLink className="h-3 w-3" />
@@ -93,13 +102,18 @@ export function StoreSelector(p: Props) {
               <p className="text-xs text-muted-foreground">הערכה בלבד</p>
             </div>
             {p.active && (
-              <Button type="button" variant="ghost" size="icon" aria-label="עריכת חנות" onClick={() => setEditing({ ...p.active! })}>
+              <Button type="button" variant="ghost" size="icon" aria-label="עריכת חנות" onClick={() => { if (p.active) setEditing({ ...p.active }); }}>
                 <Pencil className="h-4 w-4" />
               </Button>
             )}
           </div>
           {p.active?.url && p.lines.length > 0 && (
-            <Button type="button" variant="outline" size="sm" className="mt-2 w-full" onClick={() => { setOnlyTodo(p.lines.some((l) => !l.completed)); setMsg(""); setCopyOpen(true); }}>
+            <Button type="button" variant={p.active?.isOnlineOnly ? "default" : "outline"} size="sm" className="mt-2 w-full" onClick={() => {
+              setOnlyTodo(p.lines.some((l) => !l.completed));
+              setMsg("");
+              if (p.active?.isOnlineOnly) void openOnlineStore();
+              else setCopyOpen(true);
+            }}>
               <Copy />מעבר לאתר והעתקת רשימה
             </Button>
           )}
@@ -126,7 +140,8 @@ export function StoreSelector(p: Props) {
               }}><Copy />העתק</Button>
               <Button type="button" className="h-11 flex-1" onClick={async () => {
                 if (!msg.startsWith("✓")) await copyText(text);
-                const u = p.active!.url;
+                 const u = p.active?.url;
+                 if (!u) return;
                 window.open(/^https?:\/\//.test(u) ? u : `https://${u}`, "_blank", "noopener");
               }}><ExternalLink />פתח את האתר</Button>
             </div>
@@ -160,10 +175,14 @@ export function StoreSelector(p: Props) {
                 <input type="checkbox" checked={!!editing.is_default} onChange={(e) => setEditing({ ...editing, is_default: e.target.checked })} className="h-5 w-5 accent-[var(--color-primary)]" />
                 <Star className="h-4 w-4 text-primary" />סופר הבית (ברירת מחדל)
               </label>
+              <label className="flex items-center gap-3 rounded-md border border-border bg-card px-3 py-2.5 text-sm font-medium">
+                <input type="checkbox" checked={!!editing.isOnlineOnly} onChange={(e) => setEditing({ ...editing, isOnlineOnly: e.target.checked })} className="h-5 w-5 accent-[var(--color-primary)]" />
+                <Globe2 className="h-4 w-4 text-primary" />חנות אונליין בלבד
+              </label>
               <div className="flex gap-2 pt-2">
                 <Button type="submit" className="h-11 flex-1">שמירה</Button>
                 {editing.id && (
-                  <Button type="button" variant="outline" className="h-11 text-destructive" onClick={() => { p.onRemove(editing.id!); setEditing(null); }}>
+                  <Button type="button" variant="outline" className="h-11 text-destructive" onClick={() => { if (editing.id) p.onRemove(editing.id); setEditing(null); }}>
                     <Trash2 />מחיקה
                   </Button>
                 )}
