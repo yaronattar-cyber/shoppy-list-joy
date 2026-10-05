@@ -73,7 +73,7 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
 
       <div className="mt-4 space-y-3">
         {groups.map((g) => {
-          const isOpen = open[g.id] ?? true;
+          const isOpen = open[g.id] ?? false; // בעת פתיחת המסך כל הקטגוריות סגורות
           return (
             <div key={g.id} className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
               <button type="button" onClick={() => setOpen((o) => ({ ...o, [g.id]: !isOpen }))} className="flex w-full items-center gap-2 px-3 py-2.5 text-right">
