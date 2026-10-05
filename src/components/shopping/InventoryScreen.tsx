@@ -90,7 +90,7 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
       </Button>
 
       {/* אקורדיון "הוספת מוצר/ים": סגור כברירת מחדל, זהה בעיצובו לכרטיסיות השכנות */}
-      <Button type="button" variant="outline" aria-expanded={addingProducts} onClick={() => setAddingProducts((v) => !v)} className="mt-3 h-[41px] w-full justify-start border-primary/30 bg-card px-2 text-primary shadow-sm hover:bg-primary/5 hover:text-primary">
+      <Button type="button" variant="outline" aria-expanded={addingProducts} onClick={() => setAddingProducts((v) => !v)} className="mt-[8.4px] h-[41px] w-full justify-start border-primary/30 bg-card px-2 text-primary shadow-sm hover:bg-primary/5 hover:text-primary">
         <Package className="h-5 w-5" />הוספת מוצר/ים
         {drafts.length > 0 && <span className="mr-auto rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{drafts.length}</span>}
       </Button>
@@ -126,7 +126,7 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
       <BarcodeScanner open={scanning} onClose={() => setScanning(false)} onResult={(n) => { appendText(n); setScanning(false); }} />
 
       {/* כרטיסיית המתכונים נשמרת ברכיב שבחוץ — הכיווץ כאן שומר על אחידות שלוש הכרטיסיות */}
-      <div className="[&>button]:h-[41px] [&>button]:px-2">
+      <div className="mt-[8.4px] [&>button]:h-[41px] [&>button]:mt-0 [&>button]:px-2">
         <RecipesDrawer names={items.map((i) => i.name)} onAddMissing={onAddMissing} />
       </div>
 
