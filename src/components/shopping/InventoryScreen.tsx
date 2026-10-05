@@ -3,7 +3,7 @@ import { RecipesDrawer } from "./RecipesDrawer";
 import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { STOCK_STATUS, addCustomCategory, inventoryCategoryOf, useInvCategories } from "@/lib/inventory-categories";
-import { Bot, Check, ChevronDown, CookingPot, Package, Plus, ScanBarcode, Trash2, Truck, X } from "lucide-react";
+import { Bot, Check, CookingPot, Package, Plus, ScanBarcode, Trash2, Truck, X } from "lucide-react";
 import { toast } from "sonner";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { PhotoProductButton } from "./PhotoProductButton";
