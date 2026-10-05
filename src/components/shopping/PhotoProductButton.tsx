@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Camera, Check, Loader2, X } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { recognizeProduct } from "@/lib/ai/recognize-product.functions";
 
 // הקטנת התמונה בדפדפן לפני שליחה
@@ -37,7 +38,7 @@ export function PhotoProductButton({ storeName, onAdd, compact }: { storeName: s
     setBusy(true); setErr("");
     try {
       const r = await recognize({ data: { image: url } });
-      setName(r.name ?? ""); setErr(r.error ?? "");
+      setName(r.name ?? ""); setErr(r.error ?? ""); if (r.error) toast.error(r.error);
       save({ img: url, name: r.name ?? "", err: r.error ?? "" });
     } catch { setErr("הזיהוי נכשל, נסו שוב"); }
     setBusy(false);
