@@ -106,6 +106,13 @@
       "when": 1791198369954,
       "tag": "0014_rate_limit_join_family",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1791206516523,
+      "tag": "0015_add_online_only_to_stores",
+      "breakpoints": true
     }
   ]
 }

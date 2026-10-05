@@ -290,6 +290,7 @@ export type Database = {
           family_id: string
           id: string
           is_default: boolean
+          is_online_only: boolean
           name: string
           url: string
         }
@@ -298,6 +299,7 @@ export type Database = {
           family_id: string
           id?: string
           is_default?: boolean
+          is_online_only?: boolean
           name: string
           url?: string
         }
@@ -306,6 +308,7 @@ export type Database = {
           family_id?: string
           id?: string
           is_default?: boolean
+          is_online_only?: boolean
           name?: string
           url?: string
         }
