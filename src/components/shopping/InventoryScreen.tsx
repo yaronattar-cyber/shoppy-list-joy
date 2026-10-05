@@ -2,7 +2,7 @@ import { RecipesDrawer } from "./RecipesDrawer";
 import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { STOCK_STATUS, addCustomCategory, inventoryCategoryOf, useInvCategories } from "@/lib/inventory-categories";
-import { Check, CookingPot, Package, Plus, ScanBarcode, Trash2, X } from "lucide-react";
+import { Check, CookingPot, Package, Plus, ScanBarcode, Trash2, Truck, X } from "lucide-react";
 import { toast } from "sonner";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { PhotoProductButton } from "./PhotoProductButton";
@@ -118,7 +118,7 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
         <RecipesDrawer names={items.map((i) => i.name)} onAddMissing={onAddMissing} label="מתכונים" triggerClassName={TAB} />
         <button type="button" aria-expanded={ordersOpen} onClick={() => setOrdersOpen((v) => !v)} className={cn(TAB, ordersOpen && TAB_ON)}>
           <span className="relative">
-            <span aria-hidden="true" className="grid h-5 w-5 place-items-center text-base leading-none">🚚</span>
+            <Truck className="h-5 w-5" />
             {orders.length > 0 && <span className={TAB_BADGE}>{orders.length}</span>}
           </span>
           <span className={TAB_LABEL}>בדרך</span>
