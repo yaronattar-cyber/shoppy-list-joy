@@ -46,6 +46,12 @@ export function StoreSelector(p: Props) {
   const copyText = async (t: string) => {
     try { await navigator.clipboard.writeText(t); return true; } catch { return false; }
   };
+  const openOnlineStore = async () => {
+    const url = p.active?.url;
+    if (!url || !copyItems.length) return;
+    window.open(/^https?:\/\//.test(url) ? url : `https://${url}`, "_blank", "noopener");
+    await copyText(text);
+  };
   const total = estimateForStore(p.lines, p.active?.name ?? "");
 
   return (
@@ -102,7 +108,12 @@ export function StoreSelector(p: Props) {
             )}
           </div>
           {p.active?.url && p.lines.length > 0 && (
-            <Button type="button" variant={p.active?.isOnlineOnly ? "default" : "outline"} size="sm" className="mt-2 w-full" onClick={() => { setOnlyTodo(p.lines.some((l) => !l.completed)); setMsg(""); setCopyOpen(true); }}>
+            <Button type="button" variant={p.active?.isOnlineOnly ? "default" : "outline"} size="sm" className="mt-2 w-full" onClick={() => {
+              setOnlyTodo(p.lines.some((l) => !l.completed));
+              setMsg("");
+              if (p.active?.isOnlineOnly) void openOnlineStore();
+              else setCopyOpen(true);
+            }}>
               <Copy />מעבר לאתר והעתקת רשימה
             </Button>
           )}
