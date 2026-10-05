@@ -194,6 +194,7 @@ export function StoreSelector(p: Props) {
               </div>
             </form>
           )}
+          </div>
         </DrawerContent>
       </Drawer>
     </div>
