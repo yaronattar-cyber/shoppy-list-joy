@@ -55,8 +55,8 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
   const [scanning, setScanning] = useState(false);
   const [drafts, setDrafts] = useState<{ name: string; category: string }[]>([]);
   const appendText = (s: string) => setText((t) => (t.trim() ? `${t.trim()}\n${s}` : s));
-  const addDirect = () => { const list = splitItems(text); const ok = list.filter((n) => onAddToInventory(n, inventoryCategoryOf(n))).length; if (ok) toast.success(`${ok} מוצרים נוספו למלאי`); setText(""); };
-  const addToDrafts = () => { setDrafts((l) => [...l, ...splitItems(text).map((n) => ({ name: n, category: inventoryCategoryOf(n) }))]); setText(""); };
+  const addDirect = () => { const list = splitItems(text); const ok = list.filter((n) => onAddToInventory(n, inventoryCategoryOf(n, ""))).length; if (ok) toast.success(`${ok} מוצרים נוספו למלאי`); setText(""); };
+  const addToDrafts = () => { setDrafts((l) => [...l, ...splitItems(text).map((n) => ({ name: n, category: inventoryCategoryOf(n, "") }))]); setText(""); };
   const approveDraft = (idx: number) => { const d = drafts[idx]; if (d && onAddToInventory(d.name, d.category)) setDrafts((l) => l.filter((_, j) => j !== idx)); };
 
   const addMeal = () => {
