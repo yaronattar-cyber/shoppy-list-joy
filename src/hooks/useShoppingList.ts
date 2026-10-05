@@ -459,7 +459,7 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
         id: prev.id, family_id: prev.familyId, name: prev.name, completed: prev.completed,
         out_of_stock: prev.outOfStock, quantity: prev.quantity, unit: prev.unit, notes: prev.notes,
         category: prev.category, archived: prev.archived, added_by: prev.addedBy, created_at: prev.createdAt,
-        store_id: prev.storeId ?? null, expiry_date: prev.expiryDate ?? null, stock_status: prev.stockStatus,
+        store_id: prev.storeId ?? null, expiry_date: prev.expiryDate ?? null, stock_status: prev.stockStatus ?? "full",
       };
       undoToast(`„${prev.name}” נמחק`, () => enqueue({ type: "insert", rows: [row] }));
     },
