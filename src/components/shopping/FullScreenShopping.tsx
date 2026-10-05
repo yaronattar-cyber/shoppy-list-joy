@@ -67,7 +67,7 @@ export function FullScreenShopping({ items, onToggle, onOutOfStock, onAdd, onExi
     };
     const onVisible = () => {
       if (document.visibilityState === "visible") void acquire();
-agentic      else void setWakeLock(false);
+      else void setWakeLock(false);
     };
     void acquire();
     document.addEventListener("visibilitychange", onVisible);
