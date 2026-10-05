@@ -89,33 +89,40 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
         הוספת מנה מוכנה למלאי
       </Button>
 
-      {/* קלט גמיש: מוצר אחד או כמה, מופרדים בפסיק או בשורה */}
-      <div className="mt-3 rounded-lg border border-border bg-card p-2 shadow-sm">
-        <div className="flex items-start gap-2">
-          <textarea value={text} onChange={(e) => setText(e.target.value)} rows={2} placeholder="מוצר אחד או כמה, מופרדים בפסיק או בשורה" aria-label="הוספת מוצרים למלאי" className="min-h-11 flex-1 resize-none rounded-md border border-input bg-background px-3 py-2 text-base text-foreground outline-none focus:ring-2 focus:ring-ring" />
-          <Button type="button" variant="outline" className="h-11 w-11 px-0" aria-label="סריקת ברקוד" onClick={() => setScanning(true)}><ScanBarcode /></Button>
-          <PhotoProductButton compact storeName="המלאי" onAdd={(n) => { appendText(n); return n; }} />
+      {/* אקורדיון "הוספת מוצר/ים": סגור כברירת מחדל, זהה בעיצובו לכרטיסיות השכנות */}
+      <Button type="button" variant="outline" aria-expanded={addingProducts} onClick={() => setAddingProducts((v) => !v)} className="mt-3 h-12 w-full justify-start border-primary/30 bg-card text-primary shadow-sm hover:bg-primary/5 hover:text-primary">
+        <Package className="h-5 w-5" />הוספת מוצר/ים
+        {drafts.length > 0 && <span className="mr-auto rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{drafts.length}</span>}
+      </Button>
+      {addingProducts && (
+        <div className="mt-2 rounded-lg border border-border bg-card p-2 shadow-sm">
+          <div className="flex items-start gap-2">
+            <textarea value={text} onChange={(e) => setText(e.target.value)} rows={2} placeholder="מוצר אחד או כמה, מופרדים בפסיק או בשורה" aria-label="הוספת מוצרים למלאי" className="min-h-11 flex-1 resize-none rounded-md border border-input bg-background px-3 py-2 text-base text-foreground outline-none focus:ring-2 focus:ring-ring" />
+            <Button type="button" variant="outline" className="h-11 w-11 px-0" aria-label="סריקת ברקוד" onClick={() => setScanning(true)}><ScanBarcode /></Button>
+            <PhotoProductButton compact storeName="המלאי" onAdd={(n) => { appendText(n); return n; }} />
+          </div>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <Button type="button" size="sm" disabled={!splitItems(text).length} onClick={addDirect}>הוסף ישירות למלאי</Button>
+            <Button type="button" size="sm" variant="outline" disabled={!splitItems(text).length} onClick={addToDrafts}>הוסף לרשימת ההמתנה</Button>
+          </div>
+          {drafts.length > 0 && (
+            <ul className="mt-2 space-y-1.5 border-t border-border pt-2">
+              {drafts.map((d, idx) => (
+                <li key={idx} className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-1.5">
+                  <span className="truncate text-sm font-semibold text-foreground">{d.name}</span>
+                  <select value={d.category} onChange={(e) => setDrafts((l) => l.map((x, j) => (j === idx ? { ...x, category: e.target.value } : x)))} aria-label={`קטגוריה ל${d.name}`} className="h-9 max-w-36 rounded-md border border-input bg-background px-2 text-sm">
+                    {cats.map((c) => <option key={c.id} value={c.id}>{c.emoji} {c.label}</option>)}
+                  </select>
+                  <Button type="button" size="icon" variant="ghost" className="h-9 w-9 text-primary" aria-label={`אישור ${d.name}`} onClick={() => approveDraft(idx)}><Check className="h-4 w-4" /></Button>
+                  <Button type="button" size="icon" variant="ghost" className="h-9 w-9 text-muted-foreground" aria-label={`הסרת ${d.name}`} onClick={() => setDrafts((l) => l.filter((_, j) => j !== idx))}><X className="h-4 w-4" /></Button>
+                </li>
+              ))}
+              <Button type="button" size="sm" className="w-full" onClick={() => { drafts.forEach((d) => onAddToInventory(d.name, d.category)); setDrafts([]); }}>אישור הכל ({drafts.length})</Button>
+            </ul>
+          )}
         </div>
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          <Button type="button" size="sm" disabled={!splitItems(text).length} onClick={addDirect}>הוסף ישירות למלאי</Button>
-          <Button type="button" size="sm" variant="outline" disabled={!splitItems(text).length} onClick={addToDrafts}>הוסף לרשימת ההמתנה</Button>
-        </div>
-        {drafts.length > 0 && (
-          <ul className="mt-2 space-y-1.5 border-t border-border pt-2">
-            {drafts.map((d, idx) => (
-              <li key={idx} className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-1.5">
-                <span className="truncate text-sm font-semibold text-foreground">{d.name}</span>
-                <select value={d.category} onChange={(e) => setDrafts((l) => l.map((x, j) => (j === idx ? { ...x, category: e.target.value } : x)))} aria-label={`קטגוריה ל${d.name}`} className="h-9 max-w-36 rounded-md border border-input bg-background px-2 text-sm">
-                  {cats.map((c) => <option key={c.id} value={c.id}>{c.emoji} {c.label}</option>)}
-                </select>
-                <Button type="button" size="icon" variant="ghost" className="h-9 w-9 text-primary" aria-label={`אישור ${d.name}`} onClick={() => approveDraft(idx)}><Check className="h-4 w-4" /></Button>
-                <Button type="button" size="icon" variant="ghost" className="h-9 w-9 text-muted-foreground" aria-label={`הסרת ${d.name}`} onClick={() => setDrafts((l) => l.filter((_, j) => j !== idx))}><X className="h-4 w-4" /></Button>
-              </li>
-            ))}
-            <Button type="button" size="sm" className="w-full" onClick={() => { drafts.forEach((d) => onAddToInventory(d.name, d.category)); setDrafts([]); }}>אישור הכל ({drafts.length})</Button>
-          </ul>
-        )}
-      </div>
+      )}
+
       <BarcodeScanner open={scanning} onClose={() => setScanning(false)} onResult={(n) => { appendText(n); setScanning(false); }} />
 
       <RecipesDrawer names={items.map((i) => i.name)} onAddMissing={onAddMissing} />
