@@ -386,6 +386,16 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
     return true;
   };
 
+  // הוספת מוצר ישירות למלאי עם קטגוריה נבחרת
+  const addToInventory = (rawName: string, category: string) => {
+    const parsed = parseQuantity(rawName);
+    const name = parsed.name.trim();
+    if (!name || !familyId) return false;
+    const row = makeRow(name, parsed.quantity, parsed.unit);
+    enqueue({ type: "insert", rows: [{ ...row, completed: true, archived: true, category }] });
+    return true;
+  };
+
   const update = useCallback((id: string, patch: Patch) => enqueue({ type: "update", ids: [id], patch }), [enqueue]);
 
   // הקשה: רגיל → נקנה; ממצב נקנה/חסר → חזרה לרגיל
