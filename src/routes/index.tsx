@@ -282,6 +282,7 @@ function Index() {
           onRestore={(ids) => void list.restoreFromInventory(ids)}
           onDelete={(ids) => void list.deleteFromInventory(ids)}
           onAddPreparedMeal={list.addPreparedMeal}
+          onAddToInventory={list.addToInventory}
           onUpdate={list.updateInventory}
           onAddMissing={(names) => { const home = stores.stores.find((x) => x.is_default)?.id ?? null; names.forEach((n) => list.addItem(n, home)); }}
         />

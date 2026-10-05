@@ -2,7 +2,10 @@ import { RecipesDrawer } from "./RecipesDrawer";
 import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { STOCK_STATUS, addCustomCategory, inventoryCategoryOf, useInvCategories } from "@/lib/inventory-categories";
-import { CookingPot, Package, Plus, Trash2 } from "lucide-react";
+import { Check, CookingPot, Package, Plus, ScanBarcode, Trash2, X } from "lucide-react";
+import { toast } from "sonner";
+import { BarcodeScanner } from "./BarcodeScanner";
+import { PhotoProductButton } from "./PhotoProductButton";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -25,12 +28,15 @@ type Props = {
   onAddPreparedMeal: (name: string) => boolean;
   onAddMissing: (names: string[]) => void;
   onUpdate: (id: string, d: { expiryDate: string | null; stockStatus: string; quantity: number; unit: string; category: string }) => void;
+  onAddToInventory: (name: string, category: string) => boolean;
 };
 
 const daysLeft = (d?: string | null) => (d ? Math.ceil((new Date(d).getTime() - Date.now()) / 86400000) : null);
+// פיצול טקסט חופשי לפריטים: פסיקים או שורות חדשות
+const splitItems = (s: string) => s.split(/[,،\n]+/).map((x) => x.trim()).filter(Boolean);
 
 // מסך מלאי — מוצרים שנקנו; מחיקה שואלת אם להחזיר לרשימת הקניות
-export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal, onUpdate, onAddMissing }: Props) {
+export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal, onUpdate, onAddMissing, onAddToInventory }: Props) {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [editing, setEditing] = useState<ShoppingItem | null>(null);
   const [draft, setDraft] = useState({ expiryDate: "", stockStatus: "full", quantity: 1, unit: "", category: "other" });
@@ -45,6 +51,13 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
   const [catEmoji, setCatEmoji] = useState("🏷️");
   const many = (pending?.length ?? 0) > 1;
   const saveCat = () => { if (addCustomCategory(catName, catEmoji)) { setCatName(""); setCatEmoji("🏷️"); setAddingCat(false); } };
+  const [text, setText] = useState("");
+  const [scanning, setScanning] = useState(false);
+  const [drafts, setDrafts] = useState<{ name: string; category: string }[]>([]);
+  const appendText = (s: string) => setText((t) => (t.trim() ? `${t.trim()}\n${s}` : s));
+  const addDirect = () => { const list = splitItems(text); const ok = list.filter((n) => onAddToInventory(n, inventoryCategoryOf(n, ""))).length; if (ok) toast.success(`${ok} מוצרים נוספו למלאי`); setText(""); };
+  const addToDrafts = () => { setDrafts((l) => [...l, ...splitItems(text).map((n) => ({ name: n, category: inventoryCategoryOf(n, "") }))]); setText(""); };
+  const approveDraft = (idx: number) => { const d = drafts[idx]; if (d && onAddToInventory(d.name, d.category)) setDrafts((l) => l.filter((_, j) => j !== idx)); };
 
   const addMeal = () => {
     if (!onAddPreparedMeal(mealName)) return;
@@ -73,6 +86,35 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
         <CookingPot className="h-5 w-5" />
         הוספת מנה מוכנה למלאי
       </Button>
+
+      {/* קלט גמיש: מוצר אחד או כמה, מופרדים בפסיק או בשורה */}
+      <div className="mt-3 rounded-lg border border-border bg-card p-2 shadow-sm">
+        <div className="flex items-start gap-2">
+          <textarea value={text} onChange={(e) => setText(e.target.value)} rows={2} placeholder="מוצר אחד או כמה, מופרדים בפסיק או בשורה" aria-label="הוספת מוצרים למלאי" className="min-h-11 flex-1 resize-none rounded-md border border-input bg-background px-3 py-2 text-base text-foreground outline-none focus:ring-2 focus:ring-ring" />
+          <Button type="button" variant="outline" className="h-11 w-11 px-0" aria-label="סריקת ברקוד" onClick={() => setScanning(true)}><ScanBarcode /></Button>
+          <PhotoProductButton compact storeName="המלאי" onAdd={(n) => { appendText(n); return n; }} />
+        </div>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <Button type="button" size="sm" disabled={!splitItems(text).length} onClick={addDirect}>הוסף ישירות למלאי</Button>
+          <Button type="button" size="sm" variant="outline" disabled={!splitItems(text).length} onClick={addToDrafts}>הוסף לרשימת ההמתנה</Button>
+        </div>
+        {drafts.length > 0 && (
+          <ul className="mt-2 space-y-1.5 border-t border-border pt-2">
+            {drafts.map((d, idx) => (
+              <li key={idx} className="grid grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-1.5">
+                <span className="truncate text-sm font-semibold text-foreground">{d.name}</span>
+                <select value={d.category} onChange={(e) => setDrafts((l) => l.map((x, j) => (j === idx ? { ...x, category: e.target.value } : x)))} aria-label={`קטגוריה ל${d.name}`} className="h-9 max-w-36 rounded-md border border-input bg-background px-2 text-sm">
+                  {cats.map((c) => <option key={c.id} value={c.id}>{c.emoji} {c.label}</option>)}
+                </select>
+                <Button type="button" size="icon" variant="ghost" className="h-9 w-9 text-primary" aria-label={`אישור ${d.name}`} onClick={() => approveDraft(idx)}><Check className="h-4 w-4" /></Button>
+                <Button type="button" size="icon" variant="ghost" className="h-9 w-9 text-muted-foreground" aria-label={`הסרת ${d.name}`} onClick={() => setDrafts((l) => l.filter((_, j) => j !== idx))}><X className="h-4 w-4" /></Button>
+              </li>
+            ))}
+            <Button type="button" size="sm" className="w-full" onClick={() => { drafts.forEach((d) => onAddToInventory(d.name, d.category)); setDrafts([]); }}>אישור הכל ({drafts.length})</Button>
+          </ul>
+        )}
+      </div>
+      <BarcodeScanner open={scanning} onClose={() => setScanning(false)} onResult={(n) => { appendText(n); setScanning(false); }} />
 
       <RecipesDrawer names={items.map((i) => i.name)} onAddMissing={onAddMissing} />
 
