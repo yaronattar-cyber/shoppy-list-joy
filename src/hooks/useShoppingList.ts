@@ -136,6 +136,7 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
   const [pendingCount, setPendingCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
   const flushingRef = useRef(false);
+  const waitingSyncToastRef = useRef(false); // מונע הצפת toast „ממתין לסנכרון" בניסיונות חוזרים
 
   // היסטוריה: מקומית מיד, ואז מיזוג עם היסטוריית המשפחה בענן + Realtime
   useEffect(() => {
