@@ -71,6 +71,7 @@ function Index() {
   const stores = useStores(family.familyId);
   const list = useShoppingList(family.familyId, family.userName ?? undefined, stores.activeId);
   const onlineOrders = useOnlineOrders(family.familyId, stores.active?.isOnlineOnly ? stores.active.id : null);
+  const pendingOrders = useOnlineOrders(family.familyId, "*");
   const events = useEvents(family.familyId);
   // רשימת אירוע משותפת פועלת כרשימה עצמאית עם קוד משלה
   const eventList = useShoppingList(events.activeId, family.userName ?? undefined, null);
@@ -299,6 +300,10 @@ function Index() {
           onAddPreparedMeal={list.addPreparedMeal}
           onAddToInventory={list.addToInventory}
           onUpdate={list.updateInventory}
+          orders={pendingOrders.orders}
+          storeNames={Object.fromEntries(stores.stores.map((st) => [st.id, st.name]))}
+          orderWorking={pendingOrders.working}
+          onOrderReceived={async (orderId) => { const count = await pendingOrders.receiveOrder(orderId); if (count) await list.refresh(); return count; }}
           onAddMissing={(names) => { const home = stores.stores.find((x) => x.is_default)?.id ?? null; names.forEach((n) => list.addItem(n, home)); }}
         />
       )}
