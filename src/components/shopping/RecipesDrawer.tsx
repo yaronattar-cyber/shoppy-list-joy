@@ -6,17 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { suggestRecipes, type Recipe } from "@/lib/ai/recipes.functions";
 
-type Props = { names: string[]; onAddMissing: (names: string[]) => void; label?: string; triggerClassName?: string };
+type Props = { names: string[]; onAddMissing: (names: string[]) => void; label?: string; triggerClassName?: string; onOpenChange?: (open: boolean) => void };
 
 // מתכונים חכמים לפי המלאי + הוספת חוסרים לסופר הבית
-export function RecipesDrawer({ names, onAddMissing, label, triggerClassName }: Props) {
+export function RecipesDrawer({ names, onAddMissing, label, triggerClassName, onOpenChange }: Props) {
   const fetchRecipes = useServerFn(suggestRecipes);
   const [open, setOpen] = useState(false);
+  // ידיעה החוצה על פתיחה/סגירה, כדי שהטאב יציג מצב פעיל
+  const setOpenAndNotify = (o: boolean) => { setOpen(o); onOpenChange?.(o); };
   const [loading, setLoading] = useState(false);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
 
   const run = async () => {
-    setOpen(true);
+    setOpenAndNotify(true);
     setLoading(true);
     try {
       const r = await fetchRecipes({ data: { items: [...new Set(names)].slice(0, 200) } });
@@ -35,7 +37,7 @@ export function RecipesDrawer({ names, onAddMissing, label, triggerClassName }: 
         <ChefHat className="h-5 w-5" />
         {label ?? "מה מבשלים היום? מתכונים מהמלאי"}
       </Button>
-      <Drawer open={open} onOpenChange={setOpen}>
+      <Drawer open={open} onOpenChange={setOpenAndNotify}>
         <DrawerContent dir="rtl" className="mx-auto max-h-[88vh] max-w-xl rounded-t-2xl border-border bg-card">
           <DrawerHeader className="text-right sm:text-right">
             <DrawerTitle className="flex items-center gap-2 text-xl"><ChefHat className="h-5 w-5 text-primary" />מתכונים מהמלאי</DrawerTitle>
