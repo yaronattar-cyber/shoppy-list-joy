@@ -214,7 +214,7 @@ function Index() {
           size="sm"
           variant={startScreen === screen ? "default" : "outline"}
           onClick={toggleStart}
-          className="h-7 rounded-full px-2.5 text-[11px] font-semibold"
+          className="h-7 rounded-full px-2.5 text-xs font-semibold"
         >
           {startScreen === screen ? <Pin className="h-3.5 w-3.5 fill-current" /> : <PinOff className="h-3.5 w-3.5" />}
           {startScreen === screen ? "מסך פתיחה קבוע" : "קבע כמסך פתיחה"}

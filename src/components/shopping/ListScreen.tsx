@@ -8,7 +8,7 @@ import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerHeader, Dr
 import { AiRequestDrawer } from "./AiRequestDrawer";
 import { ItemEditDrawer } from "./ItemEditDrawer";
 import { TargetPicker, type AddTarget } from "./TargetPicker";
-import { ShoppingItemRow } from "./ShoppingItemRow";
+import { LongPressHint, ShoppingItemRow } from "./ShoppingItemRow";
 import { storeTone } from "./StoreChips";
 import { HistorySuggestions } from "./HistorySuggestions";
 import { matchHistory, type HistoryEntry } from "@/lib/product-history";
@@ -109,6 +109,8 @@ export function ListScreen(p: Props) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      <LongPressHint />
 
       {allDone && <div className="mt-4 animate-scale-in rounded-lg border border-primary/30 bg-primary/10 p-4 text-center">
         <PartyPopper className="mx-auto mb-1 h-8 w-8 text-primary" />

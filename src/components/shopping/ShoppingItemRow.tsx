@@ -1,10 +1,11 @@
-import { memo, useEffect, useRef } from "react";
-import { Check, ChevronLeft, X } from "lucide-react";
+import { memo, useContext, useEffect, useRef, useState } from "react";
+import { AlertTriangle, Check, ChevronLeft, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatQuantity } from "@/lib/quantity";
 import type { ShoppingItem } from "@/lib/shopping-list";
 import { haptic } from "@/lib/shopping-tools";
-import { ROLE_EMOJI, useMemberRole } from "@/hooks/useFamilyMembers";
+import { loadUserName } from "@/lib/user-name";
+import { MembersContext, ROLE_EMOJI, useMemberRole } from "@/hooks/useFamilyMembers";
 
 type Props = {
   item: ShoppingItem;
@@ -24,6 +25,9 @@ export const ShoppingItemRow = memo(function ShoppingItemRow({ item, onToggle, o
   const longPressed = useRef(false);
   const missing = item.outOfStock && !item.completed;
   const role = useMemberRole(item.addedBy);
+  // תגית „הוסיף” רק כשמישהו אחר הוסיף ויש יותר מחבר משפחה אחד
+  const memberCount = Object.keys(useContext(MembersContext)).length;
+  const showAdder = !!item.addedBy && memberCount > 1 && item.addedBy.trim() !== (loadUserName() ?? "").trim();
 
   useEffect(() => () => { if (pressTimer.current) clearTimeout(pressTimer.current); }, []);
 
@@ -41,7 +45,7 @@ export const ShoppingItemRow = memo(function ShoppingItemRow({ item, onToggle, o
   const label = item.completed ? `בטל סימון ${item.name}` : missing ? `בטל „חסר במלאי” עבור ${item.name}` : `סמן את ${item.name} כנקנה (לחיצה ארוכה: חסר במלאי)`;
 
   return (
-    <li className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-3 py-2.5 transition-colors last:border-b-0 ${item.completed ? "bg-muted/50" : missing ? "bg-destructive/5" : "bg-card"}`}>
+    <li className={`grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3 border-b border-border px-3 py-2.5 transition-colors last:border-b-0 ${item.completed ? "bg-muted/50" : missing ? "bg-destructive/5" : "bg-card"}`}>
       <Button
         type="button"
         size="icon"
@@ -53,23 +57,41 @@ export const ShoppingItemRow = memo(function ShoppingItemRow({ item, onToggle, o
         onContextMenu={(e) => e.preventDefault()}
         aria-label={label}
         title="הקשה: נקנה · לחיצה ארוכה: חסר במלאי"
-        className={`h-9 w-9 shrink-0 select-none touch-manipulation rounded-full border ${item.completed ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90" : missing ? "border-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90" : "border-input bg-card text-transparent hover:text-muted-foreground"}`}
+        className={`h-11 w-11 shrink-0 select-none touch-manipulation rounded-full border ${item.completed ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90" : missing ? "border-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90" : "border-input bg-card text-transparent hover:text-muted-foreground"}`}
       >
         {missing ? <X className="h-5 w-5" strokeWidth={3} /> : <Check className="h-5 w-5" strokeWidth={3} />}
       </Button>
-      <Button type="button" variant="ghost" onClick={() => onOpen(item)} className="h-auto min-w-0 justify-start whitespace-normal rounded-md px-0 py-1 text-right hover:bg-transparent">
+      {/* אזור לחיץ אחד לעריכה: שם + כמות + חץ */}
+      <Button type="button" variant="ghost" onClick={() => onOpen(item)} aria-label={`עריכת ${item.name}`} className="h-auto min-w-0 justify-between gap-2 whitespace-normal rounded-md px-0 py-1 text-right hover:bg-transparent">
         <span className="min-w-0 flex-1 text-right">
           <span className={`break-words text-base font-semibold leading-6 ${item.completed ? "text-foreground line-through opacity-50" : "text-foreground"}`}>{item.name}</span>
-          {storeLabel && <span className={`mr-2 inline-block rounded-full px-2 py-0.5 align-middle text-[11px] font-medium ${storeTone ? "" : "bg-muted text-muted-foreground"}`} style={storeTone ? { backgroundColor: `var(--store-${storeTone})`, color: `var(--store-${storeTone}-fg)` } : undefined}>{storeLabel}</span>}
-          {item.addedBy && <span className="mr-2 inline-block rounded-full bg-muted px-2 py-0.5 align-middle text-[11px] font-medium text-muted-foreground">{ROLE_EMOJI[role] ?? "🙂"} {role ? `${role} · ` : ""}{item.addedBy}</span>}
-          {missing && <span className="block text-xs font-medium text-destructive">חסר במלאי</span>}
+          {storeLabel && <span className={`mr-2 inline-block rounded-full px-2 py-0.5 align-middle text-xs font-medium ${storeTone ? "" : "bg-muted text-muted-foreground"}`} style={storeTone ? { backgroundColor: `var(--store-${storeTone})`, color: `var(--store-${storeTone}-fg)` } : undefined}>{storeLabel}</span>}
+          {showAdder && <span className="mr-2 inline-block rounded-full bg-muted px-2 py-0.5 align-middle text-xs font-medium text-muted-foreground">{ROLE_EMOJI[role] ?? "🙂"} {role ? `${role} · ` : ""}{item.addedBy}</span>}
+          {item.completed && <span className="flex items-center gap-1 text-xs font-medium text-primary"><Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />נקנה</span>}
+          {missing && <span className="flex items-center gap-1 text-xs font-medium text-destructive"><AlertTriangle className="h-3.5 w-3.5" aria-hidden />חסר במלאי</span>}
           {item.notes && <span className="block break-words text-xs font-normal text-muted-foreground">{item.notes}</span>}
         </span>
-      </Button>
-      <Button type="button" variant="ghost" onClick={() => onOpen(item)} aria-label={`עריכת ${item.name}`} className="h-9 shrink-0 gap-1 px-1.5 text-muted-foreground">
-        <span className="text-sm font-medium">{quantity}</span>
-        <ChevronLeft className="h-4 w-4" />
+        <span className="flex shrink-0 items-center gap-1 text-muted-foreground" aria-hidden>
+          <span className="text-sm font-medium">{quantity}</span>
+          <ChevronLeft className="h-4 w-4" />
+        </span>
       </Button>
     </li>
   );
 });
+
+// רמז חד־פעמי בכניסה הראשונה לרשימה
+const HINT_KEY = "hint-long-press-seen";
+export function LongPressHint() {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    try { if (!localStorage.getItem(HINT_KEY)) { setShow(true); localStorage.setItem(HINT_KEY, "1"); } } catch { /* ignore */ }
+  }, []);
+  if (!show) return null;
+  return (
+    <div className="mt-3 flex items-center justify-between gap-2 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-foreground">
+      <span>💡 לחיצה ארוכה על העיגול = חסר במלאי</span>
+      <button type="button" onClick={() => setShow(false)} aria-label="סגור רמז" className="text-muted-foreground"><X className="h-4 w-4" /></button>
+    </div>
+  );
+}

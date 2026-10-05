@@ -103,9 +103,9 @@ export function StoreSelector(p: Props) {
               )}
             </div>
             <div className="shrink-0 text-left">
-              <p className="text-[11px] text-muted-foreground">סל משוער</p>
+              <p className="text-xs text-muted-foreground">סל משוער</p>
               <p className="text-sm font-bold text-primary">₪{formatPrice(total)}</p>
-              <p className="text-[10px] text-muted-foreground">הערכה בלבד</p>
+              <p className="text-xs text-muted-foreground">הערכה בלבד</p>
             </div>
             {p.active && (
               <Button type="button" variant="ghost" size="icon" aria-label="עריכת חנות" onClick={() => setEditing({ ...p.active! })}>
