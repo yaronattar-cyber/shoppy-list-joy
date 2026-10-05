@@ -39,7 +39,7 @@ export const askInventoryAssistant = createServerFn({ method: "POST" })
       const result = streamText({
         model: provider.responses("openai/gpt-6-astra"),
         system,
-        prompt: `${inventory || "(המלאי ריכק)"}\n\nשאלה: ${data.question}`,
+        prompt: `${inventory || "(המלאי ריק)"}\n\nשאלה: ${data.question}`,
         maxRetries: 0,
         providerOptions: {
           openai: { store: false, forceReasoning: true, reasoningEffort: "low", reasoningSummary: "auto", include: ["reasoning.encrypted_content"] },

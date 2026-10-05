@@ -1,8 +1,9 @@
+import { InventoryAssistant } from "./InventoryAssistant";
 import { RecipesDrawer } from "./RecipesDrawer";
 import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { STOCK_STATUS, addCustomCategory, inventoryCategoryOf, useInvCategories } from "@/lib/inventory-categories";
-import { Check, CookingPot, Package, Plus, ScanBarcode, Trash2, Truck, X } from "lucide-react";
+import { Bot, Check, ChevronDown, CookingPot, Package, Plus, ScanBarcode, Trash2, Truck, X } from "lucide-react";
 import { toast } from "sonner";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { PhotoProductButton } from "./PhotoProductButton";
@@ -68,6 +69,7 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
   const [scanning, setScanning] = useState(false);
   const [addingProducts, setAddingProducts] = useState(false); // אקורדיון "הוספת מוצר/ים" סגור כברירת מחדל
   const [ordersOpen, setOrdersOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const [recipesOpen, setRecipesOpen] = useState(false);
   // הטאב הפעיל הוא תמיד מה שבאמת פתוח — נקי אוטומטי כשחלונית נסגרת
   const activeTab = addingMeal ? "meal" : recipesOpen ? "recipes" : addingProducts ? "products" : ordersOpen ? "orders" : null;
@@ -100,8 +102,9 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
           <p className="text-sm text-muted-foreground">{items.length ? `${items.length} מוצרים שנקנו` : "אין מוצרים במלאי"}</p>
         </div>
         <div className="flex items-center gap-1">
-          <Button type="button" size="icon" aria-label="הוספת מנה מוכנה למלאי" title="הוספת מנה מוכנה" onClick={() => setAddingMeal(true)} className="h-10 w-10 rounded-full">
-            <span className="relative"><CookingPot className="h-5 w-5" /><Plus className="absolute -bottom-1 -left-1 h-3 w-3 rounded-full bg-primary-foreground text-primary" /></span>
+          <Button type="button" size="icon" aria-label="עוזרת אישית למלאי" title="עוזרת אישית למלאי" onClick={() => setAssistantOpen(true)}
+            className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-md ring-1 ring-primary/30 transition-transform hover:scale-105">
+            <Bot className="h-5 w-5" />
           </Button>
           <Button type="button" variant="ghost" size="sm" disabled={!items.length} onClick={() => setPending(items.map((i) => i.id))} className="text-destructive hover:text-destructive">
             <Trash2 />ניקוי הכל
