@@ -250,6 +250,8 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
     setOnline(navigator.onLine);
     void flush().then(() => refresh());
 
+    // מצב הערוץ — סנכרון רקע רץ רק כש־Realtime לא מחובר
+    let channelStatus = "";
     const channel = supabase
       .channel(`items-${familyId}`)
       .on(
@@ -281,6 +283,7 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
         },
       )
       .subscribe((status) => {
+        channelStatus = status;
         // התחברות מחדש/ניתוק — משיכה מלאה כדי לא לפספס שינויים
         if (status === "SUBSCRIBED" || status === "CHANNEL_ERROR" || status === "TIMED_OUT") void refresh();
       });
@@ -299,6 +302,8 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
     // סנכרון רקע: שליחת תור + משיכת שינויים של בני המשפחה (רשת ביטחון ל־Realtime)
     const timer = setInterval(() => {
       if (document.visibilityState !== "visible") return;
+      // Realtime מחובר — הוא מביא את השינויים, אין צורך במשיכה מחזורית
+      if (channelStatus === "SUBSCRIBED") return;
       void flush().then(() => refresh());
     }, 15000);
 

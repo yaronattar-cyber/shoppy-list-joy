@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Home, ListChecks, Package, Pin, PinOff, Users } from "lucide-react";
 import { toast } from "sonner";
 import type { AddTarget } from "@/components/shopping/TargetPicker";
@@ -77,7 +77,11 @@ function Index() {
   const shown = events.active ? eventList : list;
   const fam = useFamilyMembers(family.familyId, family.userName);
   const roleMap = Object.fromEntries(fam.members.map((m) => [m.name, m.role]));
-  useAppBadge([...list.allActive, ...list.inventory, ...eventList.allActive], family.userName);
+  const badgeItems = useMemo(
+    () => [...list.allActive, ...list.inventory, ...eventList.allActive],
+    [list.allActive, list.inventory, eventList.allActive],
+  );
+  useAppBadge(badgeItems, family.userName);
   useEffect(() => {
     const ask = () => requestBadgePermission();
     window.addEventListener("pointerdown", ask, { once: true });
