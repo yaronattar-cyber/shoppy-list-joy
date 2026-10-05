@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 // קטגוריות מטבח למסך המלאי — סיווג לפי קטגוריה שמורה או לפי מילות מפתח בשם
 export type InvCategory = { id: string; label: string; emoji: string; words: string[] };
 
@@ -22,7 +23,7 @@ export const INV_CATEGORIES: InvCategory[] = [
 const BY_ID = new Map(INV_CATEGORIES.map((c) => [c.id, c]));
 
 export function inventoryCategoryOf(name: string, stored: string): string {
-  if (BY_ID.has(stored)) return stored;
+  if (BY_ID.has(stored) || (stored.startsWith("custom-") && loadCustomCategories().some((c) => c.id === stored))) return stored;
   const n = name.toLowerCase();
   for (const c of INV_CATEGORIES) if (c.words.some((w) => n.includes(w))) return c.id;
   return "other";
@@ -33,3 +34,42 @@ export const STOCK_STATUS = [
   { id: "half", label: "חצי מלא", dot: "bg-amber-500" },
   { id: "low", label: "כמעט נגמר", dot: "bg-destructive" },
 ] as const;
+
+// קטגוריות מותאמות אישית — נשמרות ב-localStorage ומסונכרנות בין רכיבים
+const CUSTOM_KEY = "custom-inv-categories";
+const CUSTOM_EVENT = "custom-inv-categories-change";
+
+export function loadCustomCategories(): InvCategory[] {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem(CUSTOM_KEY) ?? "[]") as InvCategory[]; } catch { return []; }
+}
+
+export function addCustomCategory(label: string, emoji: string): InvCategory | null {
+  const clean = label.trim();
+  if (!clean) return null;
+  const list = loadCustomCategories();
+  const existing = [...INV_CATEGORIES, ...list].find((c) => c.label === clean);
+  if (existing) return existing;
+  const cat: InvCategory = { id: `custom-${Date.now().toString(36)}`, label: clean, emoji: emoji || "🏷️", words: [] };
+  localStorage.setItem(CUSTOM_KEY, JSON.stringify([...list, cat]));
+  window.dispatchEvent(new Event(CUSTOM_EVENT));
+  return cat;
+}
+
+// כל הקטגוריות (מובנות + מותאמות), "אחר" תמיד בסוף
+export function allInvCategories(): InvCategory[] {
+  const other = INV_CATEGORIES.filter((c) => c.id === "other");
+  return [...INV_CATEGORIES.filter((c) => c.id !== "other"), ...loadCustomCategories(), ...other];
+}
+
+export function useInvCategories(): InvCategory[] {
+  const [cats, setCats] = useState<InvCategory[]>(INV_CATEGORIES);
+  useEffect(() => {
+    const sync = () => setCats(allInvCategories());
+    sync();
+    window.addEventListener(CUSTOM_EVENT, sync);
+    window.addEventListener("storage", sync);
+    return () => { window.removeEventListener(CUSTOM_EVENT, sync); window.removeEventListener("storage", sync); };
+  }, []);
+  return cats;
+}
