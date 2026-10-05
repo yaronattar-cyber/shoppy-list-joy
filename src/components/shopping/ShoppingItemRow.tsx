@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 import { Check, ChevronLeft, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatQuantity } from "@/lib/quantity";
@@ -18,7 +18,7 @@ type Props = {
 const LONG_PRESS_MS = 550;
 
 // הקשה = נקנה / איפוס (מיידי); לחיצה ארוכה = חסר במלאי
-export function ShoppingItemRow({ item, onToggle, onOutOfStock, onOpen, storeLabel, storeTone }: Props) {
+export const ShoppingItemRow = memo(function ShoppingItemRow({ item, onToggle, onOutOfStock, onOpen, storeLabel, storeTone }: Props) {
   const quantity = formatQuantity(item.quantity, item.unit) || "×1";
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressed = useRef(false);
@@ -72,4 +72,4 @@ export function ShoppingItemRow({ item, onToggle, onOutOfStock, onOpen, storeLab
       </Button>
     </li>
   );
-}
+});
