@@ -200,12 +200,28 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
         const op = queue[0]!;
         const { error } = await sendOp(op);
         if (error && isNetworkError(error.message)) break;
-        if (error) console.error("sync op dropped", error);
+        // אימות/הרשאות: לא זורקים את הפעולה — התור נשאר שלם, וננסה שוב אחרי שהכניסה האנונימית
+        // וההצטרפות למשפחה הסתיימו (המנויים, הטיימר וחזרת המסך לחזית מפעילים flush מחדש)
+        if (error && isAuthError(error.message)) {
+          if (!waitingSyncToastRef.current) {
+            waitingSyncToastRef.current = true;
+            toast("ממתין לסנכרון", { description: "השינויים שלך יישלחו ברגע שהחיבור יושלם" });
+          }
+          break;
+        }
+        if (error) {
+          // שגיאה שאינה קשורה להרשאות (נתונים לא תקינים וכדומה) — מוותרים על הפעולה
+          console.error("sync op dropped", error);
+          toast.error("שמירת שינוי נכשלה בענן", { description: error.message });
+        }
         queue = readJson<Op[]>(queueKey(familyId), []).slice(1);
         writeJson(queueKey(familyId), queue);
         setPendingCount(queue.length);
       }
-      if (!queue.length) await refresh();
+      if (!queue.length) {
+        waitingSyncToastRef.current = false;
+        await refresh();
+      }
     } catch (e) {
       console.warn("sync failed, will retry", e);
     } finally {
