@@ -100,6 +100,32 @@ export type Database = {
           },
         ]
       }
+      family_memberships: {
+        Row: {
+          created_at: string
+          family_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          family_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          family_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_memberships_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       family_product_history: {
         Row: {
           category: string
@@ -262,6 +288,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      is_family_member: { Args: { _fid: string }; Returns: boolean }
+      join_event: {
+        Args: { _event_id: string; _family_id: string }
+        Returns: string
+      }
+      join_family: { Args: { _id: string; _name?: string }; Returns: undefined }
       merge_family_items: {
         Args: { _from: string; _to: string }
         Returns: number
