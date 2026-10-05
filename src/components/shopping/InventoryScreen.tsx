@@ -253,6 +253,8 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
       </Button>
 
 
+      <InventoryAssistant open={assistantOpen} onOpenChange={setAssistantOpen} items={items} />
+
       <Drawer open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DrawerContent dir="rtl" className="mx-auto max-w-xl rounded-t-2xl border-border bg-card">
           <DrawerHeader className="text-right sm:text-right">
