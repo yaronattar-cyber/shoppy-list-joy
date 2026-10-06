@@ -73,14 +73,15 @@ export function useEvents(familyId: string | null) {
     else sessionStorage.removeItem(activeKey(familyId));
   }, [familyId]);
 
-  const create = useCallback(async (name: string) => {
-    if (!familyId || !name.trim()) return;
+  const create = useCallback(async (name: string): Promise<string | null> => {
+    if (!familyId || !name.trim()) return null;
     const id = newFamilyCode();
     const ev = { id, name: name.trim(), owner_family_id: familyId };
     await supabase.from("families").insert({ ...ev, kind: "event" });
     await supabase.from("event_members").insert({ event_id: id, family_id: familyId });
     setEvents((e) => [...e, ev]);
     select(id);
+    return id;
   }, [familyId, select]);
 
   // היוצר סוגר את האירוע לכולם; משפחה מוזמנת רק עוזבת
