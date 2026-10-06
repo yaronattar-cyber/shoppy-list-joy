@@ -14,7 +14,7 @@ type Props = {
   onAnalyze?: (mode: ScanMode, imageDataUrl: string) => void;
   inventory?: ShoppingItem[];
   onCreateRecipeList?: ((dish: string, names: string[]) => void) | undefined;
-  onSaveOnline?: ((names: string[]) => void) | undefined;
+  onSaveOnline?: ((list: { title: string; store: string; price: string; url: string; image: string }[]) => void) | undefined;
 };
 
 // קישורי חיפוש לחנויות אונליין לפי מילות המפתח
@@ -45,6 +45,15 @@ async function toDataUrl(file: File): Promise<string> {
   c.height = Math.round(bmp.height * scale);
   c.getContext("2d")!.drawImage(bmp, 0, 0, c.width, c.height);
   return c.toDataURL("image/jpeg", 0.8);
+}
+
+// תמונה ממוזערת לשמירה מקומית
+async function toThumb(src: string): Promise<string> {
+  const im = new Image(); im.src = src; await im.decode();
+  const sc = Math.min(1, 120 / Math.max(im.width, im.height));
+  const c = document.createElement("canvas"); c.width = Math.round(im.width * sc); c.height = Math.round(im.height * sc);
+  c.getContext("2d")!.drawImage(im, 0, 0, c.width, c.height);
+  return c.toDataURL("image/jpeg", 0.7);
 }
 
 // שני כפתורי AI חזותיים: בישול / קנייה — עם חלונית צילום משותפת
@@ -146,7 +155,13 @@ export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList, on
                       );
                     })}
                   </ul>
-                  <Button type="button" className="h-12 w-full text-base font-bold" disabled={!picked.length} onClick={() => { onSaveOnline?.(picked.map((id) => `${product.productTitle} (${MARKETS.find((m) => m.id === id)!.name})`)); close(); }}>
+                  <Button type="button" className="h-12 w-full text-base font-bold" disabled={!picked.length} onClick={async () => {
+                    const thumb = await toThumb(img);
+                    const q = product.searchKeywords || product.productTitle;
+                    onSaveOnline?.(picked.map((id) => { const m = MARKETS.find((x) => x.id === id)!; return { title: product.productTitle, store: m.name, price: product.priceEstimates[m.id], url: m.url(q), image: thumb }; }));
+                    toast.success("נשמר בקניות אונליין");
+                    close();
+                  }}>
                     שמור לרשימת קניות אונליין{picked.length ? ` (${picked.length})` : ""}
                   </Button>
                   <Button type="button" variant="outline" className="h-11 w-full" onClick={() => { setProduct(null); setImg(""); }}>סריקה חדשה</Button>
