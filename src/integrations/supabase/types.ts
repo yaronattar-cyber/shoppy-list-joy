@@ -189,6 +189,7 @@ export type Database = {
           name: string
           notes: string
           out_of_stock: boolean
+          photo_url: string | null
           quantity: number
           stock_status: string
           store_id: string | null
@@ -206,6 +207,7 @@ export type Database = {
           name: string
           notes?: string
           out_of_stock?: boolean
+          photo_url?: string | null
           quantity?: number
           stock_status?: string
           store_id?: string | null
@@ -223,6 +225,7 @@ export type Database = {
           name?: string
           notes?: string
           out_of_stock?: boolean
+          photo_url?: string | null
           quantity?: number
           stock_status?: string
           store_id?: string | null
@@ -401,6 +404,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_tab_order: {
+        Row: {
+          tab_ids: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          tab_ids?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          tab_ids?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {

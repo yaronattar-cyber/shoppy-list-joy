@@ -22,6 +22,7 @@ type Row = {
   store_id: string | null;
   expiry_date?: string | null;
   stock_status?: string;
+  photo_url?: string | null;
 };
 
 type Patch = Partial<Omit<Row, "id" | "family_id" | "created_at" | "added_by">>;
@@ -42,6 +43,7 @@ const toItem = (row: Row): ShoppingItem => ({
   storeId: row.store_id ?? null,
   expiryDate: row.expiry_date ?? null,
   stockStatus: (row.stock_status as ShoppingItem["stockStatus"]) ?? "full",
+  photoUrl: row.photo_url ?? null,
 });
 
 // המרת שדות DB לשדות פריט מקומי
@@ -57,6 +59,7 @@ const patchToItem = (p: Patch): Partial<ShoppingItem> => {
   if (p.archived !== undefined) out.archived = p.archived;
   if (p.expiry_date !== undefined) out.expiryDate = p.expiry_date;
   if (p.stock_status !== undefined) out.stockStatus = p.stock_status as ShoppingItem["stockStatus"];
+  if (p.photo_url !== undefined) out.photoUrl = p.photo_url;
   return out;
 };
 
@@ -374,14 +377,14 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
   );
 
   // הוספת אוכל מוכן ישירות למלאי, בלי לעבור דרך רשימת הקניות
-  const addPreparedMeal = (rawName: string) => {
+  const addPreparedMeal = (rawName: string, photoUrl?: string | null) => {
     const parsed = parseQuantity(rawName);
     const name = parsed.name.trim();
     if (!name || !familyId) return false;
     const row = makeRow(name, parsed.quantity, parsed.unit);
     enqueue({
       type: "insert",
-      rows: [{ ...row, completed: true, archived: true, category: "prepared-meal" }],
+      rows: [{ ...row, completed: true, archived: true, category: "prepared-meal", photo_url: photoUrl ?? null }],
     });
     return true;
   };
@@ -455,6 +458,8 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
       update(id, { expiry_date: d.expiryDate || null, stock_status: d.stockStatus, quantity: d.quantity > 0 ? d.quantity : 1, unit: d.unit, category: d.category }),
     [update],
   );
+
+  const setPhoto = useCallback((id: string, path: string) => update(id, { photo_url: path }), [update]);
 
   // toast עם „בטל” ל־5 שניות — הביטול עובר דרך אותו תור
   const undoToast = (msg: string, undo: () => void) =>
@@ -537,6 +542,7 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
     setQuantity,
     updateDetails,
     updateInventory,
+    setPhoto,
     removeItem,
     markAll,
     archiveCompleted,
