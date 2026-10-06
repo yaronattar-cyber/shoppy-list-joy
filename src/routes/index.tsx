@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Home, ListChecks, Package, Users } from "lucide-react";
+import { Home, ListChecks, Package, Users, ShoppingBag } from "lucide-react";
+import { OnlineWishlist } from "@/components/shopping/OnlineWishlist";
+import { useOnlineWishlist } from "@/hooks/useOnlineWishlist";
 import { toast } from "sonner";
 import type { AddTarget } from "@/components/shopping/TargetPicker";
 import { Button } from "@/components/ui/button";
@@ -48,6 +50,8 @@ const ORDER = ["home", "list", "inventory"] as const;
 type Screen = (typeof ORDER)[number] | "family";
 
 function Index() {
+  const wish = useOnlineWishlist();
+  const [listTab, setListTab] = useState<"shopping" | "online">("shopping");
   const [screen, setScreen] = useState<Screen>("home");
   const [restored, setRestored] = useState(false);
   const [startScreen, setStartScreen] = useState<Screen>("home");
@@ -217,7 +221,18 @@ function Index() {
         </div>
       </nav>
 
-      {screen === "list" && events.active && (
+      {screen === "list" && (
+        <div role="tablist" aria-label="סוג רשימת קניות" className="mx-auto flex max-w-2xl gap-2 px-3 pt-3 sm:px-6">
+          <Button role="tab" aria-selected={listTab === "shopping"} variant={listTab === "shopping" ? "default" : "ghost"} size="sm" onClick={() => setListTab("shopping")}><ListChecks className="h-4 w-4" />רשימת קניות</Button>
+          <Button role="tab" aria-selected={listTab === "online"} variant={listTab === "online" ? "default" : "ghost"} size="sm" onClick={() => setListTab("online")}><ShoppingBag className="h-4 w-4" />קניות אונליין ({wish.items.length})</Button>
+        </div>
+      )}
+      {screen === "list" && listTab === "online" && (
+        <div role="tabpanel" aria-label="קניות אונליין" className="mx-auto max-w-2xl px-3 pb-8 sm:px-6">
+          <OnlineWishlist embedded items={wish.items} onToggle={wish.toggle} onRename={wish.rename} onRemove={wish.remove} onRemoveStore={wish.removeStore} />
+        </div>
+      )}
+      {screen === "list" && listTab === "shopping" && events.active && (
         <EventBar
           familyId={family.familyId}
           userName={family.userName}
@@ -227,7 +242,7 @@ function Index() {
           onClose={(ev) => void events.close(ev)}
         />
       )}
-      {screen === "list" && (
+      {screen === "list" && listTab === "shopping" && (
         <StoreSelector
           stores={stores.stores}
           active={stores.active}
@@ -254,6 +269,7 @@ function Index() {
       )}
       {screen === "home" && (
         <AddScreen
+          wish={wish}
           userName={family.userName}
           count={list.items.length}
           items={list.items}
@@ -264,12 +280,12 @@ function Index() {
           onAddTo={addTo}
           inventory={list.inventory}
           onCreateRecipeList={(d, n) => void createRecipeList(d, n)}
-          onGoShopping={() => setScreen("list")}
+           onGoShopping={() => { setListTab("shopping"); setScreen("list"); }}
           onOpenFamily={() => setScreen("family")}
           onSpeak={(text) => speak(text)}
         />
       )}
-      {screen === "list" && (
+      {screen === "list" && listTab === "shopping" && (
         <ListScreen
           items={shown.items}
           history={list.history}

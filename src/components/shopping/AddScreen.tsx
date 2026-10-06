@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, Mic, MicOff, Plus, ScanBarcode } from "lucide-react";
+import { Check, Mic, MicOff, Plus, ScanBarcode, ShoppingBag } from "lucide-react";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { Button } from "@/components/ui/button";
 import { CategoryBar } from "./CategoryBar";
@@ -11,7 +11,8 @@ import type { ShoppingItem } from "@/lib/shopping-list";
 import { TargetPicker, type AddTarget } from "./TargetPicker";
 import { VisualAiScan } from "./VisualAiScan";
 import { OnlineWishlist } from "./OnlineWishlist";
-import { useOnlineWishlist } from "@/hooks/useOnlineWishlist";
+import type { useOnlineWishlist } from "@/hooks/useOnlineWishlist";
+import { Drawer, DrawerClose, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 export type { AddTarget };
 
 type Props = {
@@ -28,6 +29,7 @@ type Props = {
   onSpeak?: (text: string) => void;
   inventory?: ShoppingItem[];
   onCreateRecipeList?: (dish: string, names: string[]) => void;
+  wish: ReturnType<typeof useOnlineWishlist>;
 };
 
 const greeting = () => {
@@ -36,8 +38,8 @@ const greeting = () => {
 };
 
 // מסך הבית: כותרת קומפקטית, שורת הוספה ופריטים אחרונים
-export function AddScreen({ userName, items = [], history = [], productHistory = [], targets, onAddTo, onToggle, onGoShopping, inventory = [], onCreateRecipeList }: Props) {
-  const wish = useOnlineWishlist();
+export function AddScreen({ userName, items = [], history = [], productHistory = [], targets, onAddTo, onToggle, onGoShopping, inventory = [], onCreateRecipeList, wish }: Props) {
+  const [onlineOpen, setOnlineOpen] = useState(false);
   const [value, setValue] = useState("");
   const [popup, setPopup] = useState<string | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -77,14 +79,17 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
     <section className="mx-auto w-full max-w-2xl px-4 pb-28 pt-4 sm:px-6">
       <header className="flex items-center justify-between gap-3">
         <h1 className="min-w-0 text-lg font-bold tracking-tight text-foreground">{greeting()}, {userName}</h1>
+        <div className="flex shrink-0 items-center gap-1">
+        <Button type="button" size="icon" variant="ghost" onClick={() => setOnlineOpen(true)} aria-label="קניות אונליין" title="קניות אונליין" className="h-8 w-8 text-primary"><ShoppingBag className="h-4 w-4" /></Button>
         <Button type="button" onClick={onGoShopping} variant="secondary" aria-label={`${pending.length} ברשימה — פתיחת רשימת הקניות`} className="h-8 shrink-0 items-center gap-1.5 rounded-full border border-primary/15 bg-primary/10 px-3 text-xs font-semibold text-primary transition-all hover:bg-primary/15 active:scale-95">
           <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden />
           {pending.length} ברשימה
         </Button>
+        </div>
       </header>
 
       {/* שדה הוספה */}
-      <form className="mt-4 flex items-center gap-1 rounded-2xl border border-border/70 bg-card p-1.5 shadow-soft transition-all focus-within:border-primary/30 focus-within:shadow-glow" onSubmit={(event) => { event.preventDefault(); if (add(value)) setValue(""); }}>
+      <form className="mt-4 flex items-center gap-1 rounded-2xl border border-border/70 bg-card p-0.5 shadow-soft transition-all focus-within:border-primary/30 focus-within:shadow-glow [&>button]:h-9 [&>button]:w-9 [&>input]:h-9" onSubmit={(event) => { event.preventDefault(); if (add(value)) setValue(""); }}>
         <Button type="button" size="icon" variant="ghost" onClick={stt.start} disabled={!stt.supported} aria-label={stt.listening ? "מקשיב, לחצו לעצירה" : "הוספה בדיבור"} title={stt.supported ? "הוספה בדיבור" : "הדפדפן אינו תומך בזיהוי דיבור"} className={`relative isolate h-10 w-10 shrink-0 rounded-xl transition-all active:scale-95 ${stt.listening ? "mic-ripple bg-destructive/10 text-destructive" : "text-primary hover:bg-accent"}`}>
           {stt.supported ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
         </Button>
@@ -95,8 +100,17 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
         <Button type="submit" size="icon" className="h-10 w-10 shrink-0 rounded-xl transition-all active:scale-95" aria-label="הוספת פריט"><Plus className="h-5 w-5" /></Button>
       </form>
 
+      <CategoryBar onAdd={fill} />
       <VisualAiScan inventory={inventory} onCreateRecipeList={onCreateRecipeList} onSaveOnline={wish.add} />
-      <OnlineWishlist items={wish.items} onToggle={wish.toggle} onRename={wish.rename} onRemove={wish.remove} onRemoveStore={wish.removeStore} />
+      <Drawer open={onlineOpen} onOpenChange={setOnlineOpen}>
+        <DrawerContent dir="rtl" className="mx-auto max-w-2xl bg-card">
+          <DrawerHeader className="text-right"><DrawerTitle>קניות אונליין</DrawerTitle></DrawerHeader>
+          <div className="max-h-[65dvh] overflow-y-auto px-4 pb-4">
+            <OnlineWishlist embedded items={wish.items} onToggle={wish.toggle} onRename={wish.rename} onRemove={wish.remove} onRemoveStore={wish.removeStore} />
+          </div>
+          <DrawerClose asChild><Button variant="outline" className="mx-4 mb-4">סגירה</Button></DrawerClose>
+        </DrawerContent>
+      </Drawer>
 
       <HistorySuggestions items={suggestions} onPick={(name) => fill(name)} />
 
@@ -104,8 +118,6 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
         {stt.listening && <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive"><span className="h-2 w-2 animate-pulse rounded-full bg-destructive" />מקשיב...</div>}
         {!stt.listening && stt.error && <p className="mt-3 rounded-xl bg-destructive/10 px-3 py-2 text-sm text-destructive">{stt.error}</p>}
       </div>
-
-      <CategoryBar onAdd={fill} />
 
       <BarcodeScanner open={scannerOpen} onClose={() => setScannerOpen(false)} onResult={(name) => setScanDraft(name)} />
 
