@@ -89,10 +89,10 @@ function Index() {
     return () => window.removeEventListener("pointerdown", ask);
   }, []);
   // מוצר שממתין להוספה לאירוע שעדיין נטען
-  const [pendingEvent, setPendingEvent] = useState<{ id: string; name: string } | null>(null);
+  const [pendingEvent, setPendingEvent] = useState<{ id: string; names: string[] } | null>(null);
   useEffect(() => {
     if (pendingEvent && events.activeId === pendingEvent.id) {
-      eventList.addItem(pendingEvent.name);
+      pendingEvent.names.forEach((n) => eventList.addItem(n));
       setPendingEvent(null);
     }
   }, [pendingEvent, events.activeId, eventList]);
@@ -111,8 +111,16 @@ function Index() {
     toast.success(`${name} נוסף ל${t.label}`);
     if (events.activeId === t.id) return eventList.addItem(name);
     events.select(t.id);
-    setPendingEvent({ id: t.id, name });
+    setPendingEvent({ id: t.id, names: [name] });
     return name;
+  };
+  // רשימה ייעודית לרכיבים חסרים של מנה שזוהתה בתמונה
+  const createRecipeList = async (dish: string, names: string[]) => {
+    const id = await events.create(`רכיבים ל-${dish}`);
+    if (!id) return;
+    setPendingEvent({ id, names });
+    toast.success(`נוצרה רשימה „רכיבים ל-${dish}”`);
+    setScreen("list");
   };
   useEffect(() => {
     if (events.joinedName) setScreen("list");
@@ -254,6 +262,8 @@ function Index() {
           productHistory={list.productHistory}
           targets={targets}
           onAddTo={addTo}
+          inventory={list.inventory}
+          onCreateRecipeList={(d, n) => void createRecipeList(d, n)}
           onGoShopping={() => setScreen("list")}
           onOpenFamily={() => setScreen("family")}
           onSpeak={(text) => speak(text)}
