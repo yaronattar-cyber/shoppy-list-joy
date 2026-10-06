@@ -9,6 +9,7 @@ import { matchHistory, type HistoryEntry } from "@/lib/product-history";
 import type { ShoppingItem } from "@/lib/shopping-list";
 
 import { TargetPicker, type AddTarget } from "./TargetPicker";
+import { VisualAiScan } from "./VisualAiScan";
 export type { AddTarget };
 
 type Props = {
@@ -88,6 +89,8 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
         <input ref={inputRef} value={value} onChange={(event) => setValue(event.target.value)} placeholder="מה חסר במקרר?" aria-label="שם הפריט" autoComplete="off" className="h-10 min-w-0 flex-1 bg-transparent px-1 text-base text-foreground outline-none placeholder:text-muted-foreground" />
         <Button type="submit" size="icon" className="h-10 w-10 shrink-0 rounded-xl transition-all active:scale-95" aria-label="הוספת פריט"><Plus className="h-5 w-5" /></Button>
       </form>
+
+      <VisualAiScan />
 
       <HistorySuggestions items={suggestions} onPick={(name) => fill(name)} />
 
