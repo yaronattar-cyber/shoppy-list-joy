@@ -16,17 +16,17 @@ export function OnlineWishlist({ items, onToggle, onRename, onRemove, onRemoveSt
   const [open, setOpen] = useState(true);
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
-  if (!items.length) return null;
   const stores = [...new Set(items.map((i) => i.store))];
 
   return (
     <section className="mt-6 rounded-2xl border border-border/60 bg-card shadow-soft">
-      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="flex w-full items-center justify-between px-4 py-3">
+      <Button type="button" variant="ghost" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="flex h-auto w-full items-center justify-between px-4 py-3">
         <span className="text-base font-bold text-foreground">🛍️ קניות אונליין ({items.length})</span>
         <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
+      </Button>
       {open && (
         <div className="space-y-4 px-3 pb-3">
+          {!items.length && <p className="text-sm text-muted-foreground">עדיין אין מוצרים בקניות אונליין.</p>}
           {stores.map((store) => (
             <div key={store}>
               <div className="mb-1.5 flex items-center justify-between">
