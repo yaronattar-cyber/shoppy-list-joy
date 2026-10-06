@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import type { WishItem } from "@/hooks/useOnlineWishlist";
 
 type Props = {
+  embedded?: boolean;
   items: WishItem[];
   onToggle: (id: string) => void;
   onRename: (id: string, title: string) => void;
@@ -12,19 +13,19 @@ type Props = {
 };
 
 // אזור "קניות אונליין" מקובץ לפי חנות
-export function OnlineWishlist({ items, onToggle, onRename, onRemove, onRemoveStore }: Props) {
+export function OnlineWishlist({ items, onToggle, onRename, onRemove, onRemoveStore, embedded = false }: Props) {
   const [open, setOpen] = useState(true);
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const stores = [...new Set(items.map((i) => i.store))];
 
   return (
-    <section className="mt-6 rounded-2xl border border-border/60 bg-card shadow-soft">
-      <Button type="button" variant="ghost" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="flex h-auto w-full items-center justify-between px-4 py-3">
+    <section className={embedded ? "mt-3" : "mt-6 rounded-2xl border border-border/60 bg-card shadow-soft"}>
+      {!embedded && <Button type="button" variant="ghost" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="flex h-auto w-full items-center justify-between px-4 py-3">
         <span className="text-base font-bold text-foreground">🛍️ קניות אונליין ({items.length})</span>
         <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
-      </Button>
-      {open && (
+      </Button>}
+      {(embedded || open) && (
         <div className="space-y-4 px-3 pb-3">
           {!items.length && <p className="text-sm text-muted-foreground">עדיין אין מוצרים בקניות אונליין.</p>}
           {stores.map((store) => (
