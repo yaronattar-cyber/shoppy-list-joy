@@ -176,14 +176,8 @@ export function ListScreen(p: Props) {
       {!p.items.length && <div className="mt-10 text-center text-muted-foreground"><ShoppingCart className="mx-auto mb-2 h-8 w-8 opacity-40" /><p className="text-sm">הוסיפו מוצר ראשון למעלה</p></div>}
 
 
-      {/* סל מוזל: שורה רזה אחת עם אייקון, ולצידה פעולת ניקוי */}
-      <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 mx-auto max-w-2xl space-y-1.5 px-3 sm:px-6">
-        {cheapest && nearest && todo.some((i) => !i.outOfStock) && (
-          <Button type="button" variant="outline" onClick={() => setPricesOpen(true)} className="h-8 w-full justify-start gap-1.5 rounded-full border-border bg-card/95 px-3 text-xs shadow-md backdrop-blur">
-            <Tag className="h-3.5 w-3.5 shrink-0 text-primary" />
-            <span className="min-w-0 flex-1 truncate text-right"><strong className="font-semibold">{cheapest.store} ₪{formatPrice(cheapest.total)}</strong><span className="text-muted-foreground"> · קרוב: {nearest.store}</span></span>
-          </Button>
-        )}
+      {/* שורת פעולה תחתונה: ניקוי פריטים שנקנו בלבד */}
+      <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 mx-auto max-w-2xl px-3 sm:px-6">
         {!onlineOnly && <Button type="button" className="h-9 w-full text-sm" disabled={!doneCount} onClick={p.onArchive}><Archive className="h-4 w-4" />ניקוי פריטים שנקנו{doneCount ? ` (${doneCount})` : ""}</Button>}
       </div>
 
@@ -199,15 +193,6 @@ export function ListScreen(p: Props) {
         </DrawerContent>
       </Drawer>
 
-      <Drawer open={pricesOpen} onOpenChange={setPricesOpen}>
-        <DrawerContent dir="rtl" className="mx-auto max-w-xl rounded-t-2xl bg-card">
-          <DrawerHeader className="text-right sm:text-right"><DrawerTitle>השוואת סל</DrawerTitle><DrawerDescription>המחירים משוערים ואינם מתעדכנים מהרשתות.</DrawerDescription></DrawerHeader>
-          <div className="px-4 pb-6">
-            <div className="mb-3 grid grid-cols-2 rounded-md bg-muted p-1"><Button type="button" size="sm" variant={sort === "price" ? "default" : "ghost"} onClick={() => setSort("price")}>לפי מחיר</Button><Button type="button" size="sm" variant={sort === "distance" ? "default" : "ghost"} onClick={() => setSort("distance")}>לפי מרחק</Button></div>
-            <ul className="overflow-hidden rounded-lg border border-border">{sortedTotals.map((total, index) => <li key={total.store} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-3 py-2.5 last:border-0"><span className="grid h-6 w-6 place-items-center rounded-full bg-muted text-xs font-semibold">{index + 1}</span><span className="font-semibold">{total.store}<small className="block font-normal text-muted-foreground">{formatDistance(STORE_DISTANCES[total.store])}</small></span><strong className="text-left">₪{formatPrice(total.total)}</strong></li>)}</ul>
-          </div>
-        </DrawerContent>
-      </Drawer>
 
       {fullScreen && (
         <FullScreenShopping
