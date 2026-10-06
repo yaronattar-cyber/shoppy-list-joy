@@ -14,7 +14,7 @@ type Props = {
   onAnalyze?: (mode: ScanMode, imageDataUrl: string) => void;
   inventory?: ShoppingItem[];
   onCreateRecipeList?: ((dish: string, names: string[]) => void) | undefined;
-  onSaveOnline?: ((list: { title: string; store: string; price: string; url: string; image: string }[]) => void) | undefined;
+  onSaveOnline?: ((list: { title: string; store: string; price: string; url: string; image: string; ordered?: boolean }[]) => void) | undefined;
 };
 
 // קישורי חיפוש לחנויות אונליין לפי מילות המפתח
@@ -73,6 +73,7 @@ export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList, on
   const identifyFn = useServerFn(identifyProduct);
   const [product, setProduct] = useState<ProductIdentification | null>(null);
   const [picked, setPicked] = useState<string[]>([]);
+  const [choice, setChoice] = useState<string | null>(null);
   const analyzeFn = useServerFn(analyzeDish);
   const [result, setResult] = useState<DishAnalysis | null>(null);
   const [mode, setMode] = useState<ScanMode | null>(null);
@@ -179,42 +180,55 @@ export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList, on
 
             <div className="space-y-3 px-4 pb-6">
               {product ? (
-                <div className="max-h-[70dvh] space-y-3 overflow-y-auto">
-                  <div>
-                    <h3 className="text-lg font-bold text-foreground">{product.productTitle}</h3>
-                    <p className="text-xs text-muted-foreground">{product.category} · המחירים הערכה בלבד</p>
+                <div className="max-h-[75dvh] space-y-2 overflow-y-auto">
+                  <div className="flex items-center gap-3">
+                    <img src={img} alt="" className="h-12 w-12 shrink-0 rounded-xl border border-border object-cover" />
+                    <div className="min-w-0">
+                      <h3 className="truncate text-base font-bold text-foreground">{product.productTitle}</h3>
+                      <p className="text-xs text-muted-foreground">{product.category} · המחירים הערכה בלבד</p>
+                    </div>
                   </div>
-                  <ul className="grid gap-2">
+                  <ul className="grid gap-1.5">
                     {MARKETS.map((m) => {
                       const on = picked.includes(m.id);
                       return (
-                        <li key={m.id} className={`flex items-center gap-3 rounded-2xl border p-2 transition-all ${on ? "border-primary bg-accent/60" : "border-border bg-card"}`}>
-                          <button type="button" aria-pressed={on} aria-label={`בחירת ${m.name}`} onClick={() => setPicked((p) => on ? p.filter((x) => x !== m.id) : [...p, m.id])} className="flex min-w-0 flex-1 items-center gap-3 text-right">
-                            <img src={img} alt="" className="h-14 w-14 shrink-0 rounded-xl border border-border object-cover" />
-                            <span className="min-w-0 flex-1">
-                              <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-bold ${m.color}`}>{m.name}</span>
-                              <span className="block truncate text-sm font-medium text-foreground">{product.productTitle}</span>
-                              <span className="block text-sm font-semibold text-primary">{product.priceEstimates[m.id]}</span>
+                        <li key={m.id} className={`flex h-16 items-center gap-2 rounded-xl border p-1.5 transition-all ${on ? "border-primary bg-accent/60" : "border-border bg-card"}`}>
+                          <button type="button" aria-label={`בחירת ${m.name}`} onClick={() => setChoice(m.id)} className="flex min-w-0 flex-1 items-center gap-2 text-right">
+                            <span className="relative h-12 w-12 shrink-0">
+                              <img src={img} alt="" className="h-12 w-12 rounded-lg border border-border object-cover" />
+                              {on && <span className="absolute inset-0 grid place-items-center rounded-lg bg-primary/60 text-xl font-bold text-primary-foreground">✓</span>}
                             </span>
-                            <span className={`grid h-5 w-5 shrink-0 place-items-center rounded border-2 text-xs ${on ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40"}`}>{on ? "✓" : ""}</span>
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${m.color}`}>{m.name}</span>
+                            <span className="mr-auto text-sm font-semibold text-primary">{product.priceEstimates[m.id]}</span>
                           </button>
-                          <Button asChild size="sm" variant="outline" className="shrink-0 rounded-xl">
-                            <a href={m.url(product.searchKeywords || product.productTitle)} target="_blank" rel="noopener noreferrer">צפה במוצר</a>
+                          <Button asChild size="sm" variant="outline" className="h-8 shrink-0 rounded-lg px-2 text-xs">
+                            <a href={m.url(product.searchKeywords || product.productTitle)} target="_blank" rel="noopener noreferrer">לחנות</a>
                           </Button>
                         </li>
                       );
                     })}
                   </ul>
-                  <Button type="button" className="h-12 w-full text-base font-bold" disabled={!picked.length} onClick={async () => {
-                    const thumb = await toThumb(img);
-                    const q = product.searchKeywords || product.productTitle;
-                    onSaveOnline?.(picked.map((id) => { const m = MARKETS.find((x) => x.id === id)!; return { title: product.productTitle, store: m.name, price: product.priceEstimates[m.id], url: m.url(q), image: thumb }; }));
-                    toast.success("נשמר בקניות אונליין");
-                    close();
-                  }}>
-                    שמור לרשימת קניות אונליין{picked.length ? ` (${picked.length})` : ""}
-                  </Button>
-                  <Button type="button" variant="outline" className="h-11 w-full" onClick={() => { setProduct(null); setImg(""); }}>סריקה חדשה</Button>
+                  {choice && (() => {
+                    const m = MARKETS.find((x) => x.id === choice)!;
+                    const save = async (ordered: boolean) => {
+                      const thumb = await toThumb(img);
+                      onSaveOnline?.([{ title: product.productTitle, store: m.name, price: product.priceEstimates[m.id], url: m.url(product.searchKeywords || product.productTitle), image: thumb, ordered }]);
+                      setPicked((p) => (p.includes(m.id) ? p : [...p, m.id]));
+                      setChoice(null);
+                      toast.success(ordered ? "נשמר בהזמנות אונליין במלאי" : "נוסף לרשימת קניות אונליין");
+                    };
+                    return (
+                      <div role="dialog" aria-label={`פעולה עבור ${m.name}`} className="space-y-2 rounded-xl border border-primary/30 bg-accent/40 p-2">
+                        <p className="text-sm font-semibold">{m.name} — מה לעשות?</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button type="button" onClick={() => void save(true)}>נקנה</Button>
+                          <Button type="button" variant="outline" onClick={() => void save(false)}>הוסף לרשימת אונליין</Button>
+                        </div>
+                        <Button type="button" variant="ghost" size="sm" className="w-full" onClick={() => setChoice(null)}>ביטול</Button>
+                      </div>
+                    );
+                  })()}
+                  <Button type="button" variant="outline" className="h-11 w-full" onClick={() => { setProduct(null); setImg(""); setPicked([]); }}>סריקה חדשה</Button>
                 </div>
               ) : result ? (
                 <div className="max-h-[70dvh] space-y-4 overflow-y-auto">

@@ -1,7 +1,8 @@
 // רשימת "קניות אונליין" מהחיפוש החזותי — נשמרת מקומית במכשיר
 import { useCallback, useEffect, useState } from "react";
 
-export type WishItem = { id: string; title: string; store: string; price: string; url: string; image: string; done: boolean };
+// ordered = נקנה אונליין וממתין למשלוח (מוצג במלאי עד אישור הגעה)
+export type WishItem = { id: string; title: string; store: string; price: string; url: string; image: string; done: boolean; ordered?: boolean };
 const KEY = "online-wishlist";
 
 const load = (): WishItem[] => {
@@ -24,7 +25,8 @@ export function useOnlineWishlist() {
     });
   }, []);
   return {
-    items,
+    items: items.filter((x) => !x.ordered),
+    ordered: items.filter((x) => x.ordered),
     add: (list: Omit<WishItem, "id" | "done">[]) => update((p) => [...p, ...list.map((x) => ({ ...x, id: crypto.randomUUID(), done: false }))]),
     toggle: (id: string) => update((p) => p.map((x) => (x.id === id ? { ...x, done: !x.done } : x))),
     rename: (id: string, title: string) => update((p) => p.map((x) => (x.id === id ? { ...x, title } : x))),
