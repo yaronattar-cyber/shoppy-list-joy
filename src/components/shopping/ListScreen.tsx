@@ -1,7 +1,7 @@
 import { PhotoProductButton } from "./PhotoProductButton";
 import { FullScreenShopping } from "./FullScreenShopping";
 import { useEffect, useMemo, useState } from "react";
-import { Archive, CheckCheck, ChevronDown, ClipboardList, Eye, Globe2, Layers, Maximize2, PackageCheck, PartyPopper, Plus, Send, Share2, ShoppingCart, SlidersHorizontal, Sun, Tag, Wand2 } from "lucide-react";
+import { Archive, CheckCheck, ChevronDown, ClipboardList, Eye, Globe2, Layers, Maximize2, PackageCheck, PartyPopper, Plus, Send, Share2, ShoppingCart, SlidersHorizontal, Sun, Wand2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { atStoreText, groupByCategory, listAsText, openWhatsApp, setWakeLock, wakeLockSupported } from "@/lib/shopping-tools";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,6 @@ import { LongPressHint, ShoppingItemRow } from "./ShoppingItemRow";
 import { storeTone } from "./StoreChips";
 import { HistorySuggestions } from "./HistorySuggestions";
 import { matchHistory, type HistoryEntry } from "@/lib/product-history";
-import { basketTotals, formatDistance, formatPrice, STORE_DISTANCES } from "@/lib/prices";
 import { parsePastedList, type ShoppingItem } from "@/lib/shopping-list";
 import type { OnlineOrder } from "@/hooks/useOnlineOrders";
 import { toast } from "sonner";
@@ -53,7 +52,6 @@ export function ListScreen(p: Props) {
   const submitQuick = () => { const n = quick.trim(); if (!n) return; if (p.targets?.length && p.onAddTo) setPicking(n); else if (p.onAdd(n)) setQuick(""); };
   const [selected, setSelected] = useState<ShoppingItem | null>(null);
   const [importOpen, setImportOpen] = useState(false);
-  const [pricesOpen, setPricesOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   // מצב "אני בסופר": קניות במסך מלא
   const [fullScreen, setFullScreen] = useState(false);
@@ -78,13 +76,8 @@ export function ListScreen(p: Props) {
     for (const r of rows) { const k = storeNameOf(r); m.set(k, [...(m.get(k) ?? []), r]); }
     return [...m.entries()].sort(([a], [b]) => (a === "ללא חנות" ? 1 : b === "ללא חנות" ? -1 : a.localeCompare(b, "he")));
   };
-  const [sort, setSort] = useState<"price" | "distance">("price");
   const doneCount = p.items.filter((item) => item.completed).length;
   const allDone = p.items.length > 0 && doneCount === p.items.length;
-  const totals = useMemo(() => basketTotals(p.items), [p.items]);
-  const cheapest = totals[0];
-  const nearest = [...totals].sort((a, b) => STORE_DISTANCES[a.store] - STORE_DISTANCES[b.store])[0];
-  const sortedTotals = [...totals].sort((a, b) => sort === "price" ? a.total - b.total : STORE_DISTANCES[a.store] - STORE_DISTANCES[b.store]);
   // רשימת פריטים משותפת לכל אופן תצוגה
   const rows = (list: ShoppingItem[]) => list.map((item) => <ShoppingItemRow key={item.id} item={item} storeLabel={tag(item)} storeTone={general ? storeTone(p.stores ?? [], item.storeId) : undefined} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />);
   const placeOnlineOrder = async () => {
