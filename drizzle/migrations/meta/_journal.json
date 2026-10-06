@@ -127,6 +127,13 @@
       "when": 1791289742941,
       "tag": "0017_tab_order_meal_photos",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1791289760378,
+      "tag": "0018_meal_photos_policies",
+      "breakpoints": true
     }
   ]
 }
