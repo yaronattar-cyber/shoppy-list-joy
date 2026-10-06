@@ -264,12 +264,6 @@ function Index() {
           onAddTo={addTo}
           inventory={list.inventory}
           onCreateRecipeList={(d, n) => void createRecipeList(d, n)}
-          onSaveOnline={(names) => {
-            // חנות אונליין ראשונה אם קיימת, אחרת הרשימה הכללית
-            const online = stores.stores.find((st) => st.isOnlineOnly);
-            names.forEach((n) => list.addItem(n, online?.id ?? null));
-            toast.success(`נשמרו ${names.length} מוצרים${online ? ` ל${online.name}` : " לרשימה"}`);
-          }}
           onGoShopping={() => setScreen("list")}
           onOpenFamily={() => setScreen("family")}
           onSpeak={(text) => speak(text)}

@@ -10,6 +10,8 @@ import type { ShoppingItem } from "@/lib/shopping-list";
 
 import { TargetPicker, type AddTarget } from "./TargetPicker";
 import { VisualAiScan } from "./VisualAiScan";
+import { OnlineWishlist } from "./OnlineWishlist";
+import { useOnlineWishlist } from "@/hooks/useOnlineWishlist";
 export type { AddTarget };
 
 type Props = {
@@ -26,7 +28,6 @@ type Props = {
   onSpeak?: (text: string) => void;
   inventory?: ShoppingItem[];
   onCreateRecipeList?: (dish: string, names: string[]) => void;
-  onSaveOnline?: (names: string[]) => void;
 };
 
 const greeting = () => {
@@ -35,7 +36,8 @@ const greeting = () => {
 };
 
 // מסך הבית: כותרת קומפקטית, שורת הוספה ופריטים אחרונים
-export function AddScreen({ userName, items = [], history = [], productHistory = [], targets, onAddTo, onToggle, onGoShopping, inventory = [], onCreateRecipeList, onSaveOnline }: Props) {
+export function AddScreen({ userName, items = [], history = [], productHistory = [], targets, onAddTo, onToggle, onGoShopping, inventory = [], onCreateRecipeList }: Props) {
+  const wish = useOnlineWishlist();
   const [value, setValue] = useState("");
   const [popup, setPopup] = useState<string | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -93,7 +95,8 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
         <Button type="submit" size="icon" className="h-10 w-10 shrink-0 rounded-xl transition-all active:scale-95" aria-label="הוספת פריט"><Plus className="h-5 w-5" /></Button>
       </form>
 
-      <VisualAiScan inventory={inventory} onCreateRecipeList={onCreateRecipeList} onSaveOnline={onSaveOnline} />
+      <VisualAiScan inventory={inventory} onCreateRecipeList={onCreateRecipeList} onSaveOnline={wish.add} />
+      <OnlineWishlist items={wish.items} onToggle={wish.toggle} onRename={wish.rename} onRemove={wish.remove} onRemoveStore={wish.removeStore} />
 
       <HistorySuggestions items={suggestions} onPick={(name) => fill(name)} />
 
