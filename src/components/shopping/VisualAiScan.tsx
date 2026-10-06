@@ -1,12 +1,25 @@
 import { useEffect, useRef, useState } from "react";
 import { ChefHat, Camera, ImagePlus, Loader2, ShoppingBag, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
+import { analyzeDish, type DishAnalysis } from "@/lib/ai/analyze-dish.functions";
+import type { ShoppingItem } from "@/lib/shopping-list";
 
 export type ScanMode = "recipe" | "shopping";
 
 type Props = {
   // יתחבר ללוגיקת ה-AI בשלב הבא
   onAnalyze?: (mode: ScanMode, imageDataUrl: string) => void;
+  inventory?: ShoppingItem[];
+  onCreateRecipeList?: (dish: string, names: string[]) => void;
+};
+
+// השוואה גמישה בין שם רכיב לשם במלאי
+const norm = (t: string) => t.trim().toLowerCase().replace(/[^\p{L}\p{N} ]/gu, "").replace(/(ים|ות)$/u, "");
+const inStock = (name: string, inv: ShoppingItem[]) => {
+  const n = norm(name);
+  return !!n && inv.some((i) => { const m = norm(i.name); return !!m && (m.includes(n) || n.includes(m)); });
 };
 
 const MODES: Record<ScanMode, { title: string; hint: string }> = {
@@ -26,14 +39,31 @@ async function toDataUrl(file: File): Promise<string> {
 }
 
 // שני כפתורי AI חזותיים: בישול / קנייה — עם חלונית צילום משותפת
-export function VisualAiScan({ onAnalyze }: Props) {
+export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList }: Props) {
+  const analyzeFn = useServerFn(analyzeDish);
+  const [result, setResult] = useState<DishAnalysis | null>(null);
   const [mode, setMode] = useState<ScanMode | null>(null);
   const [img, setImg] = useState("");
   const [busy, setBusy] = useState(false);
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
 
-  const close = () => { setMode(null); setImg(""); setBusy(false); };
+  const close = () => { setMode(null); setImg(""); setBusy(false); setResult(null); };
+
+  const analyze = async () => {
+    if (!mode) return;
+    if (mode !== "recipe") return onAnalyze?.(mode, img);
+    setBusy(true);
+    try {
+      const r = await analyzeFn({ data: { image: img } });
+      if (r.error || !r.result) toast.error(r.error ?? "הניתוח נכשל");
+      else setResult(r.result);
+    } catch { toast.error("הניתוח נכשל, נסו שוב"); }
+    finally { setBusy(false); }
+  };
+
+  const marked = result?.ingredients.map((g) => ({ ...g, ok: inStock(g.name, inventory) })) ?? [];
+  const missing = marked.filter((g) => !g.ok);
 
   const onFile = async (f?: File) => {
     if (!f) return;
@@ -69,7 +99,32 @@ export function VisualAiScan({ onAnalyze }: Props) {
             </div>
 
             <div className="space-y-3 px-4 pb-6">
-              {img ? (
+              {result ? (
+                <div className="max-h-[70dvh] space-y-4 overflow-y-auto">
+                  <h3 className="text-xl font-bold text-foreground">{result.dishName}</h3>
+                  <section>
+                    <h4 className="mb-2 text-sm font-semibold text-muted-foreground">רכיבים</h4>
+                    <ul className="space-y-1.5">
+                      {marked.map((g, i) => (
+                        <li key={i} className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm ${g.ok ? "border-primary/30 bg-accent text-primary" : "border-destructive/30 bg-destructive/10 text-destructive"}`}>
+                          <span className="font-medium">{g.ok ? "✓" : "✗"} {g.name}</span>
+                          <span className="shrink-0 text-xs opacity-80">{g.quantity} · {g.ok ? "במלאי" : "חסר"}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                  <section>
+                    <h4 className="mb-2 text-sm font-semibold text-muted-foreground">אופן הכנה</h4>
+                    <ol className="list-decimal space-y-1 pr-5 text-sm text-foreground">
+                      {result.instructions.map((st, i) => <li key={i}>{st}</li>)}
+                    </ol>
+                  </section>
+                  <Button type="button" className="h-12 w-full text-base font-bold" disabled={!missing.length} onClick={() => { onCreateRecipeList?.(result.dishName, missing.map((g) => g.name)); close(); }}>
+                    {missing.length ? `הוסף רכיבים חסרים לרשימת קניות (${missing.length})` : "כל הרכיבים במלאי 🎉"}
+                  </Button>
+                  <Button type="button" variant="outline" className="h-11 w-full" onClick={() => { setResult(null); setImg(""); }}>סריקה חדשה</Button>
+                </div>
+              ) : img ? (
                 <>
                   <div className="relative">
                     <img src={img} alt="התמונה שנבחרה" className="mx-auto max-h-56 rounded-xl border border-border object-contain" />
@@ -79,7 +134,7 @@ export function VisualAiScan({ onAnalyze }: Props) {
                       </div>
                     )}
                   </div>
-                  <Button type="button" className="h-12 w-full text-base font-bold" disabled={busy} onClick={() => onAnalyze?.(mode, img)}>
+                  <Button type="button" className="h-12 w-full text-base font-bold" disabled={busy} onClick={() => void analyze()}>
                     המשך לניתוח
                   </Button>
                   <Button type="button" variant="outline" className="h-11 w-full" onClick={() => setImg("")}>בחירת תמונה אחרת</Button>
