@@ -4,4 +4,4 @@
 - [x] Validate responsive layouts and interactions
 - [x] Add persistent online order history for online-only stores
 - [x] Move received online orders into inventory and verify the flow
-- [ ] Compact Home input, reorder shortcuts, and move online wishlist to a List subtab with a Home drawer shortcut; verify.
+- [x] Compact Home input, reorder shortcuts, and move online wishlist to a List subtab with a Home drawer shortcut; verify.
