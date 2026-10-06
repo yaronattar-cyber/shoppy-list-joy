@@ -36,6 +36,8 @@ type Props = {
   storeNames?: Record<string, string>;
   orderWorking?: boolean;
   onOrderReceived?: (orderId: string) => Promise<number>;
+  onlineBought?: { id: string; title: string; store: string; price: string; image: string }[];
+  onOnlineDelivered?: (id: string) => void;
 };
 
 // טאב פעולה קומפקטי — אייקון מעל טקסט, נראה אותו דבר בין אם זה כפתור רגיל או של הרכיב החיצוני
@@ -50,7 +52,7 @@ const daysLeft = (d?: string | null) => (d ? Math.ceil((new Date(d).getTime() - 
 const splitItems = (s: string) => s.split(/[,،\n]+/).map((x) => x.trim()).filter(Boolean);
 
 // מסך מלאי — מוצרים שנקנו; מחיקה שואלת אם להחזיר לרשימת הקניות
-export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal, onUpdate, onAddMissing, onAddToInventory, orders = [], storeNames = {}, orderWorking, onOrderReceived }: Props) {
+export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal, onUpdate, onAddMissing, onAddToInventory, orders = [], storeNames = {}, orderWorking, onOrderReceived, onlineBought = [], onOnlineDelivered }: Props) {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [editing, setEditing] = useState<ShoppingItem | null>(null);
   const [draft, setDraft] = useState({ expiryDate: "", stockStatus: "full", quantity: 1, unit: "", category: "other" });
@@ -353,6 +355,22 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
           </form>
         </DrawerContent>
       </Drawer>
+
+      {onlineBought.length > 0 && (
+        <section aria-label="הזמנות אונליין" className="mt-4 rounded-2xl border border-border bg-card p-3">
+          <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-primary"><Truck className="h-4 w-4" />הזמנות אונליין ({onlineBought.length})</h3>
+          <ul className="space-y-1.5">
+            {onlineBought.map((w) => (
+              <li key={w.id} className="flex items-center gap-2 rounded-xl border border-border p-1.5">
+                {w.image && <img src={w.image} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />}
+                <span className="min-w-0 flex-1 text-sm"><span className="block truncate font-medium">{w.title}</span><span className="text-xs text-muted-foreground">{w.store} · {w.price}</span></span>
+                <Button type="button" size="sm" variant="outline" onClick={() => { if (onAddToInventory(w.title, inventoryCategoryOf(w.title, ""))) { onOnlineDelivered?.(w.id); toast.success("הועבר למלאי"); } }}>📦 הגיע</Button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
 
       <AlertDialog open={!!pending} onOpenChange={(open) => !open && setPending(null)}>
         <AlertDialogContent dir="rtl" className="text-right">

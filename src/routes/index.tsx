@@ -331,6 +331,8 @@ function Index() {
           orderWorking={pendingOrders.working}
           onOrderReceived={async (orderId) => { const count = await pendingOrders.receiveOrder(orderId); if (count) await list.refresh(); return count; }}
           onAddMissing={(names) => { const home = stores.stores.find((x) => x.is_default)?.id ?? null; names.forEach((n) => list.addItem(n, home)); }}
+          onlineBought={wish.ordered}
+          onOnlineDelivered={wish.remove}
         />
       )}
       {screen === "family" && (
