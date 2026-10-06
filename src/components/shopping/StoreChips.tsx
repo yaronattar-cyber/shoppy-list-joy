@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, Globe2, PartyPopper } from "lucide-react";
+import { ArrowDownUp, Check, ChevronLeft, ChevronRight, Globe2, PartyPopper } from "lucide-react";
+import { useTabOrder } from "@/hooks/useTabOrder";
 import type { ShoppingItem } from "@/lib/shopping-list";
 
 type Props = {
@@ -20,7 +21,12 @@ export const storeTone = (stores: { id: string }[], id: string | null | undefine
 };
 
 // לשוניות: רשימה כללית, חנויות ואירועים — לחיצה עוברת לרשימה המתאימה
-export function StoreChips({ stores, activeId, items, onSelect, events = [], activeEventId = null, onSelectEvent }: Props) {
+export function StoreChips({ stores: rawStores, activeId, items, onSelect, events: rawEvents = [], activeEventId = null, onSelectEvent }: Props) {
+  const tabOrder = useTabOrder();
+  const [sorting, setSorting] = useState(false);
+  const tabs = tabOrder.sort([...rawStores.map((s) => ({ ...s, kind: "store" as const })), ...rawEvents.map((e) => ({ ...e, kind: "event" as const }))]);
+  const stores = rawStores;
+  const move = (i: number, d: -1 | 1) => { const ids = tabs.map((t) => t.id); const j = i + d; if (j < 0 || j >= ids.length) return; [ids[i], ids[j]] = [ids[j]!, ids[i]!]; void tabOrder.save(ids); };
   const ref = useRef<HTMLDivElement>(null);
   const [more, setMore] = useState(false);
   const todo = items.filter((i) => !i.completed);
@@ -31,7 +37,7 @@ export function StoreChips({ stores, activeId, items, onSelect, events = [], act
     if (!el) return;
     setMore(el.scrollWidth - el.clientWidth - Math.abs(el.scrollLeft) > 4);
   };
-  useEffect(() => { check(); }, [stores.length, items.length, events.length]);
+  useEffect(() => { check(); }, [stores.length, items.length, rawEvents.length]);
 
   const base = "flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-semibold transition-colors";
   const on = "border-primary bg-primary text-primary-foreground";
@@ -45,24 +51,21 @@ export function StoreChips({ stores, activeId, items, onSelect, events = [], act
         <button type="button" onClick={() => onSelect(null)} className={`${base} ${generalActive ? on : off}`}>
           רשימה כללית{badge(generalActive, todo.length)}
         </button>
-        {stores.map((s) => {
-          const a = !activeEventId && s.id === activeId;
-          const tone = storeTone(stores, s.id);
+        {tabs.map((t, i) => {
+          const a = t.kind === "event" ? t.id === activeEventId : !activeEventId && t.id === activeId;
+          const tone = t.kind === "store" ? storeTone(stores, t.id) : undefined;
           return (
-            <button key={s.id} type="button" onClick={() => onSelect(s.id)} className={`${base} ${a ? on : off}`}>
-              {tone && !a && <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: `var(--store-${tone}-fg)` }} />}
-               {s.name}{s.isOnlineOnly && <span className="flex items-center gap-0.5 text-xs font-medium"><Globe2 className="h-3 w-3" />אונליין</span>}{badge(a, count(s.id))}
-            </button>
+            <span key={t.id} className="flex shrink-0 items-center gap-0.5">
+              {sorting && <button type="button" aria-label="הזזה ימינה" onClick={() => move(i, -1)} className="grid h-7 w-7 place-items-center rounded-full bg-muted"><ChevronRight className="h-4 w-4" /></button>}
+              <button type="button" onClick={() => (t.kind === "event" ? onSelectEvent?.(t.id) : onSelect(t.id))} className={`${base} ${a ? on : off}`}>
+                {t.kind === "event" ? <PartyPopper className="h-3.5 w-3.5" /> : tone && !a && <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: `var(--store-${tone}-fg)` }} />}
+                {t.name}{t.kind === "store" && t.isOnlineOnly && <span className="flex items-center gap-0.5 text-xs font-medium"><Globe2 className="h-3 w-3" />אונליין</span>}{t.kind === "store" && badge(a, count(t.id))}
+              </button>
+              {sorting && <button type="button" aria-label="הזזה שמאלה" onClick={() => move(i, 1)} className="grid h-7 w-7 place-items-center rounded-full bg-muted"><ChevronLeft className="h-4 w-4" /></button>}
+            </span>
           );
         })}
-        {events.map((ev) => {
-          const a = ev.id === activeEventId;
-          return (
-            <button key={ev.id} type="button" onClick={() => onSelectEvent?.(ev.id)} className={`${base} ${a ? on : off}`}>
-              <PartyPopper className="h-3.5 w-3.5" />{ev.name}
-            </button>
-          );
-        })}
+        {tabs.length > 1 && <button type="button" aria-label={sorting ? "סיום סידור" : "סידור לשוניות"} onClick={() => setSorting((v) => !v)} className={`${base} ${sorting ? on : off}`}>{sorting ? <Check className="h-4 w-4" /> : <ArrowDownUp className="h-4 w-4" />}</button>}
         <span className="w-8 shrink-0" aria-hidden />
       </div>
       {more && (

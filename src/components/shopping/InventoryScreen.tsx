@@ -1,5 +1,6 @@
 import { InventoryAssistant } from "./InventoryAssistant";
 import { RecipesDrawer } from "./RecipesDrawer";
+import { MealPhotoPicker, MealThumb } from "./MealPhoto";
 import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { STOCK_STATUS, addCustomCategory, inventoryCategoryOf, useInvCategories } from "@/lib/inventory-categories";
@@ -28,7 +29,9 @@ type Props = {
   items: ShoppingItem[];
   onRestore: (ids: string[]) => void;
   onDelete: (ids: string[]) => void;
-  onAddPreparedMeal: (name: string) => boolean;
+  onAddPreparedMeal: (name: string, photoUrl?: string | null) => boolean;
+  familyId?: string;
+  onSetPhoto?: (id: string, path: string) => void;
   onAddMissing: (names: string[]) => void;
   onUpdate: (id: string, d: { expiryDate: string | null; stockStatus: string; quantity: number; unit: string; category: string }) => void;
   onAddToInventory: (name: string, category: string) => boolean;
@@ -52,7 +55,7 @@ const daysLeft = (d?: string | null) => (d ? Math.ceil((new Date(d).getTime() - 
 const splitItems = (s: string) => s.split(/[,،\n]+/).map((x) => x.trim()).filter(Boolean);
 
 // מסך מלאי — מוצרים שנקנו; מחיקה שואלת אם להחזיר לרשימת הקניות
-export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal, onUpdate, onAddMissing, onAddToInventory, orders = [], storeNames = {}, orderWorking, onOrderReceived, onlineBought = [], onOnlineDelivered }: Props) {
+export function InventoryScreen({ items, familyId = "", onSetPhoto, onRestore, onDelete, onAddPreparedMeal, onUpdate, onAddMissing, onAddToInventory, orders = [], storeNames = {}, orderWorking, onOrderReceived, onlineBought = [], onOnlineDelivered }: Props) {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [editing, setEditing] = useState<ShoppingItem | null>(null);
   const [draft, setDraft] = useState({ expiryDate: "", stockStatus: "full", quantity: 1, unit: "", category: "other" });
@@ -62,6 +65,7 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
   const [pending, setPending] = useState<string[] | null>(null);
   const [addingMeal, setAddingMeal] = useState(false);
   const [mealName, setMealName] = useState("");
+  const [mealPhoto, setMealPhoto] = useState<string | null>(null);
   const [addingCat, setAddingCat] = useState(false);
   const [catName, setCatName] = useState("");
   const [catEmoji, setCatEmoji] = useState("🏷️");
@@ -104,8 +108,9 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
   const approveDraft = (idx: number) => { const d = drafts[idx]; if (d && onAddToInventory(d.name, d.category)) setDrafts((l) => l.filter((_, j) => j !== idx)); };
 
   const addMeal = () => {
-    if (!onAddPreparedMeal(mealName)) return;
+    if (!onAddPreparedMeal(mealName, mealPhoto)) return;
     setMealName("");
+    setMealPhoto(null);
     setAddingMeal(false);
   };
 
@@ -244,7 +249,7 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
                     return (
                       <li key={item.id} data-inv-item={item.id} className={cn("grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 border-b border-border px-3 py-2.5 last:border-b-0 transition-colors", highlightId === item.id && "animate-pulse bg-primary/15 ring-1 ring-inset ring-primary")}>
                         <button type="button" onClick={() => openItem(item)} className="min-w-0 text-right">
-                          <span className="flex items-center gap-2"><span className={`h-2.5 w-2.5 shrink-0 rounded-full ${st.dot}`} title={st.label} /><span className="break-words text-base font-semibold leading-6 text-foreground">{item.name}</span></span>
+                          <span className="flex items-center gap-2">{g.id === "prepared-meal" && <MealThumb path={item.photoUrl} className="h-9 w-9" />}<span className={`h-2.5 w-2.5 shrink-0 rounded-full ${st.dot}`} title={st.label} /><span className="break-words text-base font-semibold leading-6 text-foreground">{item.name}</span></span>
                           <span className="block text-xs text-muted-foreground">{st.label}{dl !== null && <span className={dl <= 2 ? " font-semibold text-destructive" : ""}> · {dl < 0 ? "פג תוקף" : dl === 0 ? "פג היום" : `תפוגה בעוד ${dl} ימים`}</span>}</span>
                         </button>
                         <span className="text-sm font-medium text-muted-foreground">{formatQuantity(item.quantity, item.unit) || "×1"}</span>
@@ -277,6 +282,7 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
             <DrawerDescription>נכנס למלאי: {editing ? formatDateTime(editing.createdAt) : ""} · {editing?.addedBy}</DrawerDescription>
           </DrawerHeader>
           <div className="space-y-4 px-4 pb-2">
+            {editing && familyId && onSetPhoto && inventoryCategoryOf(editing.name, editing.category) === "prepared-meal" && <MealPhotoPicker familyId={familyId} value={editing.photoUrl} onChange={(p) => { onSetPhoto(editing.id, p); setEditing({ ...editing, photoUrl: p }); }} />}
             <div>
               <p className="mb-1.5 text-sm font-medium text-foreground">סטטוס</p>
               <div className="grid grid-cols-3 gap-2">
@@ -324,6 +330,7 @@ export function InventoryScreen({ items, onRestore, onDelete, onAddPreparedMeal,
                 <input autoFocus value={mealName} onChange={(event) => setMealName(event.target.value)} placeholder="לדוגמה: 3 מנות מרק ירקות" className="h-12 w-full rounded-md border border-input bg-background px-3 text-base text-foreground outline-none focus:ring-2 focus:ring-ring" />
               </label>
               <p className="mt-2 text-xs text-muted-foreground">אפשר לציין כמות בשם, למשל „2 מנות לזניה”.</p>
+              {familyId && <div className="mt-3"><MealPhotoPicker familyId={familyId} value={mealPhoto} onChange={setMealPhoto} /></div>}
             </div>
             <DrawerFooter className="grid grid-cols-[auto_minmax(0,1fr)] gap-3">
               <DrawerClose asChild><Button type="button" variant="ghost">ביטול</Button></DrawerClose>
