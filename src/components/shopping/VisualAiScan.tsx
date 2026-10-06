@@ -12,7 +12,7 @@ type Props = {
   // יתחבר ללוגיקת ה-AI בשלב הבא
   onAnalyze?: (mode: ScanMode, imageDataUrl: string) => void;
   inventory?: ShoppingItem[];
-  onCreateRecipeList?: (dish: string, names: string[]) => void;
+  onCreateRecipeList?: ((dish: string, names: string[]) => void) | undefined;
 };
 
 // השוואה גמישה בין שם רכיב לשם במלאי
