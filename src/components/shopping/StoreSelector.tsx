@@ -3,7 +3,7 @@ import { ArrowRight, Copy, ExternalLink, Globe2, Pencil, Plus, Star, Store, Tras
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { estimateForStore, formatPrice, type BasketLine } from "@/lib/prices";
+import type { BasketLine } from "@/lib/prices";
 import type { ShoppingItem } from "@/lib/shopping-list";
 import type { StoreInfo } from "@/hooks/useStores";
 import type { EventList } from "@/hooks/useEvents";
@@ -52,7 +52,6 @@ export function StoreSelector(p: Props) {
     window.open(/^https?:\/\//.test(url) ? url : `https://${url}`, "_blank", "noopener");
     await copyText(text);
   };
-  const total = estimateForStore(p.lines, p.active?.name ?? "");
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 pt-1 sm:px-6">
@@ -95,11 +94,6 @@ export function StoreSelector(p: Props) {
               ) : (
                 <p className="text-xs text-muted-foreground">{p.active ? "לא הוגדר אתר" : "פריטים ללא חנות מסוימת"}</p>
               )}
-            </div>
-            <div className="shrink-0 text-left">
-              <p className="text-xs text-muted-foreground">סל משוער</p>
-              <p className="text-sm font-bold text-primary">₪{formatPrice(total)}</p>
-              <p className="text-xs text-muted-foreground">הערכה בלבד</p>
             </div>
             {p.active && (
               <Button type="button" variant="ghost" size="icon" aria-label="עריכת חנות" onClick={() => { if (p.active) setEditing({ ...p.active }); }}>
@@ -155,7 +149,7 @@ export function StoreSelector(p: Props) {
           <div className="max-h-[80dvh] overflow-y-auto overscroll-contain">
             <DrawerHeader className="text-right">
               <DrawerTitle>{editing?.id ? "עריכת חנות" : "חנות חדשה"}</DrawerTitle>
-              <DrawerDescription>לכל חנות רשימה משלה. כתובת האתר תשמש לחישוב מחירים.</DrawerDescription>
+              <DrawerDescription>לכל חנות רשימה משלה. כתובת האתר תשמש למעבר לאתר ולהעתקת הרשימה.</DrawerDescription>
             </DrawerHeader>
             {editing && (
               <form
