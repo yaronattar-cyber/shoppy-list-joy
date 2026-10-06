@@ -27,7 +27,7 @@ function useSignedUrl(path?: string | null) {
 }
 
 // תמונה ממוזערת עם גרפיקת ברירת מחדל
-export function MealThumb({ path, className = "h-10 w-10" }: { path?: string | null; className?: string }) {
+export function MealThumb({ path, className = "h-10 w-10" }: { path?: string | null | undefined; className?: string }) {
   const url = useSignedUrl(path);
   const [broken, setBroken] = useState(false);
   if (!url || broken) return <span className={`grid shrink-0 place-items-center rounded-md bg-accent text-primary ${className}`}><CookingPot className="h-1/2 w-1/2" /></span>;
@@ -35,7 +35,7 @@ export function MealThumb({ path, className = "h-10 w-10" }: { path?: string | n
 }
 
 // כפתורי צילום/העלאה + תצוגה מקדימה
-export function MealPhotoPicker({ familyId, value, onChange }: { familyId: string; value?: string | null; onChange: (path: string) => void }) {
+export function MealPhotoPicker({ familyId, value, onChange }: { familyId: string; value?: string | null | undefined; onChange: (path: string) => void }) {
   const cam = useRef<HTMLInputElement>(null);
   const gal = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
