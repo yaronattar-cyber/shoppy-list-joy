@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { analyzeDish, type DishAnalysis } from "@/lib/ai/analyze-dish.functions";
+import { identifyProduct, type ProductIdentification } from "@/lib/ai/identify-product.functions";
 import type { ShoppingItem } from "@/lib/shopping-list";
 
 export type ScanMode = "recipe" | "shopping";
@@ -13,7 +14,15 @@ type Props = {
   onAnalyze?: (mode: ScanMode, imageDataUrl: string) => void;
   inventory?: ShoppingItem[];
   onCreateRecipeList?: ((dish: string, names: string[]) => void) | undefined;
+  onSaveOnline?: ((names: string[]) => void) | undefined;
 };
+
+// קישורי חיפוש לחנויות אונליין לפי מילות המפתח
+const MARKETS = [
+  { id: "aliexpress", name: "AliExpress", color: "bg-destructive/10 text-destructive", url: (q: string) => `https://www.aliexpress.com/w/wholesale-${encodeURIComponent(q.replace(/\s+/g, "-"))}.html` },
+  { id: "amazon", name: "Amazon", color: "bg-secondary text-secondary-foreground", url: (q: string) => `https://www.amazon.com/s?k=${encodeURIComponent(q)}` },
+  { id: "temu", name: "Temu", color: "bg-accent text-primary", url: (q: string) => `https://www.temu.com/search_result.html?search_key=${encodeURIComponent(q)}` },
+] as const;
 
 // השוואה גמישה בין שם רכיב לשם במלאי
 const norm = (t: string) => t.trim().toLowerCase().replace(/[^\p{L}\p{N} ]/gu, "").replace(/(ים|ות)$/u, "");
@@ -39,7 +48,10 @@ async function toDataUrl(file: File): Promise<string> {
 }
 
 // שני כפתורי AI חזותיים: בישול / קנייה — עם חלונית צילום משותפת
-export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList }: Props) {
+export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList, onSaveOnline }: Props) {
+  const identifyFn = useServerFn(identifyProduct);
+  const [product, setProduct] = useState<ProductIdentification | null>(null);
+  const [picked, setPicked] = useState<string[]>([]);
   const analyzeFn = useServerFn(analyzeDish);
   const [result, setResult] = useState<DishAnalysis | null>(null);
   const [mode, setMode] = useState<ScanMode | null>(null);
@@ -48,12 +60,20 @@ export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList }: 
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
 
-  const close = () => { setMode(null); setImg(""); setBusy(false); setResult(null); };
+  const close = () => { setMode(null); setImg(""); setBusy(false); setResult(null); setProduct(null); setPicked([]); };
 
   const analyze = async () => {
     if (!mode) return;
-    if (mode !== "recipe") return onAnalyze?.(mode, img);
     setBusy(true);
+    if (mode === "shopping") {
+      try {
+        const r = await identifyFn({ data: { image: img } });
+        if (r.error || !r.result) toast.error(r.error ?? "הזיהוי נכשל");
+        else { setProduct(r.result); setPicked([]); }
+      } catch { toast.error("הזיהוי נכשל, נסו שוב"); }
+      finally { setBusy(false); }
+      return;
+    }
     try {
       const r = await analyzeFn({ data: { image: img } });
       if (r.error || !r.result) toast.error(r.error ?? "הניתוח נכשל");
@@ -99,7 +119,39 @@ export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList }: 
             </div>
 
             <div className="space-y-3 px-4 pb-6">
-              {result ? (
+              {product ? (
+                <div className="max-h-[70dvh] space-y-3 overflow-y-auto">
+                  <div>
+                    <h3 className="text-lg font-bold text-foreground">{product.productTitle}</h3>
+                    <p className="text-xs text-muted-foreground">{product.category} · המחירים הערכה בלבד</p>
+                  </div>
+                  <ul className="grid gap-2">
+                    {MARKETS.map((m) => {
+                      const on = picked.includes(m.id);
+                      return (
+                        <li key={m.id} className={`flex items-center gap-3 rounded-2xl border p-2 transition-all ${on ? "border-primary bg-accent/60" : "border-border bg-card"}`}>
+                          <button type="button" aria-pressed={on} aria-label={`בחירת ${m.name}`} onClick={() => setPicked((p) => on ? p.filter((x) => x !== m.id) : [...p, m.id])} className="flex min-w-0 flex-1 items-center gap-3 text-right">
+                            <img src={img} alt="" className="h-14 w-14 shrink-0 rounded-xl border border-border object-cover" />
+                            <span className="min-w-0 flex-1">
+                              <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-bold ${m.color}`}>{m.name}</span>
+                              <span className="block truncate text-sm font-medium text-foreground">{product.productTitle}</span>
+                              <span className="block text-sm font-semibold text-primary">{product.priceEstimates[m.id]}</span>
+                            </span>
+                            <span className={`grid h-5 w-5 shrink-0 place-items-center rounded border-2 text-xs ${on ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/40"}`}>{on ? "✓" : ""}</span>
+                          </button>
+                          <Button asChild size="sm" variant="outline" className="shrink-0 rounded-xl">
+                            <a href={m.url(product.searchKeywords || product.productTitle)} target="_blank" rel="noopener noreferrer">צפה במוצר</a>
+                          </Button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <Button type="button" className="h-12 w-full text-base font-bold" disabled={!picked.length} onClick={() => { onSaveOnline?.(picked.map((id) => `${product.productTitle} (${MARKETS.find((m) => m.id === id)!.name})`)); close(); }}>
+                    שמור לרשימת קניות אונליין{picked.length ? ` (${picked.length})` : ""}
+                  </Button>
+                  <Button type="button" variant="outline" className="h-11 w-full" onClick={() => { setProduct(null); setImg(""); }}>סריקה חדשה</Button>
+                </div>
+              ) : result ? (
                 <div className="max-h-[70dvh] space-y-4 overflow-y-auto">
                   <h3 className="text-xl font-bold text-foreground">{result.dishName}</h3>
                   <section>

@@ -26,6 +26,7 @@ type Props = {
   onSpeak?: (text: string) => void;
   inventory?: ShoppingItem[];
   onCreateRecipeList?: (dish: string, names: string[]) => void;
+  onSaveOnline?: (names: string[]) => void;
 };
 
 const greeting = () => {
@@ -34,7 +35,7 @@ const greeting = () => {
 };
 
 // מסך הבית: כותרת קומפקטית, שורת הוספה ופריטים אחרונים
-export function AddScreen({ userName, items = [], history = [], productHistory = [], targets, onAddTo, onToggle, onGoShopping, inventory = [], onCreateRecipeList }: Props) {
+export function AddScreen({ userName, items = [], history = [], productHistory = [], targets, onAddTo, onToggle, onGoShopping, inventory = [], onCreateRecipeList, onSaveOnline }: Props) {
   const [value, setValue] = useState("");
   const [popup, setPopup] = useState<string | null>(null);
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -92,7 +93,7 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
         <Button type="submit" size="icon" className="h-10 w-10 shrink-0 rounded-xl transition-all active:scale-95" aria-label="הוספת פריט"><Plus className="h-5 w-5" /></Button>
       </form>
 
-      <VisualAiScan inventory={inventory} onCreateRecipeList={onCreateRecipeList} />
+      <VisualAiScan inventory={inventory} onCreateRecipeList={onCreateRecipeList} onSaveOnline={onSaveOnline} />
 
       <HistorySuggestions items={suggestions} onPick={(name) => fill(name)} />
 
