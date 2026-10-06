@@ -36,15 +36,27 @@ const MODES: Record<ScanMode, { title: string; hint: string }> = {
   shopping: { title: "סריקת מוצר לקנייה", hint: "צלמו מוצר — ונוסיף אותו לרשימה" },
 };
 
-// הקטנת תמונה בדפדפן לפני שמירה/ניתוח
+const SCAN_KEY = "visual-scan-pending";
+
+// הקטנת תמונה בדפדפן לפני שמירה/ניתוח (חסכוני בזיכרון, עם גיבוי)
 async function toDataUrl(file: File): Promise<string> {
-  const bmp = await createImageBitmap(file);
-  const scale = Math.min(1, 1024 / Math.max(bmp.width, bmp.height));
+  let src: CanvasImageSource; let w: number; let h: number; let url = "";
+  try {
+    const bmp = await createImageBitmap(file, { resizeWidth: 1024, resizeQuality: "medium" } as ImageBitmapOptions);
+    src = bmp; w = bmp.width; h = bmp.height;
+  } catch {
+    url = URL.createObjectURL(file);
+    const im = new Image(); im.src = url; await im.decode();
+    src = im; w = im.naturalWidth; h = im.naturalHeight;
+  }
+  const scale = Math.min(1, 1024 / Math.max(w, h));
   const c = document.createElement("canvas");
-  c.width = Math.round(bmp.width * scale);
-  c.height = Math.round(bmp.height * scale);
-  c.getContext("2d")!.drawImage(bmp, 0, 0, c.width, c.height);
-  return c.toDataURL("image/jpeg", 0.8);
+  c.width = Math.round(w * scale);
+  c.height = Math.round(h * scale);
+  c.getContext("2d")!.drawImage(src, 0, 0, c.width, c.height);
+  if (url) URL.revokeObjectURL(url);
+  if ("close" in src && typeof src.close === "function") src.close();
+  return c.toDataURL("image/jpeg", 0.75);
 }
 
 // תמונה ממוזערת לשמירה מקומית
@@ -97,8 +109,24 @@ export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList, on
   const onFile = async (f?: File) => {
     if (!f) return;
     setBusy(true);
-    try { setImg(await toDataUrl(f)); } finally { setBusy(false); }
+    try { setImg(await toDataUrl(f)); }
+    catch { toast.error("לא הצלחנו לקרוא את התמונה, נסו שוב"); }
+    finally { setBusy(false); }
   };
+
+  // שחזור חלונית ותמונה אחרי שהדפדפן רוענן בחזרה מהמצלמה
+  const [restored, setRestored] = useState(false);
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(SCAN_KEY);
+      if (raw) { const p = JSON.parse(raw) as { mode: ScanMode; img: string }; setMode(p.mode); setImg(p.img || ""); }
+    } catch { /* ignore */ }
+    setRestored(true);
+  }, []);
+  useEffect(() => {
+    if (!restored) return;
+    try { mode ? sessionStorage.setItem(SCAN_KEY, JSON.stringify({ mode, img })) : sessionStorage.removeItem(SCAN_KEY); } catch { /* מקום מלא */ }
+  }, [mode, img, restored]);
 
   // ניקוי מצב בעת סגירה
   useEffect(() => { if (!mode) setImg(""); }, [mode]);
