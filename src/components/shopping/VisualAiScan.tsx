@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ChefHat, Camera, ImagePlus, Loader2, ShoppingBag, X } from "lucide-react";
+import { ChefHat, Camera, Check, ImagePlus, Loader2, ShoppingBag, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -256,20 +256,40 @@ export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList, on
                   <Button type="button" variant="outline" className="h-11 w-full" onClick={() => { setResult(null); setImg(""); }}>סריקה חדשה</Button>
                 </div>
               ) : img ? (
-                <>
-                  <div className="relative">
-                    <img src={img} alt="התמונה שנבחרה" className="mx-auto max-h-56 rounded-xl border border-border object-contain" />
-                    {busy && (
-                      <div className="absolute inset-0 grid place-items-center rounded-xl bg-background/60">
-                        <p className="flex items-center gap-2 text-sm font-medium text-foreground"><Loader2 className="h-5 w-5 animate-spin text-primary" />מעבד תמונה...</p>
-                      </div>
-                    )}
+                mode === "shopping" ? (
+                  // תצוגת אישור: אימות ידני בלבד — הניתוח מתחיל רק בלחיצה על ✓
+                  <div className="flex items-center justify-center gap-3">
+                    <Button type="button" aria-label="אישור התמונה והתחלת ניתוח" className="h-16 w-16 shrink-0 rounded-full p-0 transition-transform active:scale-95" disabled={busy} onClick={() => void analyze()}>
+                      <Check className="h-8 w-8" strokeWidth={3} />
+                    </Button>
+                    <div className="relative min-w-0">
+                      <img src={img} alt="התמונה שנבחרה" className="mx-auto max-h-56 rounded-xl border border-border object-contain" />
+                      {busy && (
+                        <div className="absolute inset-0 grid place-items-center rounded-xl bg-background/60">
+                          <p className="flex items-center gap-2 text-sm font-medium text-foreground"><Loader2 className="h-5 w-5 animate-spin text-primary" />מעבד תמונה...</p>
+                        </div>
+                      )}
+                    </div>
+                    <Button type="button" variant="destructive" aria-label="ביטול התמונה וצילום מחדש" className="h-16 w-16 shrink-0 rounded-full p-0 transition-transform active:scale-95" disabled={busy} onClick={() => { setImg(""); void startCam(); }}>
+                      <X className="h-8 w-8" strokeWidth={3} />
+                    </Button>
                   </div>
-                  <Button type="button" className="h-12 w-full text-base font-bold" disabled={busy} onClick={() => void analyze()}>
-                    המשך לניתוח
-                  </Button>
-                  <Button type="button" variant="outline" className="h-11 w-full" onClick={() => setImg("")}>בחירת תמונה אחרת</Button>
-                </>
+                ) : (
+                  <>
+                    <div className="relative">
+                      <img src={img} alt="התמונה שנבחרה" className="mx-auto max-h-56 rounded-xl border border-border object-contain" />
+                      {busy && (
+                        <div className="absolute inset-0 grid place-items-center rounded-xl bg-background/60">
+                          <p className="flex items-center gap-2 text-sm font-medium text-foreground"><Loader2 className="h-5 w-5 animate-spin text-primary" />מעבד תמונה...</p>
+                        </div>
+                      )}
+                    </div>
+                    <Button type="button" className="h-12 w-full text-base font-bold" disabled={busy} onClick={() => void analyze()}>
+                      המשך לניתוח
+                    </Button>
+                    <Button type="button" variant="outline" className="h-11 w-full" onClick={() => setImg("")}>בחירת תמונה אחרת</Button>
+                  </>
+                )
               ) : (
                 live ? (
                 <div className="space-y-2">
