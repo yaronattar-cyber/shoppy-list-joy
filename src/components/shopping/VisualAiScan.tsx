@@ -81,7 +81,29 @@ export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList, on
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
 
-  const close = () => { setMode(null); setImg(""); setBusy(false); setResult(null); setProduct(null); setPicked([]); };
+  // מצלמה חיה בתוך האפליקציה (מונע קריסה במעבר למצלמת המערכת)
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const [live, setLive] = useState(false);
+  const stopCam = () => { streamRef.current?.getTracks().forEach((t) => t.stop()); streamRef.current = null; setLive(false); };
+  const startCam = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) { cameraRef.current?.click(); return; }
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false });
+      streamRef.current = s; setLive(true);
+    } catch { toast.error("אין גישה למצלמה, נסו להעלות מהגלריה"); }
+  };
+  useEffect(() => { if (live && videoRef.current && streamRef.current) videoRef.current.srcObject = streamRef.current; }, [live]);
+  useEffect(() => () => stopCam(), []);
+  const snap = () => {
+    const v = videoRef.current; if (!v || !v.videoWidth) return;
+    const sc = Math.min(1, 1024 / Math.max(v.videoWidth, v.videoHeight));
+    const c = document.createElement("canvas"); c.width = Math.round(v.videoWidth * sc); c.height = Math.round(v.videoHeight * sc);
+    c.getContext("2d")!.drawImage(v, 0, 0, c.width, c.height);
+    setImg(c.toDataURL("image/jpeg", 0.75)); stopCam();
+  };
+
+  const close = () => { stopCam(); setMode(null); setImg(""); setBusy(false); setResult(null); setProduct(null); setPicked([]); };
 
   const analyze = async () => {
     if (!mode) return;
@@ -235,8 +257,15 @@ export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList, on
                   <Button type="button" variant="outline" className="h-11 w-full" onClick={() => setImg("")}>בחירת תמונה אחרת</Button>
                 </>
               ) : (
+                live ? (
+                <div className="space-y-2">
+                  <video ref={videoRef} autoPlay playsInline muted className="mx-auto max-h-[55dvh] w-full rounded-xl bg-foreground object-cover" />
+                  <Button type="button" className="h-12 w-full text-base font-bold" onClick={snap}><Camera className="h-5 w-5" />צלם</Button>
+                  <Button type="button" variant="outline" className="h-11 w-full" onClick={stopCam}>ביטול</Button>
+                </div>
+                ) : (
                 <div className="grid grid-cols-2 gap-2">
-                  <Button type="button" variant="outline" className="h-20 flex-col gap-1.5 rounded-2xl" onClick={() => cameraRef.current?.click()}>
+                  <Button type="button" variant="outline" className="h-20 flex-col gap-1.5 rounded-2xl" onClick={() => void startCam()}>
                     <Camera className="h-6 w-6 text-primary" />
                     <span className="text-sm font-medium">צילום עכשיו</span>
                   </Button>
