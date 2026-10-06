@@ -275,6 +275,7 @@ export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList, on
                   </Button>
                   {busy && <p className="col-span-2 flex items-center justify-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />מעבד תמונה...</p>}
                 </div>
+                )
               )}
             </div>
           </div>
