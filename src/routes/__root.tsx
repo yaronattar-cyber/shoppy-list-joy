@@ -86,6 +86,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "רשימת קניות משפחתית בעברית: הוספה בדיבור, סנכרון בין מכשירים, מלאי בית, חנויות ואירועים והערכות מחיר לסל.",
       },
       { name: "author", content: "רשימת קניות חכמה" },
+      { name: "theme-color", content: "#000000" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-title", content: "Shoppy" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
       { property: "og:title", content: "רשימת קניות חכמה למשפחה" },
       {
         property: "og:description",
@@ -102,7 +107,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { rel: "icon", href: "/favicon.png", type: "image/png" },
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
-      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "manifest", href: "/manifest.json" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
