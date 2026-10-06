@@ -18,6 +18,7 @@ export type ShoppingItem = {
   expiryDate?: string | null; // YYYY-MM-DD
   stockStatus?: "full" | "half" | "low" | undefined;
   assignedTo?: string; // שיוך אופציונלי: מי אחראי על קניית הפריט
+  photoUrl?: string | null; // נתיב תמונת מנה באחסון
 };
 
 // DD/MM/YYYY HH:mm
