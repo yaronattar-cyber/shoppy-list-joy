@@ -1,0 +1,6 @@
+CREATE OR REPLACE FUNCTION public.save_home_shortcuts(_ids text[]) RETURNS void LANGUAGE plpgsql SECURITY INVOKER SET search_path = public AS $$ BEGIN IF auth.uid() IS NULL THEN RAISE EXCEPTION 'Unauthorized' USING ERRCODE = '42501'; END IF; INSERT INTO public.user_tab_order(user_id, home_tab_ids, updated_at) VALUES(auth.uid(), _ids, now()) ON CONFLICT(user_id) DO UPDATE SET home_tab_ids = EXCLUDED.home_tab_ids, updated_at = EXCLUDED.updated_at; END; $$;
+REVOKE ALL ON FUNCTION public.save_home_shortcuts(text[]) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.save_home_shortcuts(text[]) TO authenticated;
+CREATE OR REPLACE FUNCTION public.save_list_tab_order(_ids text[]) RETURNS void LANGUAGE plpgsql SECURITY INVOKER SET search_path = public AS $$ BEGIN IF auth.uid() IS NULL THEN RAISE EXCEPTION 'Unauthorized' USING ERRCODE = '42501'; END IF; INSERT INTO public.user_tab_order(user_id, tab_ids, updated_at) VALUES(auth.uid(), _ids, now()) ON CONFLICT(user_id) DO UPDATE SET tab_ids = EXCLUDED.tab_ids, updated_at = EXCLUDED.updated_at; END; $$;
+REVOKE ALL ON FUNCTION public.save_list_tab_order(text[]) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.save_list_tab_order(text[]) TO authenticated;

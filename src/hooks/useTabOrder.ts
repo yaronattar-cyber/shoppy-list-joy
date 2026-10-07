@@ -16,7 +16,7 @@ export function useTabOrder() {
     setOrder(ids);
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return;
-    await supabase.from("user_tab_order").upsert({ user_id: u.user.id, tab_ids: ids, updated_at: new Date().toISOString() });
+    await supabase.rpc("save_list_tab_order", { _ids: ids });
   }, []);
   const sort = useCallback(<T extends { id: string }>(list: T[]) => {
     const rank = (id: string) => { const i = order.indexOf(id); return i < 0 ? 1e6 : i; };

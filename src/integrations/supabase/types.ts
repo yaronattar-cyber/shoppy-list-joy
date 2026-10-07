@@ -407,16 +407,19 @@ export type Database = {
       }
       user_tab_order: {
         Row: {
+          home_tab_ids: string[]
           tab_ids: string[]
           updated_at: string
           user_id: string
         }
         Insert: {
+          home_tab_ids?: string[]
           tab_ids?: string[]
           updated_at?: string
           user_id?: string
         }
         Update: {
+          home_tab_ids?: string[]
           tab_ids?: string[]
           updated_at?: string
           user_id?: string
@@ -445,6 +448,8 @@ export type Database = {
         Args: { _category: string; _family_id: string; _name: string }
         Returns: undefined
       }
+      save_home_shortcuts: { Args: { _ids: string[] }; Returns: undefined }
+      save_list_tab_order: { Args: { _ids: string[] }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

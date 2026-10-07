@@ -5,3 +5,5 @@
 - [x] Add persistent online order history for online-only stores
 - [x] Move received online orders into inventory and verify the flow
 - [x] Compact Home input, reorder shortcuts, and move online wishlist to a List subtab with a Home drawer shortcut; verify.
+- [x] Standardize Home assistant, add capture shortcut, and implement personally pinned/sorted store and event shortcuts; build and opening flows verified.
+- [ ] Verify personal shortcut persistence across two signed-in accounts — blocked: no usable test session available.

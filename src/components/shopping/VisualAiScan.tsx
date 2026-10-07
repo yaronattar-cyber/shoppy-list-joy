@@ -10,6 +10,7 @@ import type { ShoppingItem } from "@/lib/shopping-list";
 export type ScanMode = "recipe" | "shopping";
 
 type Props = {
+  cameraRequest?: number;
   // יתחבר ללוגיקת ה-AI בשלב הבא
   onAnalyze?: (mode: ScanMode, imageDataUrl: string) => void;
   inventory?: ShoppingItem[];
@@ -69,7 +70,7 @@ async function toThumb(src: string): Promise<string> {
 }
 
 // שני כפתורי AI חזותיים: בישול / קנייה — עם חלונית צילום משותפת
-export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList, onSaveOnline }: Props) {
+export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList, onSaveOnline, cameraRequest = 0 }: Props) {
   const identifyFn = useServerFn(identifyProduct);
   const [product, setProduct] = useState<ProductIdentification | null>(null);
   const [picked, setPicked] = useState<string[]>([]);
@@ -96,6 +97,13 @@ export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList, on
   };
   useEffect(() => { if (live && videoRef.current && streamRef.current) videoRef.current.srcObject = streamRef.current; }, [live]);
   useEffect(() => () => stopCam(), []);
+  useEffect(() => {
+    if (!cameraRequest) return;
+    setMode("shopping");
+    setImg("");
+    setProduct(null);
+    void startCam();
+  }, [cameraRequest]);
   const snap = () => {
     const v = videoRef.current; if (!v || !v.videoWidth) return;
     const sc = Math.min(1, 1024 / Math.max(v.videoWidth, v.videoHeight));

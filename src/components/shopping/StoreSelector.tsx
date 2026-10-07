@@ -13,13 +13,16 @@ type Props = {
   active: StoreInfo | null;
   lines: BasketLine[];
   onSelect: (id: string | null) => void;
-  onSave: (s: { id?: string; name: string; url: string; is_default?: boolean; isOnlineOnly?: boolean }) => void;
+  onSave: (s: { id?: string; name: string; url: string; is_default?: boolean; isOnlineOnly?: boolean }) => Promise<string | undefined>;
   onRemove: (id: string) => void;
   onAdd?: (name: string) => void;
   events?: EventList[];
   activeEvent?: EventList | null;
   onSelectEvent?: (id: string | null) => void;
-  onCreateEvent?: (name: string) => void;
+  onCreateEvent?: (name: string) => Promise<string | null>;
+  shortcutIds: string[];
+  shortcutsReady: boolean;
+  onPinShortcut: (id: string, pinned: boolean) => void;
   chips?: React.ReactNode;
 };
 
@@ -39,6 +42,16 @@ export function StoreSelector(p: Props) {
   const [onlyTodo, setOnlyTodo] = useState(true);
   const [creatingEvent, setCreatingEvent] = useState(false);
   const [eventName, setEventName] = useState("");
+  const [pinned, setPinned] = useState(false);
+  const [eventPinned, setEventPinned] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(false);
+  const pinLabel = "הוסף לשורת הקיצורים המהירים במסך הבית";
+  const saveStore = async () => {
+    if (!editing?.name.trim()) return;
+    const id = await p.onSave(editing);
+    if (id && p.shortcutsReady) p.onPinShortcut(id, pinned);
+    setEditing(null);
+  };
   const all = p.lines as ShoppingItem[];
   const copyItems = onlyTodo ? all.filter((i) => !i.completed) : all;
   // שמות מוצרים בלבד – שורה לכל מוצר, להדבקה בחיפוש באתר
@@ -63,19 +76,31 @@ export function StoreSelector(p: Props) {
             <Button type="button" variant="outline" size="icon" className="ml-4 h-9 w-9 shrink-0 rounded-full sm:ml-6" aria-label="הוספת חנות או אירוע"><Plus /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48 text-right">
-            <DropdownMenuItem onSelect={() => setEditing({ name: "", url: "" })}><Store />הוספת חנות</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => setCreatingEvent(true)}><Plus />אירוע חדש</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => { setPinned(false); setEditing({ name: "", url: "" }); }}><Store />הוספת חנות</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => { setEventPinned(false); setCreatingEvent(true); }}><Plus />אירוע חדש</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
 
       {creatingEvent && (
-        <form className="mb-2 flex gap-2" onSubmit={(e) => { e.preventDefault(); if (eventName.trim()) { p.onCreateEvent?.(eventName); setEventName(""); setCreatingEvent(false); } }}>
+        <form className="mb-2 flex flex-wrap gap-2" onSubmit={async (e) => { e.preventDefault(); if (eventName.trim()) { const id = await p.onCreateEvent?.(eventName); if (!id) return; if (p.shortcutsReady) p.onPinShortcut(id, eventPinned); setEventName(""); setCreatingEvent(false); } }}>
           <input autoFocus value={eventName} onChange={(e) => setEventName(e.target.value)} placeholder="שם האירוע (למשל: על האש שבת)" className="h-10 min-w-0 flex-1 rounded-md border border-input bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-ring" />
           <Button type="submit" size="sm" disabled={!eventName.trim()}>צור</Button>
           <Button type="button" variant="ghost" size="icon" aria-label="ביטול" onClick={() => setCreatingEvent(false)}>✕</Button>
+           <label className="flex w-full items-center gap-2 text-sm"><input type="checkbox" checked={eventPinned} disabled={!p.shortcutsReady} onChange={(e) => setEventPinned(e.target.checked)} className="h-5 w-5 accent-[var(--color-primary)]" />{pinLabel}</label>
         </form>
       )}
+
+      {p.activeEvent && <Button type="button" variant="ghost" size="sm" className="mb-2 text-primary" aria-label="עריכת קיצור האירוע" onClick={() => { setEventPinned(p.shortcutIds.includes(p.activeEvent?.id ?? "")); setEditingEvent(true); }}><Pencil className="h-4 w-4" />עריכת קיצור האירוע</Button>}
+      <Drawer open={editingEvent} onOpenChange={setEditingEvent}>
+        <DrawerContent dir="rtl">
+          <DrawerHeader className="text-right"><DrawerTitle>{p.activeEvent?.name}</DrawerTitle><DrawerDescription>קיצור אישי במסך הבית</DrawerDescription></DrawerHeader>
+          <form className="space-y-4 px-4 pb-6" onSubmit={(e) => { e.preventDefault(); if (p.activeEvent && p.shortcutsReady) p.onPinShortcut(p.activeEvent.id, eventPinned); setEditingEvent(false); }}>
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={eventPinned} disabled={!p.shortcutsReady} onChange={(e) => setEventPinned(e.target.checked)} className="h-5 w-5 accent-[var(--color-primary)]" />{pinLabel}</label>
+            <Button type="submit" disabled={!p.shortcutsReady}>שמירה</Button>
+          </form>
+        </DrawerContent>
+      </Drawer>
 
       {/* כרטיס החנות מוצג רק כשאין אירוע פעיל */}
       {!p.activeEvent && (
@@ -96,7 +121,7 @@ export function StoreSelector(p: Props) {
               )}
             </div>
             {p.active && (
-              <Button type="button" variant="ghost" size="icon" aria-label="עריכת חנות" onClick={() => { if (p.active) setEditing({ ...p.active }); }}>
+              <Button type="button" variant="ghost" size="icon" aria-label="עריכת חנות" onClick={() => { if (p.active) { setPinned(p.shortcutIds.includes(p.active.id)); setEditing({ ...p.active }); } }}>
                 <Pencil className="h-4 w-4" />
               </Button>
             )}
@@ -157,8 +182,7 @@ export function StoreSelector(p: Props) {
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!editing.name.trim()) return;
-                p.onSave(editing);
-                setEditing(null);
+                void saveStore();
               }}
             >
               <label className="block text-sm font-medium">שם החנות
@@ -176,7 +200,7 @@ export function StoreSelector(p: Props) {
                 <Globe2 className="h-4 w-4 text-primary" />חנות אונליין בלבד
               </label>
               <div className="flex gap-2 pt-2">
-                <Button type="button" variant="outline" className="h-11" onClick={() => { if (editing.name.trim()) p.onSave(editing); setEditing(null); }}>
+                <Button type="button" variant="outline" className="h-11" onClick={() => { if (editing.name.trim()) void saveStore(); else setEditing(null); }}>
                   <ArrowRight />חזרה
                 </Button>
                 <Button type="submit" className="h-11 flex-1">שמירה</Button>
@@ -186,6 +210,7 @@ export function StoreSelector(p: Props) {
                   </Button>
                 )}
               </div>
+              <label className="flex items-center gap-3 text-sm font-medium"><input type="checkbox" checked={pinned} disabled={!p.shortcutsReady} onChange={(e) => setPinned(e.target.checked)} className="h-5 w-5 accent-[var(--color-primary)]" />{pinLabel}</label>
             </form>
           )}
           </div>
