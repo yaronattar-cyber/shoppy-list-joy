@@ -63,16 +63,18 @@ export function useSpeechToText(
     rec.continuous = false;
     rec.interimResults = true; // תמלול חי לתוך השדה
 
+    let gotFinal = false;
+    let lastInterim = "";
     rec.onresult = (e: any) => {
       let interim = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const res = e.results[i];
         const text = String(res[0]?.transcript ?? "").trim();
         if (!text) continue;
-        if (res.isFinal) finalRef.current(text);
+        if (res.isFinal) { gotFinal = true; finalRef.current(text); }
         else interim += ` ${text}`;
       }
-      if (interim.trim()) interimRef.current?.(interim.trim());
+      if (interim.trim()) { lastInterim = interim.trim(); interimRef.current?.(lastInterim); }
     };
     rec.onerror = (e: any) => {
       const code = e?.error;
@@ -87,7 +89,11 @@ export function useSpeechToText(
       }
       setListening(false);
     };
-    rec.onend = () => setListening(false);
+    rec.onend = () => {
+      setListening(false);
+      // חלק מהדפדפנים מסיימים בלי תוצאה סופית — שולחים את התמלול האחרון
+      if (!gotFinal && lastInterim) finalRef.current(lastInterim);
+    };
 
     try {
       rec.start();
