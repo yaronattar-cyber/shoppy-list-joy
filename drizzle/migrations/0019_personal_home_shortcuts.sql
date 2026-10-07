@@ -1,0 +1,2 @@
+ALTER TABLE public.user_tab_order ADD COLUMN home_tab_ids text[] NOT NULL DEFAULT '{}'::text[];
+COMMENT ON COLUMN public.user_tab_order.home_tab_ids IS 'Personal pinned Home store/event IDs in display order; isolated from Page 2 tab_ids.';

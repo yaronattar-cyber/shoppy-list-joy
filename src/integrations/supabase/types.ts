@@ -407,16 +407,19 @@ export type Database = {
       }
       user_tab_order: {
         Row: {
+          home_tab_ids: string[]
           tab_ids: string[]
           updated_at: string
           user_id: string
         }
         Insert: {
+          home_tab_ids?: string[]
           tab_ids?: string[]
           updated_at?: string
           user_id?: string
         }
         Update: {
+          home_tab_ids?: string[]
           tab_ids?: string[]
           updated_at?: string
           user_id?: string

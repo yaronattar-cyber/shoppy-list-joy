@@ -134,6 +134,13 @@
       "when": 1791289760378,
       "tag": "0018_meal_photos_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1791346339996,
+      "tag": "0019_personal_home_shortcuts",
+      "breakpoints": true
     }
   ]
 }
