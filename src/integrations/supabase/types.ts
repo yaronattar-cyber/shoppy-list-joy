@@ -448,6 +448,8 @@ export type Database = {
         Args: { _category: string; _family_id: string; _name: string }
         Returns: undefined
       }
+      save_home_shortcuts: { Args: { _ids: string[] }; Returns: undefined }
+      save_list_tab_order: { Args: { _ids: string[] }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
