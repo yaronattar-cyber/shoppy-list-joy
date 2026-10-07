@@ -92,6 +92,7 @@ export function useStores(familyId: string | null) {
       if (payload.is_default) await supabase.from("stores").update({ is_default: false }).eq("family_id", familyId).neq("id", id);
       if (store.id) await supabase.from("stores").update(databasePayload).eq("id", id);
       else await supabase.from("stores").insert({ id, family_id: familyId, ...databasePayload });
+      return id;
     },
     [familyId, select],
   );

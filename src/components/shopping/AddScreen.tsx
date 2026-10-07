@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, Mic, MicOff, Plus, ScanBarcode, ShoppingBag } from "lucide-react";
+import { Bot, Camera, Check, Plus, ScanBarcode, ShoppingBag } from "lucide-react";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { Button } from "@/components/ui/button";
 import { CategoryBar } from "./CategoryBar";
-import { useSpeechToText } from "@/hooks/useSpeechToText";
+import { InventoryAssistant } from "./InventoryAssistant";
+import { HomeShortcuts } from "./HomeShortcuts";
 import { HistorySuggestions } from "./HistorySuggestions";
 import { matchHistory, type HistoryEntry } from "@/lib/product-history";
 import type { ShoppingItem } from "@/lib/shopping-list";
@@ -30,6 +31,9 @@ type Props = {
   inventory?: ShoppingItem[];
   onCreateRecipeList?: (dish: string, names: string[]) => void;
   wish: ReturnType<typeof useOnlineWishlist>;
+  shortcutIds: string[];
+  onSortShortcuts: (ids: string[]) => void;
+  onOpenShortcut: (target: AddTarget) => void;
 };
 
 const greeting = () => {
@@ -38,7 +42,9 @@ const greeting = () => {
 };
 
 // מסך הבית: כותרת קומפקטית, שורת הוספה ופריטים אחרונים
-export function AddScreen({ userName, items = [], history = [], productHistory = [], targets, onAddTo, onToggle, onGoShopping, inventory = [], onCreateRecipeList, wish }: Props) {
+export function AddScreen({ userName, items = [], history = [], productHistory = [], targets, onAddTo, onToggle, onGoShopping, inventory = [], onCreateRecipeList, wish, shortcutIds, onSortShortcuts, onOpenShortcut }: Props) {
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [cameraRequest, setCameraRequest] = useState(0);
   const [onlineOpen, setOnlineOpen] = useState(false);
   const [value, setValue] = useState("");
   const [popup, setPopup] = useState<string | null>(null);
@@ -70,7 +76,6 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
   // בחירה מהצעות/קטגוריות/דיבור ממלאת את השדה וממתינה ללחיצה על הוסף
   const fill = (name: string) => { setValue(name); inputRef.current?.focus(); return name; };
 
-  const stt = useSpeechToText((text) => fill(text), setValue);
   const suggestions = useMemo(() => matchHistory(history, productHistory, value), [history, productHistory, value]);
   const pending = items.filter((i) => !i.completed);
   const recent = [...pending].reverse().slice(0, 4);
@@ -80,6 +85,7 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
       <header className="flex items-center justify-between gap-3">
         <h1 className="min-w-0 text-lg font-bold tracking-tight text-foreground">{greeting()}, {userName}</h1>
         <div className="flex shrink-0 items-center gap-1">
+        <Button type="button" size="icon" aria-label="עוזרת אישית למלאי" title="עוזרת אישית למלאי" onClick={() => setAssistantOpen(true)} className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-md ring-1 ring-primary/30 transition-transform hover:scale-105"><Bot className="h-5 w-5" /></Button>
         <Button type="button" size="icon" variant="ghost" onClick={() => setOnlineOpen(true)} aria-label="קניות אונליין" title="קניות אונליין" className="h-8 w-8 text-primary"><ShoppingBag className="h-4 w-4" /></Button>
         <Button type="button" onClick={onGoShopping} variant="secondary" aria-label={`${pending.length} ברשימה — פתיחת רשימת הקניות`} className="h-8 shrink-0 items-center gap-1.5 rounded-full border border-primary/15 bg-primary/10 px-3 text-xs font-semibold text-primary transition-all hover:bg-primary/15 active:scale-95">
           <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden />
@@ -90,18 +96,18 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
 
       {/* שדה הוספה */}
       <form className="mt-4 flex items-center gap-1 rounded-2xl border border-border/70 bg-card p-0.5 shadow-soft transition-all focus-within:border-primary/30 focus-within:shadow-glow [&>button]:h-9 [&>button]:w-9 [&>input]:h-9" onSubmit={(event) => { event.preventDefault(); if (add(value)) setValue(""); }}>
-        <Button type="button" size="icon" variant="ghost" onClick={stt.start} disabled={!stt.supported} aria-label={stt.listening ? "מקשיב, לחצו לעצירה" : "הוספה בדיבור"} title={stt.supported ? "הוספה בדיבור" : "הדפדפן אינו תומך בזיהוי דיבור"} className={`relative isolate h-10 w-10 shrink-0 rounded-xl transition-all active:scale-95 ${stt.listening ? "mic-ripple bg-destructive/10 text-destructive" : "text-primary hover:bg-accent"}`}>
-          {stt.supported ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
-        </Button>
         <Button type="button" size="icon" variant="ghost" onClick={() => setScannerOpen(true)} aria-label="הוספה בסריקת ברקוד" title="סריקת ברקוד" className="h-10 w-10 shrink-0 rounded-xl text-primary transition-all hover:bg-accent active:scale-95">
           <ScanBarcode className="h-5 w-5" />
         </Button>
+        <Button type="button" size="icon" variant="ghost" onClick={() => setCameraRequest((v) => v + 1)} aria-label="צילום מוצר" title="צילום מוצר" className="h-9 w-9 shrink-0 rounded-xl text-primary"><Camera className="h-5 w-5" /></Button>
         <input ref={inputRef} value={value} onChange={(event) => setValue(event.target.value)} placeholder="מה חסר במקרר?" aria-label="שם הפריט" autoComplete="off" className="h-10 min-w-0 flex-1 bg-transparent px-1 text-base text-foreground outline-none placeholder:text-muted-foreground" />
         <Button type="submit" size="icon" className="h-10 w-10 shrink-0 rounded-xl transition-all active:scale-95" aria-label="הוספת פריט"><Plus className="h-5 w-5" /></Button>
       </form>
 
       <CategoryBar onAdd={fill} />
-      <VisualAiScan inventory={inventory} onCreateRecipeList={onCreateRecipeList} onSaveOnline={wish.add} />
+      <HomeShortcuts targets={targets} ids={shortcutIds} onSort={onSortShortcuts} onSelect={onOpenShortcut} />
+      <VisualAiScan cameraRequest={cameraRequest} inventory={inventory} onCreateRecipeList={onCreateRecipeList} onSaveOnline={wish.add} />
+      <InventoryAssistant open={assistantOpen} onOpenChange={setAssistantOpen} items={inventory} />
       <Drawer open={onlineOpen} onOpenChange={setOnlineOpen}>
         <DrawerContent dir="rtl" className="mx-auto max-w-2xl bg-card">
           <DrawerHeader className="text-right"><DrawerTitle>קניות אונליין</DrawerTitle></DrawerHeader>
@@ -114,10 +120,6 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
 
       <HistorySuggestions items={suggestions} onPick={(name) => fill(name)} />
 
-      <div className="min-h-2" aria-live="polite">
-        {stt.listening && <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive"><span className="h-2 w-2 animate-pulse rounded-full bg-destructive" />מקשיב...</div>}
-        {!stt.listening && stt.error && <p className="mt-3 rounded-xl bg-destructive/10 px-3 py-2 text-sm text-destructive">{stt.error}</p>}
-      </div>
 
       <BarcodeScanner open={scannerOpen} onClose={() => setScannerOpen(false)} onResult={(name) => setScanDraft(name)} />
 

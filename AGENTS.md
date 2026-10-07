@@ -13,3 +13,4 @@
 - Store records persist whether they are online-only; physical shopping controls must only appear for non-online stores.
 - Online order snapshots persist in dedicated order tables and move into inventory atomically when received, so family devices stay consistent.
 - Own the visual-search wishlist once in the main screen container and share it with Home and List so both views update immediately.
+- Own Home shortcut preferences once in the main screen; persist ordered pinned IDs by authenticated user separately from List tab order so family members cannot overwrite one another's choices.
