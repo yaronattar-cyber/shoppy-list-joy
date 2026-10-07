@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Home, ListChecks, Package, Users, ShoppingBag } from "lucide-react";
 import { OnlineWishlist } from "@/components/shopping/OnlineWishlist";
 import { useOnlineWishlist } from "@/hooks/useOnlineWishlist";
+import { useHomeShortcuts } from "@/hooks/useHomeShortcuts";
 import { toast } from "sonner";
 import type { AddTarget } from "@/components/shopping/TargetPicker";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,7 @@ type Screen = (typeof ORDER)[number] | "family";
 
 function Index() {
   const wish = useOnlineWishlist();
+  const shortcuts = useHomeShortcuts();
   const [listTab, setListTab] = useState<"shopping" | "online">("shopping");
   const [screen, setScreen] = useState<Screen>("home");
   const [restored, setRestored] = useState(false);
@@ -248,12 +250,15 @@ function Index() {
           active={stores.active}
           lines={list.items}
           onSelect={stores.select}
-          onSave={(st) => void stores.save(st)}
+          onSave={stores.save}
+          shortcutIds={shortcuts.ids}
+          shortcutsReady={shortcuts.ready}
+          onPinShortcut={shortcuts.pin}
           onRemove={(id) => void stores.remove(id)}
           events={events.events}
           activeEvent={events.active}
           onSelectEvent={events.select}
-          onCreateEvent={(n) => void events.create(n)}
+          onCreateEvent={events.create}
           chips={
         <StoreChips
           stores={stores.stores}
@@ -270,6 +275,14 @@ function Index() {
       {screen === "home" && (
         <AddScreen
           wish={wish}
+          shortcutIds={shortcuts.ids}
+          onSortShortcuts={shortcuts.save}
+          onOpenShortcut={(target) => {
+            if (target.kind === "event" && target.id) events.select(target.id);
+            else { events.select(null); stores.select(target.id); }
+            setListTab("shopping");
+            setScreen("list");
+          }}
           userName={family.userName}
           count={list.items.length}
           items={list.items}
