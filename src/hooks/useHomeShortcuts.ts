@@ -42,7 +42,8 @@ export function useHomeShortcuts() {
     setIds(next);
     localStorage.setItem(`home-shortcuts-${id}`, JSON.stringify(next));
     writes.current = writes.current.then(async () => {
-      const { error } = await supabase.from("user_tab_order").upsert({ user_id: id, home_tab_ids: next, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+      if (userId.current !== id) return;
+      const { error } = await supabase.rpc("save_home_shortcuts", { _ids: next });
       if (error) toast.error("שמירת הקיצורים נכשלה, נסו שוב");
     });
   }, []);
