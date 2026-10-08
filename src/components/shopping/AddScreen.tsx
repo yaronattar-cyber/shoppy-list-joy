@@ -85,7 +85,8 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
 
   const suggestions = useMemo(() => matchHistory(history, productHistory, value), [history, productHistory, value]);
   const pending = items.filter((i) => !i.completed);
-  const recent = importantFirst([...pending].sort((a, b) => b.createdAt.localeCompare(a.createdAt))).slice(0, Math.max(4, pending.filter((i) => i.isImportant).length));
+  const recentCandidates = items.filter((i) => !i.completed || i.isImportant);
+  const recent = importantFirst([...recentCandidates].sort((a, b) => b.createdAt.localeCompare(a.createdAt))).slice(0, Math.max(4, recentCandidates.filter((i) => i.isImportant).length));
   const setImportant = (item: ShoppingItem, isImportant: boolean) => onUpdate(item.id, { name: item.name, quantity: item.quantity, unit: item.unit, notes: item.notes, category: item.category, isImportant });
 
   return (

@@ -285,7 +285,7 @@ function Index() {
           }}
           userName={family.userName}
           count={list.items.length}
-          items={list.items}
+          items={list.allActive}
           onToggle={list.toggleItem}
           onOutOfStock={list.markOutOfStock}
           onUpdate={list.updateDetails}
