@@ -148,6 +148,13 @@
       "when": 1791346446916,
       "tag": "0020_save_personal_shortcut_orders",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1791431676144,
+      "tag": "0021_item_importance",
+      "breakpoints": true
     }
   ]
 }

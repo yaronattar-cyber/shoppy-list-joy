@@ -6,6 +6,7 @@ export type ShoppingItem = {
   name: string;
   completed: boolean;
   outOfStock: boolean;
+  isImportant?: boolean;
   quantity: number;
   unit: string;
   notes: string;
@@ -20,6 +21,11 @@ export type ShoppingItem = {
   assignedTo?: string; // שיוך אופציונלי: מי אחראי על קניית הפריט
   photoUrl?: string | null; // נתיב תמונת מנה באחסון
 };
+
+// מיון יציב: החשובים בראש, בלי לשנות את סדר שאר הפריטים.
+export function importantFirst(items: ShoppingItem[]): ShoppingItem[] {
+  return [...items].sort((a, b) => Number(!!b.isImportant) - Number(!!a.isImportant));
+}
 
 // DD/MM/YYYY HH:mm
 export function formatDateTime(value: string | number | Date): string {

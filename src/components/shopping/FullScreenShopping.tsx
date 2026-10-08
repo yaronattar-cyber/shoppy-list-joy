@@ -1,7 +1,8 @@
 // מסך קניות מלא — מצב "אני בסופר": Wake Lock, קיבוץ לפי קטגוריות, צ'קבוקסים גדולים,
 // פריטים שנקנו בתחתית, והצעת חלופות לפריט חסר במלאי.
 import { useEffect, useMemo, useState } from "react";
-import { Check, HelpCircle, Sun, X } from "lucide-react";
+import { Sun, X } from "lucide-react";
+import { ShoppingItemRow } from "./ShoppingItemRow";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -12,7 +13,6 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { setWakeLock, wakeLockSupported } from "@/lib/shopping-tools";
-import { formatQuantity } from "@/lib/quantity";
 import { CATEGORIES } from "@/lib/categories";
 import type { ShoppingItem } from "@/lib/shopping-list";
 
@@ -26,6 +26,8 @@ type Props = {
   onAdd: (name: string) => string | null;
   /** יציאה/סגירה חזרה למסך הקודם */
   onExit: () => void;
+  onOpen: (item: ShoppingItem) => void;
+  onImportant: (item: ShoppingItem, checked: boolean) => void;
 };
 
 // קיבוץ לפי קטגוריה — "כללי" בסוף
@@ -51,7 +53,7 @@ function alternativesFor(item: ShoppingItem, items: ShoppingItem[]): string[] {
   return preset?.options?.filter((o) => o !== item.name) ?? [];
 }
 
-export function FullScreenShopping({ items, onToggle, onOutOfStock, onAdd, onExit }: Props) {
+export function FullScreenShopping({ items, onToggle, onOutOfStock, onAdd, onExit, onOpen, onImportant }: Props) {
   const [awake, setAwake] = useState(false);
   const [canWake, setCanWake] = useState(false);
   const [helpFor, setHelpFor] = useState<ShoppingItem | null>(null);
@@ -84,8 +86,9 @@ export function FullScreenShopping({ items, onToggle, onOutOfStock, onAdd, onExi
   };
 
   // לא נקנו למעלה, שנקנו למטה
-  const todo = useMemo(() => items.filter((i) => !i.completed), [items]);
-  const done = useMemo(() => items.filter((i) => i.completed), [items]);
+  const priority = useMemo(() => items.filter((i) => i.isImportant), [items]);
+  const todo = useMemo(() => items.filter((i) => !i.completed && !i.isImportant), [items]);
+  const done = useMemo(() => items.filter((i) => i.completed && !i.isImportant), [items]);
   const todoGroups = useMemo(() => groupByCategory(todo), [todo]);
   const alts = useMemo(
     () => (helpFor ? alternativesFor(helpFor, items) : []),
@@ -117,6 +120,9 @@ export function FullScreenShopping({ items, onToggle, onOutOfStock, onAdd, onExi
 
       {/* הרשימה המקובצת */}
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6">
+        {priority.length > 0 && <ul aria-label="פריטים חשובים" className="mt-4 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+          {priority.map((item) => <ShoppingItemRow key={item.id} item={item} onToggle={onToggle} onOutOfStock={onOutOfStock} onOpen={onOpen} onImportant={onImportant} onAlternatives={setHelpFor} />)}
+        </ul>}
         {todoGroups.map(([cat, rows]) => (
           <section key={cat} className="mt-4">
             <h2 className="mb-1 px-1 text-sm font-semibold text-muted-foreground">
@@ -124,35 +130,7 @@ export function FullScreenShopping({ items, onToggle, onOutOfStock, onAdd, onExi
             </h2>
             <ul className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
               {rows.map((item) => (
-                <li key={item.id} className="flex items-center gap-2 border-b border-border px-2 py-1.5 last:border-0">
-                  {/* צ'קבוקס מרובע וקטן, בפרופורציה לגודל הפונט של שם המוצר */}
-                  <button
-                    type="button"
-                    className="grid h-5 w-5 shrink-0 place-items-center rounded-[4px] border-2 border-input text-transparent transition-colors active:bg-muted hover:border-primary hover:text-primary"
-                    aria-label={`סימון ${item.name} כנקנה`}
-                    onClick={() => onToggle(item.id)}
-                  >
-                    <Check className="h-3.5 w-3.5" />
-                  </button>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold leading-5 text-foreground">{item.name}</p>
-                    {formatQuantity(item.quantity, item.unit) && (
-                      <p className="text-xs text-muted-foreground">{formatQuantity(item.quantity, item.unit)}</p>
-                    )}
-                  </div>
-                  {item.outOfStock && (
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="destructive"
-                      className="h-10 w-10 shrink-0 rounded-full"
-                      aria-label={`חלופות ל־${item.name}`}
-                      onClick={() => setHelpFor(item)}
-                    >
-                      <HelpCircle />
-                    </Button>
-                  )}
-                </li>
+                <ShoppingItemRow key={item.id} item={item} onToggle={onToggle} onOutOfStock={onOutOfStock} onOpen={onOpen} onImportant={onImportant} onAlternatives={setHelpFor} />
               ))}
             </ul>
           </section>
@@ -164,17 +142,7 @@ export function FullScreenShopping({ items, onToggle, onOutOfStock, onAdd, onExi
             <h2 className="mb-1 px-1 text-sm font-semibold text-muted-foreground">נקנו ({done.length})</h2>
             <ul className="overflow-hidden rounded-lg border border-border bg-card/60 shadow-sm">
               {done.map((item) => (
-                <li key={item.id} className="flex items-center gap-2 border-b border-border px-2 py-1.5 last:border-0 opacity-70">
-                  <button
-                    type="button"
-                    className="grid h-5 w-5 shrink-0 place-items-center rounded-[4px] bg-primary text-primary-foreground"
-                    aria-label={`ביטול סימון ${item.name}`}
-                    onClick={() => onToggle(item.id)}
-                  >
-                    <Check className="h-3.5 w-3.5" />
-                  </button>
-                  <p className="min-w-0 flex-1 truncate text-sm leading-5 text-muted-foreground line-through">{item.name}</p>
-                </li>
+                <ShoppingItemRow key={item.id} item={item} onToggle={onToggle} onOutOfStock={onOutOfStock} onOpen={onOpen} onImportant={onImportant} />
               ))}
             </ul>
           </section>

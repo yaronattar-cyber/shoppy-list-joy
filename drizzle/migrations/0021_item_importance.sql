@@ -1,0 +1,1 @@
+ALTER TABLE public.items ADD COLUMN is_important boolean NOT NULL DEFAULT false;
