@@ -9,7 +9,7 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 
-- Shared shopping-item UI belongs in reusable row and bottom-sheet components so List and In-Store stay behaviorally consistent.
+- Shared shopping-item UI belongs in reusable row and bottom-sheet components across Home, List and In-Store so editing, importance and purchase states stay consistent.
 - Store records persist whether they are online-only; physical shopping controls must only appear for non-online stores.
 - Online order snapshots persist in dedicated order tables and move into inventory atomically when received, so family devices stay consistent.
 - Own the visual-search wishlist once in the main screen container and share it with Home and List so both views update immediately.
