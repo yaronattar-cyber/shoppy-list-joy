@@ -7,4 +7,4 @@
 - [x] Compact Home input, reorder shortcuts, and move online wishlist to a List subtab with a Home drawer shortcut; verify.
 - [x] Standardize Home assistant, add capture shortcut, and implement personally pinned/sorted store and event shortcuts; build and opening flows verified.
 - [ ] Verify personal shortcut persistence across two signed-in accounts — blocked: no usable test session available.
-- [ ] Add persistent important items, top priority across shopping and Home, red titles and unified recent container; verify.
+- [x] Add important items with Cloud schema/offline persistence, top priority across shopping and Home, red titles and unified recent container; build and browser flows verified (live authenticated Cloud sync not tested).
