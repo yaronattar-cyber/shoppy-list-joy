@@ -287,6 +287,10 @@ function Index() {
           count={list.items.length}
           items={list.items}
           onToggle={list.toggleItem}
+          onOutOfStock={list.markOutOfStock}
+          onUpdate={list.updateDetails}
+          onRemove={(id) => void list.removeItem(id)}
+          stores={stores.stores}
           history={list.history}
           productHistory={list.productHistory}
           targets={targets}

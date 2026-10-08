@@ -13,11 +13,11 @@ import { LongPressHint, ShoppingItemRow } from "./ShoppingItemRow";
 import { storeTone } from "./StoreChips";
 import { HistorySuggestions } from "./HistorySuggestions";
 import { matchHistory, type HistoryEntry } from "@/lib/product-history";
-import { parsePastedList, type ShoppingItem } from "@/lib/shopping-list";
+import { importantFirst, parsePastedList, type ShoppingItem } from "@/lib/shopping-list";
 import type { OnlineOrder } from "@/hooks/useOnlineOrders";
 import { toast } from "sonner";
 
-type ItemDetails = { name: string; quantity: number; unit: string; notes: string; category: string; storeId?: string | null };
+type ItemDetails = { name: string; quantity: number; unit: string; notes: string; category: string; storeId?: string | null; isImportant?: boolean };
 type Props = {
   items: ShoppingItem[];
   history: string[];
@@ -66,6 +66,10 @@ export function ListScreen(p: Props) {
   const suggestions = useMemo(() => matchHistory(p.history, p.productHistory, quick), [p.history, p.productHistory, quick]);
   const todo = p.items.filter((item) => !item.completed);
   const done = p.items.filter((item) => item.completed);
+  const priority = importantFirst(p.items.filter((item) => item.isImportant));
+  const regularTodo = todo.filter((item) => !item.isImportant);
+  const regularDone = done.filter((item) => !item.isImportant);
+  const setImportant = (item: ShoppingItem, isImportant: boolean) => p.onUpdate(item.id, { name: item.name, quantity: item.quantity, unit: item.unit, notes: item.notes, category: item.category, isImportant });
   // רשימה כללית: תגית חנות לכל פריט וקיבוץ לפי חנויות
   const general = !!p.isGeneral;
   const storeNameOf = (item: ShoppingItem) => p.stores?.find((s) => s.id === item.storeId)?.name ?? "ללא חנות";
@@ -79,7 +83,7 @@ export function ListScreen(p: Props) {
   const doneCount = p.items.filter((item) => item.completed).length;
   const allDone = p.items.length > 0 && doneCount === p.items.length;
   // רשימת פריטים משותפת לכל אופן תצוגה
-  const rows = (list: ShoppingItem[]) => list.map((item) => <ShoppingItemRow key={item.id} item={item} storeLabel={tag(item)} storeTone={general ? storeTone(p.stores ?? [], item.storeId) : undefined} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} />);
+  const rows = (list: ShoppingItem[]) => list.map((item) => <ShoppingItemRow key={item.id} item={item} storeLabel={tag(item)} storeTone={general ? storeTone(p.stores ?? [], item.storeId) : undefined} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} onImportant={setImportant} />);
   const placeOnlineOrder = async () => {
     try {
       if (await p.onOnlineOrderPlaced?.()) toast.success("ההזמנה הועברה להזמנות בדרך במלאי");
@@ -151,25 +155,26 @@ export function ListScreen(p: Props) {
       )}
 
       {/* הרשימה תופסת את מרבית המסך: מרווחים מינימליים בין קבוצות */}
-      {todo.length > 0 && (byStore
-        ? storeGroups(todo).map(([label, list]) => <section key={label} className="mt-2">
+      {priority.length > 0 && <ul aria-label="פריטים חשובים" className={`mt-2 ${ROWS}`}>{rows(priority)}</ul>}
+      {regularTodo.length > 0 && (byStore
+        ? storeGroups(regularTodo).map(([label, list]) => <section key={label} className="mt-2">
             <h2 className="mb-0.5 px-1 text-xs font-semibold text-muted-foreground">{label} ({list.length})</h2>
             <ul className={ROWS}>{rows(list)}</ul>
           </section>)
         : grouped
-        ? groupByCategory(todo).map(([cat, list]) => <section key={cat} className="mt-2">
+        ? groupByCategory(regularTodo).map(([cat, list]) => <section key={cat} className="mt-2">
             <h2 className="mb-0.5 px-1 text-xs font-semibold text-muted-foreground">{cat} ({list.length})</h2>
             <ul className={ROWS}>{rows(list)}</ul>
           </section>)
-        : <ul className={`mt-2 ${ROWS}`}>{rows(todo)}</ul>)}
+        : <ul className={`mt-2 ${ROWS}`}>{rows(regularTodo)}</ul>)}
 
-      {done.length > 0 && (
+      {regularDone.length > 0 && (
         <section className="mt-3">
           <Button type="button" variant="ghost" onClick={() => setShowDone((v) => !v)} aria-expanded={showDone} className="mb-1 h-8 w-full justify-between px-1 text-xs font-semibold text-muted-foreground">
-            <span>פריטים שנרכשו ({done.length})</span>
+            <span>פריטים שנרכשו ({regularDone.length})</span>
             <ChevronDown className={`h-4 w-4 transition-transform ${showDone ? "rotate-180" : ""}`} />
           </Button>
-          {showDone && <ul className={ROWS}>{rows(done)}</ul>}
+          {showDone && <ul className={ROWS}>{rows(regularDone)}</ul>}
         </section>
       )}
 
@@ -200,6 +205,8 @@ export function ListScreen(p: Props) {
           onToggle={p.onToggle}
           onOutOfStock={p.onOutOfStock}
           onAdd={p.onAdd}
+          onOpen={setSelected}
+          onImportant={setImportant}
           onExit={() => setFullScreen(false)}
         />
       )}

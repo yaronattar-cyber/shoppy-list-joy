@@ -7,7 +7,9 @@ import { InventoryAssistant } from "./InventoryAssistant";
 import { HomeShortcuts } from "./HomeShortcuts";
 import { HistorySuggestions } from "./HistorySuggestions";
 import { matchHistory, type HistoryEntry } from "@/lib/product-history";
-import type { ShoppingItem } from "@/lib/shopping-list";
+import { importantFirst, type ShoppingItem } from "@/lib/shopping-list";
+import { ShoppingItemRow } from "./ShoppingItemRow";
+import { ItemEditDrawer } from "./ItemEditDrawer";
 
 import { TargetPicker, type AddTarget } from "./TargetPicker";
 import { VisualAiScan } from "./VisualAiScan";
@@ -25,6 +27,10 @@ type Props = {
   targets: AddTarget[];
   onAddTo: (name: string, target: AddTarget) => string | null;
   onToggle: (id: string) => void;
+  onOutOfStock: (id: string) => void;
+  onUpdate: (id: string, details: { name: string; quantity: number; unit: string; notes: string; category: string; storeId?: string | null; isImportant?: boolean }) => void;
+  onRemove: (id: string) => void;
+  stores: { id: string; name: string }[];
   onGoShopping: () => void;
   onOpenFamily: () => void;
   onSpeak?: (text: string) => void;
@@ -42,7 +48,8 @@ const greeting = () => {
 };
 
 // מסך הבית: כותרת קומפקטית, שורת הוספה ופריטים אחרונים
-export function AddScreen({ userName, items = [], history = [], productHistory = [], targets, onAddTo, onToggle, onGoShopping, inventory = [], onCreateRecipeList, wish, shortcutIds, onSortShortcuts, onOpenShortcut }: Props) {
+export function AddScreen({ userName, items = [], history = [], productHistory = [], targets, onAddTo, onToggle, onOutOfStock, onUpdate, onRemove, stores, onGoShopping, inventory = [], onCreateRecipeList, wish, shortcutIds, onSortShortcuts, onOpenShortcut }: Props) {
+  const [selected, setSelected] = useState<ShoppingItem | null>(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [cameraRequest, setCameraRequest] = useState(0);
   const [onlineOpen, setOnlineOpen] = useState(false);
@@ -78,7 +85,8 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
 
   const suggestions = useMemo(() => matchHistory(history, productHistory, value), [history, productHistory, value]);
   const pending = items.filter((i) => !i.completed);
-  const recent = [...pending].reverse().slice(0, 4);
+  const recent = importantFirst([...pending].sort((a, b) => b.createdAt.localeCompare(a.createdAt))).slice(0, Math.max(4, pending.filter((i) => i.isImportant).length));
+  const setImportant = (item: ShoppingItem, isImportant: boolean) => onUpdate(item.id, { name: item.name, quantity: item.quantity, unit: item.unit, notes: item.notes, category: item.category, isImportant });
 
   return (
     <section className="mx-auto w-full max-w-2xl px-4 pb-28 pt-4 sm:px-6">
@@ -165,24 +173,19 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
             <span className="h-4 w-1.5 rounded-full bg-primary" aria-hidden />
             נוספו לאחרונה
           </h2>
-          {pending.length > 4 && <Button type="button" variant="link" size="sm" onClick={onGoShopping} className="h-auto p-0">הכל ({pending.length})</Button>}
+          {pending.length > recent.length && <Button type="button" variant="link" size="sm" onClick={onGoShopping} className="h-auto p-0">הכל ({pending.length})</Button>}
         </div>
         {recent.length ? (
-          <ul className="mt-3 space-y-2">
+          <ul aria-label="נוספו לאחרונה" className="mt-3 overflow-hidden rounded-lg border border-border bg-recent shadow-sm [&>li]:bg-transparent">
             {recent.map((item) => (
-              <li key={item.id} className="flex items-center gap-3 rounded-2xl border border-border/60 bg-card px-4 py-3 shadow-soft transition-all duration-150 hover:-translate-y-0.5 hover:border-primary/25 active:scale-[0.99]">
-                <button type="button" onClick={() => onToggle(item.id)} aria-label={`סימון ${item.name} כנקנה`} className="grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 border-primary/40 text-primary transition-all hover:border-primary hover:bg-accent active:scale-90">
-                  <Check className="h-3.5 w-3.5 opacity-0 hover:opacity-100" />
-                </button>
-                <span className="min-w-0 flex-1 truncate font-medium text-foreground">{item.name}</span>
-                {item.addedBy && <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{item.addedBy}</span>}
-              </li>
+              <ShoppingItemRow key={item.id} item={item} onToggle={onToggle} onOutOfStock={onOutOfStock} onOpen={setSelected} onImportant={setImportant} />
             ))}
           </ul>
         ) : (
           <p className="mt-3 rounded-2xl border border-dashed border-border bg-card/60 p-6 text-center text-sm text-muted-foreground">הרשימה ריקה — אפשר להקליד, לדבר או לבחור למעלה</p>
         )}
       </section>
+      <ItemEditDrawer item={selected} stores={stores} onClose={() => setSelected(null)} onSave={onUpdate} onDelete={onRemove} onOutOfStock={onOutOfStock} />
 
       {popup && <div role="status" className="animate-in fade-in slide-in-from-bottom-2 fixed inset-x-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-50 mx-auto max-w-sm rounded-2xl bg-hero p-3 text-center text-primary-foreground shadow-soft duration-200"><p className="font-bold">אני על זה!</p><p className="text-sm opacity-90">{popup} נוסף לרשימה</p></div>}
     </section>
