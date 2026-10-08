@@ -12,6 +12,7 @@ type Row = {
   name: string;
   completed: boolean;
   out_of_stock: boolean;
+  is_important?: boolean;
   quantity: number;
   unit: string;
   notes: string;
@@ -33,6 +34,7 @@ const toItem = (row: Row): ShoppingItem => ({
   name: row.name,
   completed: row.completed,
   outOfStock: !!row.out_of_stock,
+  isImportant: !!row.is_important,
   quantity: Number(row.quantity) || 1,
   unit: row.unit ?? "",
   notes: row.notes ?? "",
@@ -52,6 +54,7 @@ const patchToItem = (p: Patch): Partial<ShoppingItem> => {
   if (p.name !== undefined) out.name = p.name;
   if (p.completed !== undefined) out.completed = p.completed;
   if (p.out_of_stock !== undefined) out.outOfStock = p.out_of_stock;
+  if (p.is_important !== undefined) out.isImportant = p.is_important;
   if (p.quantity !== undefined) out.quantity = p.quantity;
   if (p.unit !== undefined) out.unit = p.unit;
   if (p.notes !== undefined) out.notes = p.notes;
@@ -336,6 +339,7 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
       unit,
       completed: false,
       out_of_stock: false,
+      is_important: false,
       notes: "",
       category: "",
       archived: false,
@@ -443,11 +447,11 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
   );
 
   const updateDetails = useCallback(
-    (id: string, details: Pick<Row, "name" | "quantity" | "unit" | "notes" | "category"> & { storeId?: string | null }) => {
+    (id: string, details: Pick<Row, "name" | "quantity" | "unit" | "notes" | "category"> & { storeId?: string | null; isImportant?: boolean }) => {
       if (!details.name.trim() || !(details.quantity > 0)) return;
-      const { storeId, ...rest } = details;
+      const { storeId, isImportant, ...rest } = details;
       // storeId מועבר רק כשנבחרה חנות בחלונית העריכה
-      update(id, { ...rest, name: rest.name.trim(), ...(storeId !== undefined ? { store_id: storeId } : {}) });
+      update(id, { ...rest, name: rest.name.trim(), ...(storeId !== undefined ? { store_id: storeId } : {}), ...(isImportant !== undefined ? { is_important: isImportant } : {}) });
     },
     [update],
   );
@@ -472,7 +476,7 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
       if (!prev) return;
       const row: Row = {
         id: prev.id, family_id: prev.familyId, name: prev.name, completed: prev.completed,
-        out_of_stock: prev.outOfStock, quantity: prev.quantity, unit: prev.unit, notes: prev.notes,
+        out_of_stock: prev.outOfStock, is_important: !!prev.isImportant, quantity: prev.quantity, unit: prev.unit, notes: prev.notes,
         category: prev.category, archived: prev.archived, added_by: prev.addedBy, created_at: prev.createdAt,
         store_id: prev.storeId ?? null, expiry_date: prev.expiryDate ?? null, stock_status: prev.stockStatus ?? "full",
       };

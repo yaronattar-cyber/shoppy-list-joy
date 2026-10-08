@@ -1,6 +1,7 @@
 import { memo, useContext, useEffect, useRef, useState } from "react";
-import { AlertTriangle, Check, ChevronLeft, X } from "lucide-react";
+import { AlertTriangle, Check, ChevronLeft, HelpCircle, MoreHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { formatQuantity } from "@/lib/quantity";
 import type { ShoppingItem } from "@/lib/shopping-list";
 import { haptic } from "@/lib/shopping-tools";
@@ -14,12 +15,14 @@ type Props = {
   onOpen: (item: ShoppingItem) => void;
   storeLabel?: string | undefined;
   storeTone?: number | undefined;
+  onImportant?: (item: ShoppingItem, checked: boolean) => void;
+  onAlternatives?: (item: ShoppingItem) => void;
 };
 
 const LONG_PRESS_MS = 550;
 
 // הקשה = נקנה / איפוס (מיידי); לחיצה ארוכה = חסר במלאי
-export const ShoppingItemRow = memo(function ShoppingItemRow({ item, onToggle, onOutOfStock, onOpen, storeLabel, storeTone }: Props) {
+export const ShoppingItemRow = memo(function ShoppingItemRow({ item, onToggle, onOutOfStock, onOpen, storeLabel, storeTone, onImportant, onAlternatives }: Props) {
   const quantity = formatQuantity(item.quantity, item.unit) || "×1";
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressed = useRef(false);
@@ -45,7 +48,7 @@ export const ShoppingItemRow = memo(function ShoppingItemRow({ item, onToggle, o
   const label = item.completed ? `בטל סימון ${item.name}` : missing ? `בטל „חסר במלאי” עבור ${item.name}` : `סמן את ${item.name} כנקנה (לחיצה ארוכה: חסר במלאי)`;
 
   return (
-    <li className={`grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 border-b border-border px-2 py-1.5 transition-colors last:border-b-0 ${item.completed ? "bg-muted/50" : missing ? "bg-destructive/5" : "bg-card"}`}>
+    <li className={`flex items-center gap-2 border-b border-border px-2 py-1.5 transition-colors last:border-b-0 ${item.completed ? "bg-muted/50" : missing ? "bg-destructive/5" : "bg-card"}`}>
       {/* צ'קבוקס מרובע וקטן, בפרופורציה לגודל הפונט של שם המוצר */}
       <Button
         type="button"
@@ -63,11 +66,11 @@ export const ShoppingItemRow = memo(function ShoppingItemRow({ item, onToggle, o
         {missing ? <X className="h-3.5 w-3.5" strokeWidth={3} /> : <Check className="h-3.5 w-3.5" strokeWidth={3} />}
       </Button>
       {/* אזור לחיץ אחד לעריכה: שם + כמות + חץ */}
-      <Button type="button" variant="ghost" onClick={() => onOpen(item)} aria-label={`עריכת ${item.name}`} className="h-auto min-w-0 justify-between gap-2 whitespace-normal rounded-md px-0 py-0.5 text-right hover:bg-transparent">
+      <Button type="button" variant="ghost" onClick={() => onOpen(item)} aria-label={`עריכת ${item.name}`} className="h-auto min-w-0 flex-1 justify-between gap-2 whitespace-normal rounded-md px-0 py-0.5 text-right hover:bg-transparent">
         <span className="min-w-0 flex-1 text-right">
           {/* שם + תגיות בשורה אחת: השם נחתך עם ... ולא יורד שורה */}
           <span className="flex min-w-0 items-center gap-1">
-            <span className={`min-w-0 flex-1 truncate text-sm font-semibold leading-5 ${item.completed ? "text-foreground line-through opacity-50" : "text-foreground"}`}>{item.name}</span>
+            <span className={`min-w-0 flex-1 truncate text-sm font-semibold leading-5 ${item.isImportant ? "text-important" : "text-foreground"} ${item.completed ? `line-through ${item.isImportant ? "" : "opacity-50"}` : ""}`}>{item.name}</span>
             {storeLabel && <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${storeTone ? "" : "bg-muted text-muted-foreground"}`} style={storeTone ? { backgroundColor: `var(--store-${storeTone})`, color: `var(--store-${storeTone}-fg)` } : undefined}>{storeLabel}</span>}
             {showAdder && <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">{ROLE_EMOJI[role] ?? "🙂"} {role ? `${role} · ` : ""}{item.addedBy}</span>}
           </span>
@@ -80,6 +83,11 @@ export const ShoppingItemRow = memo(function ShoppingItemRow({ item, onToggle, o
           <ChevronLeft className="h-4 w-4" />
         </span>
       </Button>
+      {missing && onAlternatives && <Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-destructive" aria-label={`חלופות ל־${item.name}`} onClick={() => onAlternatives(item)}><HelpCircle className="h-4 w-4" /></Button>}
+      {onImportant && <DropdownMenu dir="rtl">
+        <DropdownMenuTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground" aria-label={`אפשרויות ${item.name}`} title="אפשרויות פריט"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+        <DropdownMenuContent align="end"><DropdownMenuCheckboxItem checked={!!item.isImportant} onCheckedChange={(checked) => onImportant(item, checked)} className="pl-2 pr-8 [&>span]:left-auto [&>span]:right-2">חשוב</DropdownMenuCheckboxItem></DropdownMenuContent>
+      </DropdownMenu>}
     </li>
   );
 });
