@@ -186,6 +186,7 @@ export type Database = {
           expiry_date: string | null
           family_id: string
           id: string
+          is_important: boolean
           name: string
           notes: string
           out_of_stock: boolean
@@ -204,6 +205,7 @@ export type Database = {
           expiry_date?: string | null
           family_id: string
           id?: string
+          is_important?: boolean
           name: string
           notes?: string
           out_of_stock?: boolean
@@ -222,6 +224,7 @@ export type Database = {
           expiry_date?: string | null
           family_id?: string
           id?: string
+          is_important?: boolean
           name?: string
           notes?: string
           out_of_stock?: boolean
