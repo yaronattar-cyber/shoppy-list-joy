@@ -49,7 +49,8 @@ export function ListScreen(p: Props) {
   const [quick, setQuick] = useState("");
   const [picking, setPicking] = useState<string | null>(null);
   // הוספה ידנית: שואלים לאיזו רשימה לשייך
-  const submitQuick = () => { const n = quick.trim(); if (!n) return; if (p.targets?.length && p.onAddTo) setPicking(n); else if (p.onAdd(n)) setQuick(""); };
+  // חנות/אירוע פעיל — הפריט משויך אוטומטית אליהם בלי בורר יעד; רשימה כללית — נשאלים לאן
+  const submitQuick = () => { const n = quick.trim(); if (!n) return; if (!p.isGeneral && p.onAdd(n)) { setQuick(""); return; } if (p.targets?.length && p.onAddTo) setPicking(n); else if (p.onAdd(n)) setQuick(""); };
   const [selected, setSelected] = useState<ShoppingItem | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
