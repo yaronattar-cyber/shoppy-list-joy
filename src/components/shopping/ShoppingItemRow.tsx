@@ -48,7 +48,7 @@ export const ShoppingItemRow = memo(function ShoppingItemRow({ item, onToggle, o
   const label = item.completed ? `בטל סימון ${item.name}` : missing ? `בטל „חסר במלאי” עבור ${item.name}` : `סמן את ${item.name} כנקנה (לחיצה ארוכה: חסר במלאי)`;
 
   return (
-    <li className={`flex items-center gap-2 border-b border-border px-2 py-1.5 transition-colors last:border-b-0 ${item.completed ? "bg-muted/50" : missing ? "bg-destructive/5" : "bg-card"}`}>
+    <li className={`flex items-center gap-2 px-2 py-1.5 transition-colors ${item.completed ? "bg-muted/50" : missing ? "bg-destructive/5" : "bg-card"}`}>
       {/* צ'קבוקס מרובע וקטן, בפרופורציה לגודל הפונט של שם המוצר */}
       <Button
         type="button"

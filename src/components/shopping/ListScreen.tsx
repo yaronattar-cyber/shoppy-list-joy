@@ -98,7 +98,7 @@ export function ListScreen(p: Props) {
       <TargetPicker name={picking} targets={p.targets ?? []} onCancel={() => setPicking(null)} onPick={(t) => { const n = picking ?? ""; setPicking(null); if (p.onAddTo?.(n, t)) setQuick(""); }} />
 
       {/* כותרת דקיקה + פעולות כאייקונים בלבד */}
-      <header className="flex items-center gap-1.5 pb-1 pt-1">
+      <header className="flex items-center gap-1.5 pb-0.5 pt-0.5">
         <h1 className="min-w-0 truncate text-sm font-semibold text-muted-foreground">רשימת קניות</h1>
         {p.items.length > 0 && <span className="shrink-0 text-xs text-muted-foreground">{doneCount}/{p.items.length}</span>}
         <div className="ms-auto flex shrink-0 items-center">

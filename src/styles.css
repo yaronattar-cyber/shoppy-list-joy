@@ -69,6 +69,8 @@
 :root {
   --important: #FF0000;
   --gradient-recent: linear-gradient(to left, var(--card), var(--accent));
+  /* כרטיס חנות פעילה: ירוק soft בקצוות ולבן במרכז */
+  --gradient-store-header: linear-gradient(to right, var(--accent), var(--card) 50%, var(--accent));
   --radius: 0.875rem;
   --background: oklch(0.975 0.012 85);
   --foreground: oklch(0.208 0.042 265.755);
@@ -170,6 +172,7 @@
 
 @utility bg-hero { background-image: var(--gradient-hero); }
 @utility bg-recent { background-image: var(--gradient-recent); }
+@utility bg-store-header { background-image: var(--gradient-store-header); }
 @utility shadow-soft { box-shadow: var(--shadow-soft); }
 @utility shadow-glow { box-shadow: var(--shadow-glow); }
 @utility mic-ripple {
