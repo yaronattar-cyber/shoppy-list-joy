@@ -94,7 +94,7 @@ export function ListScreen(p: Props) {
   };
 
   return (
-    <section className="mx-auto w-full max-w-2xl px-3 pb-40 pt-0 sm:px-6">
+    <section className="mx-auto w-full max-w-2xl px-3 pb-[calc(10rem+env(safe-area-inset-bottom))] pt-0 sm:px-6">
       <TargetPicker name={picking} targets={p.targets ?? []} onCancel={() => setPicking(null)} onPick={(t) => { const n = picking ?? ""; setPicking(null); if (p.onAddTo?.(n, t)) setQuick(""); }} />
 
       {/* כותרת דקיקה + פעולות כאייקונים בלבד */}
@@ -182,10 +182,14 @@ export function ListScreen(p: Props) {
       {!p.items.length && <div className="mt-10 text-center text-muted-foreground"><ShoppingCart className="mx-auto mb-2 h-8 w-8 opacity-40" /><p className="text-sm">הוסיפו מוצר ראשון למעלה</p></div>}
 
 
-      {/* שורת פעולה תחתונה: ניקוי פריטים שנקנו בלבד */}
-      <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 mx-auto max-w-2xl px-3 sm:px-6">
-        {!onlineOnly && <Button type="button" className="h-9 w-full text-sm" disabled={!doneCount} onClick={p.onArchive}><Archive className="h-4 w-4" />ניקוי פריטים שנקנו{doneCount ? ` (${doneCount})` : ""}</Button>}
-      </div>
+      {/* שורת פעולה תחתונה: ניקוי פריטים שנקנו בלבד — רקע מלא (לא שקוף) כדי שהרשימה לא תשקיף דרכה */}
+      {!onlineOnly && (
+        <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 mx-auto max-w-2xl px-3 sm:px-6">
+          <div className="rounded-xl border border-border bg-card p-1.5 shadow-[0_-6px_20px_color-mix(in_oklab,var(--color-foreground)_14%,transparent)]">
+            <Button type="button" className="h-9 w-full text-sm" disabled={!doneCount} onClick={p.onArchive}><Archive className="h-4 w-4" />ניקוי פריטים שנקנו{doneCount ? ` (${doneCount})` : ""}</Button>
+          </div>
+        </div>
+      )}
 
       <ItemEditDrawer item={selected} stores={p.stores ?? []} onClose={() => setSelected(null)} onSave={p.onUpdate} onDelete={p.onRemove} onOutOfStock={p.onOutOfStock} />
 
