@@ -164,14 +164,15 @@ export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList, on
 
   return (
     <>
+      {/* שני כפתורי ה־AI בשורה אחת קומפקטית: קנייה בימין, בישול בשמאל */}
       <div className="mt-3 grid grid-cols-2 gap-2">
-        <Button type="button" variant="outline" onClick={() => setMode("recipe")} className="h-14 flex-col gap-1 rounded-2xl border-primary/15 bg-accent/60 text-primary shadow-soft transition-all hover:bg-accent active:scale-[0.98]">
-          <ChefHat className="h-5 w-5" />
-          <span className="text-sm font-semibold">רוצה לבשל את זה!</span>
+        <Button type="button" variant="outline" onClick={() => setMode("shopping")} className="h-10 gap-2 rounded-xl border-primary/10 bg-store-header px-3 text-primary shadow-soft transition-all hover:bg-accent/60 active:scale-[0.98]">
+          <ShoppingBag className="h-4 w-4 shrink-0" />
+          <span className="truncate text-sm font-semibold">רוצה את זה!</span>
         </Button>
-        <Button type="button" variant="outline" onClick={() => setMode("shopping")} className="h-14 flex-col gap-1 rounded-2xl border-primary/15 bg-accent/60 text-primary shadow-soft transition-all hover:bg-accent active:scale-[0.98]">
-          <ShoppingBag className="h-5 w-5" />
-          <span className="text-sm font-semibold">אני רוצה את זה!</span>
+        <Button type="button" variant="outline" onClick={() => setMode("recipe")} className="h-10 gap-2 rounded-xl border-primary/10 bg-store-header px-3 text-primary shadow-soft transition-all hover:bg-accent/60 active:scale-[0.98]">
+          <ChefHat className="h-4 w-4 shrink-0" />
+          <span className="truncate text-sm font-semibold">רוצה לאכול את זה!</span>
         </Button>
       </div>
 
