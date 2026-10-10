@@ -227,27 +227,29 @@ export function InventoryScreen({ items, familyId = "", onSetPhoto, onRestore, o
       )}
 
 
-      <div className="mt-4 space-y-3">
+      {/* כל קטגוריות המלאי בתוך כרטיס אחד מאוחד עם רקע ירוק־לבן רך */}
+      <div className="mt-4 overflow-hidden rounded-2xl border border-primary/10 bg-store-header shadow-soft">
         {groups.map((g) => {
           const isOpen = open[g.id] ?? false; // בעת פתיחת המסך כל הקטגוריות סגורות
           return (
-            <div key={g.id} className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-              <button type="button" onClick={() => setOpen((o) => ({ ...o, [g.id]: !isOpen }))} className="flex w-full items-center gap-2 px-3 py-2.5 text-right">
-                <span className="text-xl" aria-hidden>{g.emoji}</span>
-                <span className="flex-1 font-bold text-foreground">{g.label}</span>
-                <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">{g.items.length}</span>
+            <div key={g.id} className="py-0.5">
+              <button type="button" onClick={() => setOpen((o) => ({ ...o, [g.id]: !isOpen }))} className="flex w-full items-center gap-2 px-3 py-1.5 text-right transition-colors hover:bg-primary/5">
+                <span className="text-base leading-none" aria-hidden>{g.emoji}</span>
+                <span className="flex-1 text-sm font-semibold tracking-tight text-foreground">{g.label}</span>
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">{g.items.length}</span>
+
                 {g.id === "prepared-meal" && (
                   <span role="button" tabIndex={0} aria-label="הוספת מנה מוכנה" onClick={(e) => { e.stopPropagation(); setAddingMeal(true); }} className="grid h-8 w-8 place-items-center rounded-full bg-primary text-primary-foreground"><Plus className="h-4 w-4" /></span>
                 )}
                 <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`} />
               </button>
               {isOpen && g.items.length > 0 && (
-                <ul className="border-t border-border">
+                <ul className="px-1.5 pb-1">
                   {g.items.map((item) => {
                     const st = STOCK_STATUS.find((x) => x.id === (item.stockStatus ?? "full")) ?? STOCK_STATUS[0];
                     const dl = daysLeft(item.expiryDate);
                     return (
-                      <li key={item.id} data-inv-item={item.id} className={cn("grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 border-b border-border px-3 py-2.5 last:border-b-0 transition-colors", highlightId === item.id && "animate-pulse bg-primary/15 ring-1 ring-inset ring-primary")}>
+                      <li key={item.id} data-inv-item={item.id} className={cn("grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-xl px-2.5 py-2 transition-colors hover:bg-white/70", highlightId === item.id && "animate-pulse bg-primary/15 ring-1 ring-inset ring-primary")}>
                         <button type="button" onClick={() => openItem(item)} className="min-w-0 text-right">
                           <span className="flex items-center gap-2">{g.id === "prepared-meal" && <MealThumb path={item.photoUrl} className="h-9 w-9" />}<span className={`h-2.5 w-2.5 shrink-0 rounded-full ${st.dot}`} title={st.label} /><span className="break-words text-base font-semibold leading-6 text-foreground">{item.name}</span></span>
                           <span className="block text-xs text-muted-foreground">{st.label}{dl !== null && <span className={dl <= 2 ? " font-semibold text-destructive" : ""}> · {dl < 0 ? "פג תוקף" : dl === 0 ? "פג היום" : `תפוגה בעוד ${dl} ימים`}</span>}</span>
@@ -264,7 +266,7 @@ export function InventoryScreen({ items, familyId = "", onSetPhoto, onRestore, o
             </div>
           );
         })}
-        {!items.length && <div className="mt-8 text-center text-muted-foreground"><Package className="mx-auto mb-3 h-10 w-10 opacity-40" /><p>מוצרים שנקנו או מנות מוכנות יופיעו כאן</p></div>}
+        {!items.length && <div className="px-4 py-10 text-center text-muted-foreground"><Package className="mx-auto mb-3 h-10 w-10 opacity-40" /><p>מוצרים שנקנו או מנות מוכנות יופיעו כאן</p></div>}
       </div>
 
       {/* "+ קטגוריה" הועבר לתחתית רשימת המלאי, מתחת לכל הקטגוריות */}
