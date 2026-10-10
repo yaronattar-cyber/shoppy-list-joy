@@ -184,7 +184,7 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
         {recent.length ? (
           <ul aria-label="נוספו לאחרונה" className="mt-3 overflow-hidden rounded-lg border border-border bg-recent shadow-sm [&>li]:bg-transparent">
             {recent.map((item) => (
-              <ShoppingItemRow key={item.id} item={item} onToggle={onToggle} onOutOfStock={onOutOfStock} onOpen={setSelected} onImportant={setImportant} />
+              <ShoppingItemRow key={item.id} item={item} storeLabel={tagOf(item)} onToggle={onToggle} onOutOfStock={onOutOfStock} onOpen={setSelected} onImportant={setImportant} />
             ))}
           </ul>
         ) : (
