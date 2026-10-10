@@ -88,6 +88,11 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
   const recentCandidates = items.filter((i) => !i.completed || i.isImportant);
   const recent = importantFirst([...recentCandidates].sort((a, b) => b.createdAt.localeCompare(a.createdAt))).slice(0, Math.max(4, recentCandidates.filter((i) => i.isImportant).length));
   const setImportant = (item: ShoppingItem, isImportant: boolean) => onUpdate(item.id, { name: item.name, quantity: item.quantity, unit: item.unit, notes: item.notes, category: item.category, isImportant });
+  // תג היעד של כל פריט: שם החנות לפי store_id, או שם האירוע/הרשימה לפי family_id
+  const tagOf = (item: ShoppingItem) =>
+    stores.find((s) => s.id === item.storeId)?.name ??
+    targets.find((t) => t.id === item.familyId)?.label ??
+    undefined;
 
   return (
     <section className="mx-auto w-full max-w-2xl px-4 pb-28 pt-4 sm:px-6">
