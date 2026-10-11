@@ -44,9 +44,9 @@ type Props = {
 };
 
 // טאב פעולה קומפקטי — אייקון מעל טקסט, נראה אותו דבר בין אם זה כפתור רגיל או של הרכיב החיצוני
-const TAB = "flex h-auto min-w-0 flex-col items-center justify-center gap-1 rounded-lg border border-transparent bg-muted/50 px-1 py-2 text-xs font-semibold text-primary shadow-none transition-all duration-200 ease-out hover:bg-primary/10 active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100";
+const TAB = "flex h-10 min-w-0 flex-auto flex-row items-center justify-center gap-0.5 overflow-hidden rounded-lg border border-transparent bg-muted/50 px-0.5 py-0 text-xs font-semibold text-primary shadow-none transition-all duration-200 ease-out hover:bg-primary/10 active:scale-[0.97] max-[360px]:gap-0 max-[360px]:px-0 motion-reduce:transition-none motion-reduce:active:scale-100";
 const TAB_ON = "bg-primary text-primary-foreground shadow-sm hover:bg-primary";
-const TAB_LABEL = "w-full truncate whitespace-nowrap text-center";
+const TAB_LABEL = "min-w-0 truncate whitespace-nowrap text-center";
 const TAB_BADGE = "absolute -left-2 -top-2 grid h-4 min-w-4 place-items-center rounded-full bg-primary-foreground px-0.5 text-xs font-bold leading-none text-primary ring-1 ring-primary/25";
 const PANEL = "animate-in fade-in-0 slide-in-from-top-1 duration-200 motion-reduce:animate-none";
 
@@ -133,14 +133,14 @@ export function InventoryScreen({ items, familyId = "", onSetPhoto, onRestore, o
       </header>
 
       {/* ארבע פעולות המלאי בשורה אחת: אייקון מעל טקסט, הטאב הפעיל מודגש */}
-      <div role="group" aria-label="פעולות מלאי" className="mt-4 grid grid-cols-4 gap-1.5 rounded-xl border border-border bg-card p-1.5 shadow-sm">
+      <div role="group" aria-label="פעולות מלאי" className="mt-3 flex gap-1 rounded-xl border border-border bg-card p-1 shadow-sm">
         <button type="button" aria-haspopup="dialog" aria-expanded={addingMeal} onClick={() => setAddingMeal(true)} className={cn(TAB, activeTab === "meal" && TAB_ON)}>
-          <CookingPot className="h-5 w-5" />
+          <CookingPot className="h-4 w-4 shrink-0 max-[360px]:h-3.5 max-[360px]:w-3.5" />
           <span className={TAB_LABEL}>מנה מוכנה</span>
         </button>
         <button type="button" aria-expanded={addingProducts} onClick={toggleProducts} className={cn(TAB, activeTab === "products" && TAB_ON)}>
           <span className="relative">
-            <Package className="h-5 w-5" />
+            <Package className="h-4 w-4 shrink-0 max-[360px]:h-3.5 max-[360px]:w-3.5" />
             {drafts.length > 0 && <span className={TAB_BADGE}>{drafts.length}</span>}
           </span>
           <span className={TAB_LABEL}>הוסף מוצר</span>
@@ -154,7 +154,7 @@ export function InventoryScreen({ items, familyId = "", onSetPhoto, onRestore, o
         />
         <button type="button" aria-expanded={ordersOpen} onClick={toggleOrders} className={cn(TAB, activeTab === "orders" && TAB_ON)}>
           <span className="relative">
-            <Truck className="h-5 w-5" />
+            <Truck className="h-4 w-4 shrink-0 max-[360px]:h-3.5 max-[360px]:w-3.5" />
             {orders.length > 0 && <span className={TAB_BADGE}>{orders.length}</span>}
           </span>
           <span className={TAB_LABEL}>בדרך</span>
