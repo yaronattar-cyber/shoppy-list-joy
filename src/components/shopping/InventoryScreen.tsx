@@ -44,7 +44,7 @@ type Props = {
 };
 
 // טאב פעולה קומפקטי — אייקון מעל טקסט, נראה אותו דבר בין אם זה כפתור רגיל או של הרכיב החיצוני
-const TAB = "flex h-10 min-w-0 flex-row items-center justify-center gap-1 overflow-hidden rounded-lg border border-transparent bg-muted/50 px-1 py-0 text-xs font-semibold text-primary shadow-none transition-all duration-200 ease-out hover:bg-primary/10 active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100";
+const TAB = "flex h-10 min-w-0 flex-auto flex-row items-center justify-center gap-1 overflow-hidden rounded-lg border border-transparent bg-muted/50 px-1 py-0 text-xs font-semibold text-primary shadow-none transition-all duration-200 ease-out hover:bg-primary/10 active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100";
 const TAB_ON = "bg-primary text-primary-foreground shadow-sm hover:bg-primary";
 const TAB_LABEL = "min-w-0 truncate whitespace-nowrap text-center";
 const TAB_BADGE = "absolute -left-2 -top-2 grid h-4 min-w-4 place-items-center rounded-full bg-primary-foreground px-0.5 text-xs font-bold leading-none text-primary ring-1 ring-primary/25";
@@ -133,7 +133,7 @@ export function InventoryScreen({ items, familyId = "", onSetPhoto, onRestore, o
       </header>
 
       {/* ארבע פעולות המלאי בשורה אחת: אייקון מעל טקסט, הטאב הפעיל מודגש */}
-      <div role="group" aria-label="פעולות מלאי" className="mt-3 grid grid-cols-4 gap-1.5 rounded-xl border border-border bg-card p-1 shadow-sm">
+      <div role="group" aria-label="פעולות מלאי" className="mt-3 flex gap-1.5 rounded-xl border border-border bg-card p-1 shadow-sm">
         <button type="button" aria-haspopup="dialog" aria-expanded={addingMeal} onClick={() => setAddingMeal(true)} className={cn(TAB, activeTab === "meal" && TAB_ON)}>
           <CookingPot className="h-4 w-4 shrink-0" />
           <span className={TAB_LABEL}>מנה מוכנה</span>
