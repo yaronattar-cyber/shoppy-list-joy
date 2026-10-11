@@ -10,9 +10,9 @@ const load = (): WishItem[] => {
 };
 
 export function useOnlineWishlist() {
-  const [items, setItems] = useState<WishItem[]>([]);
+  // טעינה מיידית מהאחסון המקומי — בלי הבהוב או איפוס במעבר בין מסכים
+  const [items, setItems] = useState<WishItem[]>(load);
   useEffect(() => {
-    setItems(load());
     const on = (e: StorageEvent) => { if (e.key === KEY) setItems(load()); };
     window.addEventListener("storage", on);
     return () => window.removeEventListener("storage", on);
