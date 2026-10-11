@@ -205,8 +205,16 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
       let queue = readJson<Op[]>(queueKey(familyId), []);
       while (queue.length) {
         const op = queue[0]!;
-        const { error } = await sendOp(op);
+        let { error } = await sendOp(op);
         if (error && isNetworkError(error.message)) break;
+        // 42501: לרוב החברות במשפחה טרם נרשמה למשתמש הנוכחי — מצטרפים (RPC מוגן) ומנסים שוב פעם אחת
+        if (error && isAuthError(error.message)) {
+          const { data: auth } = await supabase.auth.getSession();
+          if (auth.session) {
+            const { error: joinError } = await supabase.rpc("join_family", { _id: familyId, _name: "" });
+            if (!joinError) ({ error } = await sendOp(op));
+          }
+        }
         // אימות/הרשאות: לא זורקים את הפעולה — התור נשאר שלם, וננסה שוב אחרי שהכניסה האנונימית
         // וההצטרפות למשפחה הסתיימו (המנויים, הטיימר וחזרת המסך לחזית מפעילים flush מחדש)
         if (error && isAuthError(error.message)) {
