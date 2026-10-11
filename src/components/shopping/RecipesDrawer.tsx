@@ -34,8 +34,8 @@ export function RecipesDrawer({ names, onAddMissing, label, triggerClassName, on
   return (
     <>
       <Button type="button" variant="outline" disabled={!names.length} onClick={() => void run()} className={triggerClassName ?? "mt-2 h-12 w-full justify-start border-primary/30 bg-card text-primary shadow-sm hover:bg-primary/5 hover:text-primary"}>
-        <ChefHat className="h-5 w-5" />
-        {label ?? "מה מבשלים היום? מתכונים מהמלאי"}
+        <ChefHat className="h-4 w-4 shrink-0" />
+        <span className="min-w-0 truncate">{label ?? "מה מבשלים היום? מתכונים מהמלאי"}</span>
       </Button>
       <Drawer open={open} onOpenChange={setOpenAndNotify}>
         <DrawerContent dir="rtl" className="mx-auto max-h-[88vh] max-w-xl rounded-t-2xl border-border bg-card">
