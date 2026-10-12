@@ -8,3 +8,5 @@
 - [x] Standardize Home assistant, add capture shortcut, and implement personally pinned/sorted store and event shortcuts; build and opening flows verified.
 - [ ] Verify personal shortcut persistence across two signed-in accounts — blocked: no usable test session available.
 - [x] Add important items with Cloud schema/offline persistence, top priority across shopping and Home, red titles and unified recent container; build and browser flows verified (live authenticated Cloud sync not tested).
+- [x] Recipes book: Cloud tables, list/filter/detail/add UI tab
+- [ ] Store "purchase" item: checked items appear in online shopping with qty/price — blocked: needs clarification
