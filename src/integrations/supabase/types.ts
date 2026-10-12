@@ -370,6 +370,88 @@ export type Database = {
         }
         Relationships: []
       }
+      recipe_ingredients: {
+        Row: {
+          amount: number | null
+          id: string
+          item_name: string
+          position: number
+          recipe_id: string
+          unit: string
+        }
+        Insert: {
+          amount?: number | null
+          id?: string
+          item_name: string
+          position?: number
+          recipe_id: string
+          unit?: string
+        }
+        Update: {
+          amount?: number | null
+          id?: string
+          item_name?: string
+          position?: number
+          recipe_id?: string
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_ingredients_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recipes: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          family_id: string
+          id: string
+          image_url: string | null
+          instructions: string
+          prep_time_minutes: number | null
+          servings: number | null
+          title: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string
+          family_id: string
+          id?: string
+          image_url?: string | null
+          instructions?: string
+          prep_time_minutes?: number | null
+          servings?: number | null
+          title: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          family_id?: string
+          id?: string
+          image_url?: string | null
+          instructions?: string
+          prep_time_minutes?: number | null
+          servings?: number | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipes_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stores: {
         Row: {
           created_at: string
