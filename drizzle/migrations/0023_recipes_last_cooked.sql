@@ -1,0 +1,1 @@
+ALTER TABLE public.recipes ADD COLUMN last_cooked_at timestamptz;

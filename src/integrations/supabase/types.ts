@@ -414,6 +414,7 @@ export type Database = {
           id: string
           image_url: string | null
           instructions: string
+          last_cooked_at: string | null
           prep_time_minutes: number | null
           servings: number | null
           title: string
@@ -426,6 +427,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           instructions?: string
+          last_cooked_at?: string | null
           prep_time_minutes?: number | null
           servings?: number | null
           title: string
@@ -438,6 +440,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           instructions?: string
+          last_cooked_at?: string | null
           prep_time_minutes?: number | null
           servings?: number | null
           title?: string

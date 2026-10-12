@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ArrowRight, BookOpen, Clock, Plus, Trash2, Users, X } from "lucide-react";
+import { ArrowRight, BookOpen, ChefHat, Clock, ShoppingCart, Plus, Trash2, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,17 +9,26 @@ import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } f
 import { useRecipes, type Ingredient, type Recipe } from "@/hooks/useRecipes";
 
 const CATEGORIES = ["ארוחת בוקר", "ארוחת צהריים", "ארוחת ערב", "קינוחים", "מהיר", "אפייה", "סלטים"];
+// "לפני X ימים" לתאריך הבישול האחרון
+export function cookedAgo(iso: string | null) {
+  if (!iso) return null;
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (days <= 0) return "היום";
+  if (days === 1) return "אתמול";
+  return `לפני ${days} ימים`;
+}
 const card = "rounded-xl border border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-emerald-50 shadow-sm";
 
-export function RecipesScreen({ familyId }: { familyId: string }) {
-  const { recipes, loading, addRecipe, deleteRecipe } = useRecipes(familyId);
+export function RecipesScreen({ familyId, onAddItems }: { familyId: string; onAddItems: (names: string[]) => void }) {
+  const { recipes, loading, addRecipe, deleteRecipe, markCooked } = useRecipes(familyId);
   const [filter, setFilter] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const shown = useMemo(() => (filter ? recipes.filter((r) => r.category === filter) : recipes), [recipes, filter]);
   const open = recipes.find((r) => r.id === openId);
+  const history = useMemo(() => recipes.filter((r) => r.last_cooked_at).sort((a, b) => b.last_cooked_at!.localeCompare(a.last_cooked_at!)).slice(0, 5), [recipes]);
 
-  if (open) return <RecipeDetail recipe={open} onBack={() => setOpenId(null)} onDelete={() => { void deleteRecipe(open.id); setOpenId(null); }} />;
+  if (open) return <RecipeDetail recipe={open} onAddItems={onAddItems} onCooked={() => void markCooked(open.id).then((ok) => ok ? toast.success("בתאבון! נשמר בהיסטוריית הבישולים") : toast.error("השמירה נכשלה"))} onBack={() => setOpenId(null)} onDelete={() => { void deleteRecipe(open.id); setOpenId(null); }} />;
 
   return (
     <section dir="rtl" className="mx-auto max-w-2xl px-3 pb-28 pt-4 sm:px-6">
@@ -32,6 +41,16 @@ export function RecipesScreen({ familyId }: { familyId: string }) {
           <Button key={c ?? "all"} size="sm" variant={filter === c ? "default" : "outline"} className="h-8 shrink-0 rounded-full" onClick={() => setFilter(c)}>{c ?? "הכל"}</Button>
         ))}
       </div>
+      {history.length > 0 && !filter && (
+        <div className={`${card} mb-3 p-3`}>
+          <h2 className="mb-1.5 flex items-center gap-1.5 text-sm font-bold text-foreground"><ChefHat className="h-4 w-4 text-primary" />היסטוריית בישולים</h2>
+          <ul className="space-y-1">
+            {history.map((r) => (
+              <li key={r.id}><button type="button" onClick={() => setOpenId(r.id)} className="flex w-full justify-between text-sm"><span className="truncate text-foreground">{r.title}</span><span className="shrink-0 text-muted-foreground">{cookedAgo(r.last_cooked_at)}</span></button></li>
+            ))}
+          </ul>
+        </div>
+      )}
       {loading && <p className="py-10 text-center text-muted-foreground">טוען מתכונים...</p>}
       {!loading && !shown.length && <p className="py-10 text-center text-muted-foreground">אין עדיין מתכונים{filter ? " בקטגוריה זו" : ""}</p>}
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -44,6 +63,7 @@ export function RecipesScreen({ familyId }: { familyId: string }) {
               {r.prep_time_minutes != null && <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{r.prep_time_minutes} דק׳</span>}
               {r.servings != null && <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" />{r.servings}</span>}
               <span>{r.ingredients.length} מצרכים</span>
+              {r.last_cooked_at && <span>בושל לאחרונה: {cookedAgo(r.last_cooked_at)}</span>}
             </div>
           </button>
         ))}
@@ -53,8 +73,15 @@ export function RecipesScreen({ familyId }: { familyId: string }) {
   );
 }
 
-function RecipeDetail({ recipe, onBack, onDelete }: { recipe: Recipe; onBack: () => void; onDelete: () => void }) {
-  const [checked, setChecked] = useState<Set<number>>(new Set());
+function RecipeDetail({ recipe, onBack, onDelete, onAddItems, onCooked }: { recipe: Recipe; onBack: () => void; onDelete: () => void; onAddItems: (names: string[]) => void; onCooked: () => void }) {
+  // מצרכים מסומנים = ייוספו לרשימת הקניות
+  const [checked, setChecked] = useState<Set<number>>(() => new Set(recipe.ingredients.map((_, i) => i)));
+  const addSelected = () => {
+    const names = recipe.ingredients.filter((_, i) => checked.has(i)).map((i) => i.item_name);
+    if (!names.length) { toast.error("לא נבחרו מצרכים"); return; }
+    onAddItems(names);
+    toast.success(`${names.length} מצרכים נוספו לרשימת הקניות`);
+  };
   const steps = recipe.instructions.split("\n").map((s) => s.trim()).filter(Boolean);
   return (
     <section dir="rtl" className="mx-auto max-w-2xl px-3 pb-28 pt-4 sm:px-6">
@@ -76,15 +103,18 @@ function RecipeDetail({ recipe, onBack, onDelete }: { recipe: Recipe; onBack: ()
             <li key={i.id ?? idx}>
               <label className="flex min-h-10 items-center gap-3">
                 <Checkbox checked={checked.has(idx)} onCheckedChange={() => setChecked((p) => { const n = new Set(p); n.has(idx) ? n.delete(idx) : n.add(idx); return n; })} />
-                <span className={checked.has(idx) ? "text-muted-foreground line-through" : "text-foreground"}>{i.item_name}{i.amount != null ? ` · ${i.amount}` : ""}{i.unit ? ` ${i.unit}` : ""}</span>
+                <span className="text-foreground">{i.item_name}{i.amount != null ? ` · ${i.amount}` : ""}{i.unit ? ` ${i.unit}` : ""}</span>
               </label>
             </li>
           ))}
           {!recipe.ingredients.length && <li className="text-sm text-muted-foreground">לא הוזנו מצרכים</li>}
         </ul>
+        {recipe.ingredients.length > 0 && <Button variant="outline" className="mt-2 w-full" onClick={addSelected}><ShoppingCart className="h-4 w-4" />הוסף רכיבים חסרים לרשימת הקניות ({checked.size})</Button>}
         <h2 className="mt-5 font-bold text-foreground">אופן ההכנה</h2>
         <ol className="mt-2 list-decimal space-y-2 pr-5 text-foreground">{steps.map((s, i) => <li key={i}>{s}</li>)}</ol>
         {!steps.length && <p className="text-sm text-muted-foreground">לא הוזנו הוראות</p>}
+        <Button className="mt-5 w-full" onClick={onCooked}><ChefHat className="h-4 w-4" />בישלתי את זה היום</Button>
+        {recipe.last_cooked_at && <p className="mt-1.5 text-center text-xs text-muted-foreground">בושל לאחרונה: {cookedAgo(recipe.last_cooked_at)}</p>}
       </div>
     </section>
   );

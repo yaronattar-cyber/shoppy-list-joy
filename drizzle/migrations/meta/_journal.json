@@ -162,6 +162,13 @@
       "when": 1791777682414,
       "tag": "0022_recipes",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1791777850540,
+      "tag": "0023_recipes_last_cooked",
+      "breakpoints": true
     }
   ]
 }

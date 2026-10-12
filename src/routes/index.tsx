@@ -356,7 +356,7 @@ function Index() {
           onOnlineDelivered={wish.remove}
         />
       )}
-      {screen === "recipes" && <RecipesScreen familyId={family.familyId} />}
+      {screen === "recipes" && <RecipesScreen familyId={family.familyId} onAddItems={(names) => { const home = stores.stores.find((x) => x.is_default)?.id ?? null; names.forEach((n) => list.addItem(n, home)); }} />}
       {screen === "family" && (
         <FamilyScreen
           familyId={family.familyId}

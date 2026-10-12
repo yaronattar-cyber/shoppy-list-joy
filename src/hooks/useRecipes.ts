@@ -12,9 +12,10 @@ export type Recipe = {
   instructions: string;
   image_url: string | null;
   created_at: string;
+  last_cooked_at: string | null;
   ingredients: Ingredient[];
 };
-export type NewRecipe = Omit<Recipe, "id" | "created_at" | "image_url">;
+export type NewRecipe = Omit<Recipe, "id" | "created_at" | "image_url" | "last_cooked_at">;
 
 // ספר מתכונים משפחתי — נשמר בענן ומוגבל לחברי המשפחה
 export function useRecipes(familyId: string | null) {
@@ -62,5 +63,13 @@ export function useRecipes(familyId: string | null) {
     if (error) { console.error(error); void refresh(); }
   }, [refresh]);
 
-  return { recipes, loading, addRecipe, deleteRecipe, refresh };
+  const markCooked = useCallback(async (id: string) => {
+    const now = new Date().toISOString();
+    setRecipes((p) => p.map((r) => (r.id === id ? { ...r, last_cooked_at: now } : r)));
+    const { error } = await supabase.from("recipes").update({ last_cooked_at: now }).eq("id", id);
+    if (error) { console.error(error); void refresh(); return false; }
+    return true;
+  }, [refresh]);
+
+  return { recipes, loading, addRecipe, deleteRecipe, markCooked, refresh };
 }
