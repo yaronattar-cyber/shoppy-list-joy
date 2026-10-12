@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Home, ListChecks, Package, Users, ShoppingBag } from "lucide-react";
+import { Home, ListChecks, Package, Users, ShoppingBag, BookOpen } from "lucide-react";
+import { RecipesScreen } from "@/components/shopping/RecipesScreen";
 import { OnlineWishlist } from "@/components/shopping/OnlineWishlist";
 import { useOnlineWishlist } from "@/hooks/useOnlineWishlist";
 import { useHomeShortcuts } from "@/hooks/useHomeShortcuts";
@@ -47,7 +48,7 @@ export const Route = createFileRoute("/")({
 });
 
 // סדר המסכים — משמש להחלקה
-const ORDER = ["home", "list", "inventory"] as const;
+const ORDER = ["home", "list", "inventory", "recipes"] as const;
 type Screen = (typeof ORDER)[number] | "family";
 
 function Index() {
@@ -197,12 +198,13 @@ function Index() {
         </div>
       )}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_color-mix(in_oklab,var(--color-foreground)_8%,transparent)] backdrop-blur">
-        <div className="mx-auto grid h-[4.5rem] max-w-xl grid-cols-4 px-2">
+        <div className="mx-auto grid h-[4.5rem] max-w-xl grid-cols-5 px-2">
         {(
           [
             ["home", "בית", Home],
             ["list", "רשימה", ListChecks],
             ["inventory", "מלאי", Package],
+            ["recipes", "מתכונים", BookOpen],
             ["family", "משפחה", Users],
           ] as const
         ).map(([id, label, Icon]) => (
@@ -354,6 +356,7 @@ function Index() {
           onOnlineDelivered={wish.remove}
         />
       )}
+      {screen === "recipes" && <RecipesScreen familyId={family.familyId} />}
       {screen === "family" && (
         <FamilyScreen
           familyId={family.familyId}
