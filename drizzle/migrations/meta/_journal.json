@@ -155,6 +155,13 @@
       "when": 1791431676144,
       "tag": "0021_item_importance",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1791777682414,
+      "tag": "0022_recipes",
+      "breakpoints": true
     }
   ]
 }
