@@ -181,7 +181,7 @@ function Index() {
 
   return (
     <MembersContext.Provider value={roleMap}>
-    <main className="min-h-screen bg-background pb-[calc(4.5rem+env(safe-area-inset-bottom))]">
+    <main className="min-h-screen max-w-[100vw] overflow-x-hidden bg-background pb-[calc(5rem+env(safe-area-inset-bottom))]">
       {family.previousFamilyId && (
         <MergeFamilyDialog from={family.previousFamilyId} to={family.familyId} onDone={onMergeDone} />
       )}
@@ -197,7 +197,7 @@ function Index() {
               : `${list.pendingCount} שינויים ממתינים לסנכרון`}
         </div>
       )}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_16px_color-mix(in_oklab,var(--color-foreground)_8%,transparent)] backdrop-blur">
+      <nav aria-label="ניווט ראשי" className="fixed inset-x-0 bottom-0 z-50 w-full max-w-[100vw] border-t border-border bg-card pb-[env(safe-area-inset-bottom)] shadow-soft">
         <div className="mx-auto grid h-[4.5rem] max-w-xl grid-cols-5 px-2">
         {(
           [
