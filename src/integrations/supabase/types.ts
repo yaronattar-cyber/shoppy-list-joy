@@ -520,6 +520,10 @@ export type Database = {
     }
     Functions: {
       consume_ai_quota: { Args: { _limit?: number }; Returns: boolean }
+      cook_recipe: {
+        Args: { _recipe_id: string; _servings: number }
+        Returns: number
+      }
       create_online_order: { Args: { _store_id: string }; Returns: string }
       is_family_member: { Args: { _fid: string }; Returns: boolean }
       join_event: {
