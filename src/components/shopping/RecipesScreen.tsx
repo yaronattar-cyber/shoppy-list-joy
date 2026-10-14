@@ -23,9 +23,6 @@ export function cookedAgo(iso: string | null) {
 const card = "rounded-xl border border-border bg-store-header shadow-soft";
 
 type InvRow = { id: string; name: string; quantity: number; unit: string };
-const norm = (s: string) => s.trim().toLowerCase();
-const findInv = (inv: InvRow[], name: string) => inv.find((r) => norm(r.name) === norm(name)) ?? inv.find((r) => norm(r.name).includes(norm(name)) || norm(name).includes(norm(r.name)));
-const sameUnit = (a: string, b: string) => !a.trim() || !b.trim() || norm(a) === norm(b);
 const round = (n: number) => Math.round(n * 100) / 100;
 const scaleIng = (i: Ingredient, ratio: number) => (i.amount != null ? round(i.amount * ratio) : null);
 
@@ -59,7 +56,7 @@ function decodeShare(code: string): NewRecipe | null {
 }
 
 export function RecipesScreen({ familyId, onAddItems }: { familyId: string; onAddItems: (names: string[]) => void }) {
-  const { recipes, loading, addRecipe, deleteRecipe, markCooked } = useRecipes(familyId);
+  const { recipes, loading, addRecipe, deleteRecipe, refresh } = useRecipes(familyId);
   const [filter, setFilter] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -81,7 +78,7 @@ export function RecipesScreen({ familyId, onAddItems }: { familyId: string; onAd
     openForm(r);
   };
 
-  if (open) return <Drawer open onOpenChange={(value) => { if (!value) setOpenId(null); }}><DrawerContent dir="rtl" className="mx-auto max-h-[88dvh] max-w-2xl overflow-y-auto bg-card"><DrawerHeader className="sr-only"><DrawerTitle>{open.title}</DrawerTitle><DrawerDescription>פרטי מתכון</DrawerDescription></DrawerHeader><RecipeDetail key={open.id} recipe={open} familyId={familyId} onAddItems={onAddItems} onCooked={() => markCooked(open.id)} onBack={() => setOpenId(null)} onDelete={() => { void deleteRecipe(open.id); setOpenId(null); }} /></DrawerContent></Drawer>;
+  if (open) return <Drawer open onOpenChange={(value) => { if (!value) setOpenId(null); }}><DrawerContent dir="rtl" className="mx-auto max-h-[88dvh] max-w-2xl overflow-y-auto bg-card"><DrawerHeader className="sr-only"><DrawerTitle>{open.title}</DrawerTitle><DrawerDescription>פרטי מתכון</DrawerDescription></DrawerHeader><RecipeDetail key={open.id} recipe={open} familyId={familyId} onAddItems={onAddItems} onCooked={async () => { await refresh(); return true; }} onBack={() => setOpenId(null)} onDelete={() => { void deleteRecipe(open.id); setOpenId(null); }} /></DrawerContent></Drawer>;
 
   return (
     <section dir="rtl" className="mx-auto max-w-2xl px-3 pb-28 pt-4 sm:px-6">
@@ -203,22 +200,9 @@ function RecipeDetail({ recipe, familyId, onBack, onDelete, onAddItems, onCooked
 
   const cooked = async () => {
     setCooking(true);
-    const ok = await onCooked();
-    if (!ok) { setCooking(false); toast.error("השמירה נכשלה"); return; }
-    // הורדת כמויות המצרכים מהמלאי
-    const inv = await loadInventory(familyId);
-    let deducted = 0;
-    for (const i of recipe.ingredients) {
-      const m = findInv(inv, i.item_name);
-      if (!m) continue;
-      const need = scaleIng(i, ratio) ?? 1;
-      if (!sameUnit(m.unit, i.unit)) continue;
-      const left = round(Number(m.quantity) - need);
-      const { error } = left > 0
-        ? await supabase.from("items").update({ quantity: left }).eq("id", m.id)
-        : await supabase.from("items").delete().eq("id", m.id);
-      if (!error) deducted++;
-    }
+    const { data: deducted, error } = await supabase.rpc("cook_recipe", { _recipe_id: recipe.id, _servings: servings });
+    if (error) { setCooking(false); toast.error("עדכון הבישול והמלאי נכשל"); return; }
+    await onCooked();
     setCooking(false);
     toast.success(`בתאבון! ${deducted ? `${deducted} מצרכים עודכנו במלאי` : "נשמר בהיסטוריית הבישולים"}`);
     setLeftover(String(servings));
