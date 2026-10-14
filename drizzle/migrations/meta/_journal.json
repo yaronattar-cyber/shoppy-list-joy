@@ -169,6 +169,13 @@
       "when": 1791777850540,
       "tag": "0023_recipes_last_cooked",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791950435319,
+      "tag": "0024_atomic_recipe_cooking",
+      "breakpoints": true
     }
   ]
 }
