@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from "react";
-import { ArrowRight, BookOpen, Camera, ChefHat, Clock, Download, Minus, Share2, ShoppingCart, Plus, Trash2, Users, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowRight, BookOpen, Calendar, Search, Camera, ChefHat, Clock, Download, Minus, Share2, ShoppingCart, Plus, Trash2, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,9 +8,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { supabase } from "@/integrations/supabase/client";
 import { useRecipes, type Ingredient, type NewRecipe, type Recipe } from "@/hooks/useRecipes";
+import { missingIngredientIndexes } from "@/lib/recipe-stock";
 import { recipeFromImage } from "@/lib/ai/recipe-from-image.functions";
 
-const CATEGORIES = ["ארוחת בוקר", "ארוחת צהריים", "ארוחת ערב", "קינוחים", "מהיר", "אפייה", "סלטים"];
+const CATEGORIES = ["בשרי", "צמחוני", "טבעוני", "קינוחים", "אחר"];
 // "לפני X ימים" לתאריך הבישול האחרון
 export function cookedAgo(iso: string | null) {
   if (!iso) return null;
@@ -19,7 +20,7 @@ export function cookedAgo(iso: string | null) {
   if (days === 1) return "אתמול";
   return `לפני ${days} ימים`;
 }
-const card = "rounded-xl border border-emerald-100 bg-gradient-to-r from-emerald-50 via-white to-emerald-50 shadow-sm";
+const card = "rounded-xl border border-border bg-store-header shadow-soft";
 
 type InvRow = { id: string; name: string; quantity: number; unit: string };
 const norm = (s: string) => s.trim().toLowerCase();
@@ -40,7 +41,9 @@ async function compressImage(file: File): Promise<string> {
   const scale = Math.min(1, 1280 / Math.max(img.width, img.height));
   const c = document.createElement("canvas");
   c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
-  c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
+  const ctx = c.getContext("2d");
+  if (!ctx) { img.close(); throw new Error("לא ניתן להכין תמונה"); }
+  ctx.drawImage(img, 0, 0, c.width, c.height);
   img.close();
   return c.toDataURL("image/jpeg", 0.8);
 }
@@ -58,14 +61,17 @@ function decodeShare(code: string): NewRecipe | null {
 export function RecipesScreen({ familyId, onAddItems }: { familyId: string; onAddItems: (names: string[]) => void }) {
   const { recipes, loading, addRecipe, deleteRecipe, markCooked } = useRecipes(familyId);
   const [filter, setFilter] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState<NewRecipe | null>(null);
   const [draftKey, setDraftKey] = useState(0);
   const [photoOpen, setPhotoOpen] = useState(false);
-  const shown = useMemo(() => (filter ? recipes.filter((r) => r.category === filter) : recipes), [recipes, filter]);
+  const shown = useMemo(() => recipes.filter((r) => (!filter || r.category === filter) && r.title.toLowerCase().includes(query.trim().toLowerCase())), [recipes, filter, query]);
   const open = recipes.find((r) => r.id === openId);
-  const history = useMemo(() => recipes.filter((r) => r.last_cooked_at).sort((a, b) => b.last_cooked_at!.localeCompare(a.last_cooked_at!)).slice(0, 5), [recipes]);
+  const history = useMemo(() => recipes.filter((r) => r.last_cooked_at).sort((a, b) => (b.last_cooked_at ?? "").localeCompare(a.last_cooked_at ?? "")).slice(0, 5), [recipes]);
   const openForm = (d: NewRecipe | null) => { setDraft(d); setDraftKey((k) => k + 1); setAdding(true); };
   const importCode = () => {
     const code = prompt("הדביקו קוד מתכון משותף");
@@ -75,89 +81,95 @@ export function RecipesScreen({ familyId, onAddItems }: { familyId: string; onAd
     openForm(r);
   };
 
-  if (open) return <RecipeDetail recipe={open} familyId={familyId} onAddItems={onAddItems} onCooked={() => markCooked(open.id)} onBack={() => setOpenId(null)} onDelete={() => { void deleteRecipe(open.id); setOpenId(null); }} />;
+  if (open) return <Drawer open onOpenChange={(value) => { if (!value) setOpenId(null); }}><DrawerContent dir="rtl" className="mx-auto max-h-[88dvh] max-w-2xl overflow-y-auto bg-card"><DrawerHeader className="sr-only"><DrawerTitle>{open.title}</DrawerTitle><DrawerDescription>פרטי מתכון</DrawerDescription></DrawerHeader><RecipeDetail key={open.id} recipe={open} familyId={familyId} onAddItems={onAddItems} onCooked={() => markCooked(open.id)} onBack={() => setOpenId(null)} onDelete={() => { void deleteRecipe(open.id); setOpenId(null); }} /></DrawerContent></Drawer>;
 
   return (
     <section dir="rtl" className="mx-auto max-w-2xl px-3 pb-28 pt-4 sm:px-6">
-      <header className="mb-3 flex items-center justify-between gap-2">
-        <h1 className="flex items-center gap-2 text-xl font-bold text-foreground"><BookOpen className="h-5 w-5 text-primary" />ספר מתכונים</h1>
-        <div className="flex gap-1.5">
-          <Button size="icon" variant="ghost" aria-label="ייבוא מתכון משותף" onClick={importCode}><Download className="h-4 w-4" /></Button>
-          <Button size="sm" variant="outline" onClick={() => setPhotoOpen(true)}><Camera className="h-4 w-4" />הוסף מתכון מתמונה/מצלמה</Button>
-          <Button size="sm" onClick={() => openForm(null)}><Plus className="h-4 w-4" />מתכון חדש</Button>
-        </div>
-      </header>
-      <div className="-mx-1 mb-3 flex gap-2 overflow-x-auto px-1 pb-1">
-        {[null, ...CATEGORIES].map((c) => (
-          <Button key={c ?? "all"} size="sm" variant={filter === c ? "default" : "outline"} className="h-8 shrink-0 rounded-full" onClick={() => setFilter(c)}>{c ?? "הכל"}</Button>
-        ))}
+      <h1 className="mb-3 text-center text-xl font-bold text-foreground">ספר המתכונים המשפחתי</h1>
+      <div className="mb-3 grid grid-cols-3 gap-2" aria-label="פעולות ספר המתכונים">
+        <Button variant="outline" className="h-10 min-w-0 px-2" onClick={() => setSearchOpen(true)}><Search className="h-4 w-4 shrink-0" />חיפוש</Button>
+        <Button variant="outline" className="h-10 min-w-0 px-2" onClick={() => setPhotoOpen(true)}><Camera className="h-4 w-4 shrink-0" />הוסף</Button>
+        <Button variant={historyOpen ? "default" : "outline"} className="h-10 min-w-0 px-2" aria-expanded={historyOpen} onClick={() => setHistoryOpen((v) => !v)}><Calendar className="h-4 w-4 shrink-0" />היסטוריה</Button>
       </div>
-      {history.length > 0 && !filter && (
-        <div className={`${card} mb-3 flex items-center gap-2 overflow-x-auto whitespace-nowrap px-3 py-2 text-sm`}>
-          <span className="shrink-0 font-bold text-foreground">🍳 היסטוריית בישולים</span>
-          <span className="shrink-0 text-muted-foreground">({history.length} מנות)</span>
-          {history.map((r) => (
-            <button key={r.id} type="button" onClick={() => setOpenId(r.id)} className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-primary">{r.title}</button>
-          ))}
-        </div>
-      )}
+      <Drawer open={searchOpen} onOpenChange={setSearchOpen}>
+        <DrawerContent dir="rtl" className="mx-auto max-w-xl bg-card">
+          <DrawerHeader><DrawerTitle>חיפוש מתכונים</DrawerTitle><DrawerDescription>חיפוש וקטגוריה</DrawerDescription></DrawerHeader>
+          <div className="space-y-3 px-4 pb-6">
+            <Input aria-label="חיפוש מתכונים" placeholder="שם המתכון" value={query} onChange={(e) => setQuery(e.target.value)} />
+            <div className="flex flex-wrap gap-2">{[null, ...CATEGORIES].map((c) => <Button key={c ?? "all"} size="sm" variant={filter === c ? "default" : "outline"} onClick={() => setFilter(c)}>{c ?? "הכל"}</Button>)}</div>
+            <Button className="w-full" onClick={() => setSearchOpen(false)}>הצג תוצאות</Button>
+          </div>
+        </DrawerContent>
+      </Drawer>
+      {historyOpen && <div className={`${card} mb-3 flex items-center gap-2 overflow-x-auto whitespace-nowrap px-3 py-2 text-sm`}>
+        <span className="shrink-0 font-bold text-foreground">🍳 היסטוריית בישולים</span>
+        <span className="shrink-0 text-muted-foreground">({history.length} מנות)</span>
+        {history.map((r) => <Button key={r.id} variant="ghost" size="sm" className="h-7 shrink-0 px-2 text-primary" onClick={() => setOpenId(r.id)}>{r.title}</Button>)}
+      </div>}
       {loading && <p className="py-10 text-center text-muted-foreground">טוען מתכונים...</p>}
       {!loading && !shown.length && <p className="py-10 text-center text-muted-foreground">אין עדיין מתכונים{filter ? " בקטגוריה זו" : ""}</p>}
-      <div className={`${card} divide-y divide-emerald-100/60 overflow-hidden ${shown.length ? "" : "hidden"}`}>
+      <div className={`${card} divide-y divide-border overflow-hidden ${shown.length ? "" : "hidden"}`}>
         {shown.map((r) => (
-          <button key={r.id} type="button" onClick={() => setOpenId(r.id)} className="flex w-full items-center gap-3 px-3 py-2.5 text-right text-sm transition hover:bg-primary/5">
+          <Button key={r.id} variant="ghost" onClick={() => setOpenId(r.id)} className="flex h-11 w-full justify-start gap-2 rounded-none px-3 text-right text-sm">
             <span className="min-w-0 flex-1 truncate font-semibold text-foreground">{r.title}</span>
             {r.prep_time_minutes != null && <span className="shrink-0 text-muted-foreground">⏱️ {r.prep_time_minutes} דק׳</span>}
             {r.servings != null && <span className="shrink-0 text-muted-foreground">👥 {r.servings}</span>}
-          </button>
+          </Button>
         ))}
       </div>
       <AddRecipeDrawer key={draftKey} initial={draft} open={adding} onOpenChange={setAdding} onSave={async (r) => { const ok = await addRecipe(r); if (ok) { toast.success("המתכון נשמר"); setAdding(false); } else toast.error("שמירת המתכון נכשלה"); }} />
-      <PhotoRecipeDrawer open={photoOpen} onOpenChange={setPhotoOpen} onResult={(r) => { setPhotoOpen(false); openForm(r); }} />
+      <PhotoRecipeDrawer onManual={() => { setPhotoOpen(false); openForm(null); }} onImport={() => { setPhotoOpen(false); importCode(); }} open={photoOpen} onOpenChange={setPhotoOpen} onResult={(r) => { setPhotoOpen(false); openForm(r); }} />
     </section>
   );
 }
 
-function PhotoRecipeDrawer({ open, onOpenChange, onResult }: { open: boolean; onOpenChange: (o: boolean) => void; onResult: (r: NewRecipe) => void }) {
+function PhotoRecipeDrawer({ open, onOpenChange, onResult, onManual, onImport }: { open: boolean; onOpenChange: (o: boolean) => void; onResult: (r: NewRecipe) => void; onManual: () => void; onImport: () => void }) {
   const [mode, setMode] = useState<"written" | "dish">("written");
   const [busy, setBusy] = useState(false);
+  const [preparing, setPreparing] = useState(false);
+  const [images, setImages] = useState<string[]>([]);
   const camRef = useRef<HTMLInputElement>(null);
   const galRef = useRef<HTMLInputElement>(null);
-  const onFile = async (f?: File) => {
-    if (!f) return;
+  const onFiles = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setPreparing(true);
+    try {
+      const next = await Promise.all(Array.from(files).map(compressImage));
+      setImages((previous) => [...previous, ...next]);
+    } catch { toast.error("לא ניתן לפתוח את התמונה"); }
+    finally { setPreparing(false); if (camRef.current) camRef.current.value = ""; if (galRef.current) galRef.current.value = ""; }
+  };
+  const analyze = async () => {
+    if (!images.length || busy) return;
     setBusy(true);
     try {
-      const image = await compressImage(f);
-      const res = await recipeFromImage({ data: { image, mode } });
+      const res = await recipeFromImage({ data: { images, mode } });
       if (res.error || !res.result) { toast.error(res.error ?? "הניתוח נכשל"); return; }
       const x = res.result;
-      onResult({ title: x.title, description: "", category: "", prep_time_minutes: x.prep_time_minutes, servings: x.servings, instructions: x.instructions.join("\n"), ingredients: x.ingredients });
-    } catch (e) { console.error(e); toast.error("הניתוח נכשל, נסו שוב"); }
-    finally { setBusy(false); if (camRef.current) camRef.current.value = ""; if (galRef.current) galRef.current.value = ""; }
+      onResult({ title: x.title, description: "", category: x.category, prep_time_minutes: x.prep_time_minutes, servings: x.servings, instructions: x.instructions.join("\n"), ingredients: x.ingredients });
+      setImages([]);
+    } catch { toast.error("הניתוח נכשל, נסו שוב"); }
+    finally { setBusy(false); }
   };
-  return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent dir="rtl" className="mx-auto max-w-xl rounded-t-2xl bg-card">
-        <DrawerHeader className="text-right sm:text-right">
-          <DrawerTitle>מתכון מתמונה</DrawerTitle>
-          <DrawerDescription>המתכון שיזוהה ייפתח בטופס לבדיקה לפני שמירה</DrawerDescription>
-        </DrawerHeader>
-        <div className="space-y-3 px-4 pb-6">
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant={mode === "written" ? "default" : "outline"} onClick={() => setMode("written")}>📝 מתכון כתוב</Button>
-            <Button variant={mode === "dish" ? "default" : "outline"} onClick={() => setMode("dish")}>🍲 מנה מבושלת</Button>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" disabled={busy} onClick={() => camRef.current?.click()}><Camera className="h-4 w-4" />צילום</Button>
-            <Button variant="outline" disabled={busy} onClick={() => galRef.current?.click()}>גלריה</Button>
-          </div>
-          {busy && <p className="text-center text-sm text-muted-foreground">מנתח את התמונה...</p>}
-          <input ref={camRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => void onFile(e.target.files?.[0])} />
-          <input ref={galRef} type="file" accept="image/*" className="hidden" onChange={(e) => void onFile(e.target.files?.[0])} />
+  return <Drawer open={open} onOpenChange={(value) => { if (!busy) onOpenChange(value); }}>
+    <DrawerContent dir="rtl" className="mx-auto max-h-[88dvh] max-w-xl overflow-y-auto bg-card">
+      <DrawerHeader><DrawerTitle>הוסף מתכון</DrawerTitle><DrawerDescription>תמונות המתכון</DrawerDescription></DrawerHeader>
+      <div className="space-y-3 px-4 pb-6">
+        <div className="grid grid-cols-2 gap-2">
+          <Button disabled={busy} variant={mode === "written" ? "default" : "outline"} onClick={() => setMode("written")}>מתכון כתוב</Button>
+          <Button disabled={busy} variant={mode === "dish" ? "default" : "outline"} onClick={() => setMode("dish")}>מנה מבושלת</Button>
         </div>
-      </DrawerContent>
-    </Drawer>
-  );
+        <Button className="w-full" variant="outline" disabled={busy || preparing} onClick={() => camRef.current?.click()}><Camera className="h-4 w-4" />צלם מתכון במצלמה</Button>
+        <Button className="w-full" variant="outline" disabled={busy || preparing} onClick={() => galRef.current?.click()}>העלה תמונה/תמונות מהגלריה</Button>
+        {!!images.length && <div className="grid grid-cols-3 gap-2">{images.map((image, index) => <div key={index} className="relative min-w-0"><img src={image} alt={`תמונת מתכון ${index + 1}`} className="aspect-square w-full rounded-lg object-cover" /><Button disabled={busy} variant="destructive" size="icon" className="absolute left-1 top-1 h-7 w-7" aria-label={`הסר תמונה ${index + 1}`} onClick={() => setImages((previous) => previous.filter((_, i) => i !== index))}><X className="h-4 w-4" /></Button></div>)}</div>}
+        {!!images.length && <Button className="w-full" disabled={busy || preparing} onClick={() => void analyze()}>{busy ? "מנתח את התמונות..." : `נתח ${images.length} תמונות`}</Button>}
+        {preparing && <p role="status" className="text-center text-sm text-muted-foreground">מכין תמונות...</p>}
+        <div className="grid grid-cols-2 gap-2"><Button disabled={busy} variant="ghost" onClick={onManual}><Plus className="h-4 w-4" />מתכון ידני</Button><Button disabled={busy} variant="ghost" onClick={onImport}><Download className="h-4 w-4" />ייבוא מתכון</Button></div>
+        <input ref={camRef} type="file" accept="image/*" capture="environment" multiple className="hidden" onChange={(e) => void onFiles(e.target.files)} />
+        <input ref={galRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => void onFiles(e.target.files)} />
+      </div>
+    </DrawerContent>
+  </Drawer>;
 }
 
 function RecipeDetail({ recipe, familyId, onBack, onDelete, onAddItems, onCooked }: { recipe: Recipe; familyId: string; onBack: () => void; onDelete: () => void; onAddItems: (names: string[]) => void; onCooked: () => Promise<boolean> }) {
@@ -165,24 +177,24 @@ function RecipeDetail({ recipe, familyId, onBack, onDelete, onAddItems, onCooked
   const [servings, setServings] = useState(base ?? 1);
   const ratio = base ? servings / base : 1;
   // מצרכים מסומנים = ייוספו לרשימת הקניות
-  const [checked, setChecked] = useState<Set<number>>(() => new Set(recipe.ingredients.map((_, i) => i)));
+  const [checked, setChecked] = useState<Set<number>>(() => new Set());
   const [cooking, setCooking] = useState(false);
   const [leftover, setLeftover] = useState<string | null>(null);
 
   // בחירה מראש של מצרכים חסרים/לא מספיקים במלאי לפי כמות מותאמת
   const selectMissing = async () => {
     const inv = await loadInventory(familyId);
-    const next = new Set<number>();
-    recipe.ingredients.forEach((i, idx) => {
-      const m = findInv(inv, i.item_name);
-      const need = scaleIng(i, ratio);
-      if (!m || (need != null && sameUnit(m.unit, i.unit) && Number(m.quantity) < need)) next.add(idx);
-    });
+    const next = missingIngredientIndexes(recipe.ingredients, inv, ratio);
     setChecked(next);
     return next;
   };
+  useEffect(() => {
+    let current = true;
+    void loadInventory(familyId).then((inv) => { if (current) setChecked(missingIngredientIndexes(recipe.ingredients, inv, ratio)); });
+    return () => { current = false; };
+  }, [familyId, recipe.ingredients, ratio]);
   const addSelected = async () => {
-    const sel = checked.size === recipe.ingredients.length ? await selectMissing() : checked;
+    const sel = checked;
     const names = recipe.ingredients.filter((_, i) => sel.has(i)).map((i) => i.item_name);
     if (!names.length) { toast.success("כל המצרכים קיימים במלאי"); return; }
     onAddItems(names);
@@ -242,7 +254,7 @@ function RecipeDetail({ recipe, familyId, onBack, onDelete, onAddItems, onCooked
         </div>
       </div>
       <div className={`${card} p-4`}>
-        <h1 className="text-2xl font-bold text-foreground">{recipe.title}</h1>
+        <h1 className="break-words text-2xl font-bold text-foreground">{recipe.title}</h1>
         {recipe.description && <p className="mt-1 text-muted-foreground">{recipe.description}</p>}
         <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-foreground">
           {recipe.category && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">{recipe.category}</span>}
@@ -270,9 +282,9 @@ function RecipeDetail({ recipe, familyId, onBack, onDelete, onAddItems, onCooked
           {!recipe.ingredients.length && <li className="text-sm text-muted-foreground">לא הוזנו מצרכים</li>}
         </ul>
         {recipe.ingredients.length > 0 && (
-          <div className="mt-2 flex gap-2">
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row">
             <Button variant="ghost" size="sm" onClick={() => void selectMissing()}>סמן רק חסרים</Button>
-            <Button variant="outline" className="flex-1" onClick={() => void addSelected()}><ShoppingCart className="h-4 w-4" />הוסף רכיבים חסרים לרשימת הקניות</Button>
+            <Button variant="outline" className="h-auto min-h-10 flex-1 whitespace-normal py-2" onClick={() => void addSelected()}><ShoppingCart className="h-4 w-4" />הוסף רכיבים חסרים לרשימת הקניות</Button>
           </div>
         )}
         <h2 className="mt-5 font-bold text-foreground">אופן ההכנה</h2>
@@ -281,7 +293,7 @@ function RecipeDetail({ recipe, familyId, onBack, onDelete, onAddItems, onCooked
         {leftover === null ? (
           <Button className="mt-5 w-full" disabled={cooking} onClick={() => void cooked()}><ChefHat className="h-4 w-4" />{cooking ? "מעדכן מלאי..." : "בישלתי את זה היום"}</Button>
         ) : (
-          <div className="mt-5 rounded-lg border border-emerald-200 bg-card p-3">
+          <div className="mt-5 rounded-lg border border-border bg-card p-3">
             <p className="mb-2 text-sm font-semibold text-foreground">כמה מנות נשארו? יישמרו במלאי תחת ארוחות מוכנות</p>
             <div className="flex gap-2">
               <Input type="number" inputMode="numeric" min={0} value={leftover} onChange={(e) => setLeftover(e.target.value)} className="w-24" />
@@ -341,9 +353,9 @@ function AddRecipeDrawer({ open, onOpenChange, onSave, initial }: { open: boolea
             <div className="space-y-2">
               {rows.map((r, i) => (
                 <div key={i} className="flex gap-2">
-                  <Input className="flex-1" placeholder="מצרך" value={r.item_name} onChange={(e) => setRow(i, { item_name: e.target.value })} />
+                  <Input className="min-w-0 flex-1" placeholder="מצרך" value={r.item_name} onChange={(e) => setRow(i, { item_name: e.target.value })} />
                   <Input className="w-16" inputMode="decimal" placeholder="כמות" value={r.amount} onChange={(e) => setRow(i, { amount: e.target.value })} />
-                  <Input className="w-20" placeholder="יחידה" value={r.unit} onChange={(e) => setRow(i, { unit: e.target.value })} />
+                  <Input className="w-14 shrink-0" placeholder="יחידה" value={r.unit} onChange={(e) => setRow(i, { unit: e.target.value })} />
                   <Button type="button" variant="ghost" size="icon" aria-label="הסרת מצרך" onClick={() => setRows((p) => p.length > 1 ? p.filter((_, j) => j !== i) : p)}><X className="h-4 w-4" /></Button>
                 </div>
               ))}
