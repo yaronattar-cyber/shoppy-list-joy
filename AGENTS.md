@@ -14,3 +14,5 @@
 - Online order snapshots persist in dedicated order tables and move into inventory atomically when received, so family devices stay consistent.
 - Own the visual-search wishlist once in the main screen container and share it with Home and List so both views update immediately.
 - Own Home shortcut preferences once in the main screen; persist ordered pinned IDs by authenticated user separately from List tab order so family members cannot overwrite one another's choices.
+- Recipe scans combine selected images in one authenticated Gemini gateway request using request-local gateway helpers; this keeps extraction consistent and credentials server-only.
+- Cooking uses a family-scoped, RLS-enforced transactional RPC with exact name/unit matches and sequential stock consumption, preventing partial deductions and duplicate-row overcounting.

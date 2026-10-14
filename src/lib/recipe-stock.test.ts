@@ -1,3 +1,4 @@
+/// <reference types="bun" />
 import { test, expect } from "bun:test";
 import { missingIngredientIndexes, scaledAmount } from "./recipe-stock";
 test("servings scale ingredient amounts", () => {
