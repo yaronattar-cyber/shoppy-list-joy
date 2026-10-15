@@ -1,4 +1,5 @@
 - [x] Refactor Home, List, and Shopping UX/UI per approved plan
+- [ ] Special events edit/export, urgent priority and cross-store purchase/clear sync with strict event exclusion; verify.
 - [x] Add shared item editing sheet with notes and category persistence
 - [x] Move store comparison to List with sortable details sheet
 - [x] Validate responsive layouts and interactions
