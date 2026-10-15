@@ -7,6 +7,7 @@ export type ShoppingItem = {
   completed: boolean;
   outOfStock: boolean;
   isImportant?: boolean;
+  isUrgent?: boolean;
   quantity: number;
   unit: string;
   notes: string;
@@ -22,9 +23,25 @@ export type ShoppingItem = {
   photoUrl?: string | null; // נתיב תמונת מנה באחסון
 };
 
-// מיון יציב: החשובים בראש, בלי לשנות את סדר שאר הפריטים.
+// דחופים וחשובים בראש; בתוך כל קבוצה החדשים ביותר קודמים.
 export function importantFirst(items: ShoppingItem[]): ShoppingItem[] {
-  return [...items].sort((a, b) => Number(!!b.isImportant) - Number(!!a.isImportant));
+  return [...items].sort((a, b) => Number(!!b.isUrgent) - Number(!!a.isUrgent) || Number(!!b.isImportant) - Number(!!a.isImportant) || b.createdAt.localeCompare(a.createdAt));
+}
+
+export function crossStoreDuplicates(items: ShoppingItem[], source: ShoppingItem): ShoppingItem[] {
+  if (!source.storeId || source.archived) return [];
+  return items.filter((item) => item.familyId === source.familyId && !item.archived && !!item.storeId && item.storeId !== source.storeId && item.name.trim().toLocaleLowerCase() === source.name.trim().toLocaleLowerCase());
+}
+
+export function missingEventItems(items: ShoppingItem[], inventory: ShoppingItem[], active: ShoppingItem[]): ShoppingItem[] {
+  const available = new Map<string, number>();
+  const key = (item: ShoppingItem) => `${item.name.trim().toLocaleLowerCase()}\u0000${item.unit.trim()}`;
+  for (const item of [...inventory, ...active.filter((item) => !item.completed)]) available.set(key(item), (available.get(key(item)) ?? 0) + item.quantity);
+  return items.filter((item) => !item.completed && !item.archived).flatMap((item) => {
+    const stock = available.get(key(item)) ?? 0;
+    available.set(key(item), Math.max(0, stock - item.quantity));
+    return stock >= item.quantity ? [] : [{ ...item, quantity: item.quantity - stock }];
+  });
 }
 
 // DD/MM/YYYY HH:mm
