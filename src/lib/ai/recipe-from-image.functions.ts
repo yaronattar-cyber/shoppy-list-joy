@@ -28,6 +28,7 @@ export const recipeFromImage = createServerFn({ method: "POST" })
     const system = data.mode === "written"
       ? "בתמונה מתכון כתוב. חלץ בעברית: title, prep_time_minutes, servings, ingredients (item_name קצר, amount מספרי או null, unit), instructions (שלב לכל פריט). אם אין מתכון החזר title ריק."
       : "בתמונה מנה מבושלת. זהה אותה והחזר בעברית מתכון מתאים: title, prep_time_minutes משוער, servings משוער, ingredients עם כמויות משוערות (item_name קצר כפי שקונים בסופר, amount מספרי, unit), instructions 3-8 שלבים. אם אין מנה החזר title ריק.";
+    let streamError: unknown;
     try {
       const res = streamText({
         model: provider("google/gemini-3.8-flash"),
@@ -35,14 +36,20 @@ export const recipeFromImage = createServerFn({ method: "POST" })
         messages: [{ role: "user", content: [{ type: "text", text: "חלץ מתכון מהתמונה" }, ...data.images.map((image) => ({ type: "image" as const, image: new URL(image) }))] }],
         output: Output.object({ schema }),
         maxRetries: 0,
+        onError: ({ error }) => { streamError = error; },
       });
       const out = await res.output;
       if (!out?.title) return { error: "לא זוהה מתכון בתמונה, נסו שוב" };
       return { result: out };
     } catch (e: any) {
-      const status = e?.statusCode ?? e?.status;
+      const failure = (streamError ?? e) as { statusCode?: number; status?: number; responseBody?: string; message?: string };
+      const status = failure.statusCode ?? failure.status;
+      let safeMessage = failure.message;
+      if (failure.responseBody) {
+        try { const body = JSON.parse(failure.responseBody); safeMessage = body.error?.message ?? body.message ?? safeMessage; } catch { /* Non-JSON upstream error */ }
+      }
       if (status === 429) return { error: "יותר מדי בקשות, נסו שוב בעוד רגע" };
-      if (status === 402 || status === 403) return { error: e?.message ?? "השירות אינו זמין כעת" };
+      if (status && status >= 400) return { error: safeMessage ?? "השירות אינו זמין כעת" };
       console.error("recipeFromImage failed", e);
       return { error: "הניתוח נכשל, נסו שוב" };
     }
