@@ -17,7 +17,7 @@ import { importantFirst, parsePastedList, type ShoppingItem } from "@/lib/shoppi
 import type { OnlineOrder } from "@/hooks/useOnlineOrders";
 import { toast } from "sonner";
 
-type ItemDetails = { name: string; quantity: number; unit: string; notes: string; category: string; storeId?: string | null; isImportant?: boolean };
+type ItemDetails = { name: string; quantity: number; unit: string; notes: string; category: string; storeId?: string | null; isImportant?: boolean; isUrgent?: boolean };
 type Props = {
   items: ShoppingItem[];
   history: string[];
@@ -40,6 +40,7 @@ type Props = {
   targets?: AddTarget[];
   onAddTo?: (name: string, target: AddTarget) => string | null;
   isGeneral?: boolean;
+  isEvent?: boolean;
 };
 
 // שורת רשימה דחוסה: הוראות ממוקדות לרשימה זו בלבד (שורת הפריט המשותפת אינה נערכת)
@@ -65,12 +66,13 @@ export function ListScreen(p: Props) {
   useEffect(() => setCanWake(wakeLockSupported()), []);
   useEffect(() => () => { void setWakeLock(false); }, []);
   const suggestions = useMemo(() => matchHistory(p.history, p.productHistory, quick), [p.history, p.productHistory, quick]);
-  const todo = p.items.filter((item) => !item.completed);
+  const todo = importantFirst(p.items.filter((item) => !item.completed));
   const done = p.items.filter((item) => item.completed);
-  const priority = importantFirst(p.items.filter((item) => item.isImportant));
-  const regularTodo = todo.filter((item) => !item.isImportant);
-  const regularDone = done.filter((item) => !item.isImportant);
+  const priority = todo.filter((item) => item.isUrgent || item.isImportant);
+  const regularTodo = todo.filter((item) => !item.isImportant && !item.isUrgent);
+  const regularDone = done;
   const setImportant = (item: ShoppingItem, isImportant: boolean) => p.onUpdate(item.id, { name: item.name, quantity: item.quantity, unit: item.unit, notes: item.notes, category: item.category, isImportant });
+  const setUrgent = (item: ShoppingItem, isUrgent: boolean) => p.onUpdate(item.id, { name: item.name, quantity: item.quantity, unit: item.unit, notes: item.notes, category: item.category, isUrgent });
   // רשימה כללית: תגית חנות לכל פריט וקיבוץ לפי חנויות
   const general = !!p.isGeneral;
   const storeNameOf = (item: ShoppingItem) => p.stores?.find((s) => s.id === item.storeId)?.name ?? "ללא חנות";
@@ -84,7 +86,7 @@ export function ListScreen(p: Props) {
   const doneCount = p.items.filter((item) => item.completed).length;
   const allDone = p.items.length > 0 && doneCount === p.items.length;
   // רשימת פריטים משותפת לכל אופן תצוגה
-  const rows = (list: ShoppingItem[]) => list.map((item) => <ShoppingItemRow key={item.id} item={item} storeLabel={tag(item)} storeTone={general ? storeTone(p.stores ?? [], item.storeId) : undefined} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} onImportant={setImportant} />);
+  const rows = (list: ShoppingItem[]) => list.map((item) => <ShoppingItemRow key={item.id} item={item} storeLabel={tag(item)} storeTone={general ? storeTone(p.stores ?? [], item.storeId) : undefined} onToggle={p.onToggle} onOutOfStock={p.onOutOfStock} onOpen={setSelected} onImportant={setImportant} onUrgent={setUrgent} />);
   const placeOnlineOrder = async () => {
     try {
       if (await p.onOnlineOrderPlaced?.()) toast.success("ההזמנה הועברה להזמנות בדרך במלאי");
@@ -151,7 +153,7 @@ export function ListScreen(p: Props) {
         <div className="mt-2 flex items-center gap-2 rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5">
           <PartyPopper className="h-4 w-4 shrink-0 text-primary" />
           <p className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">הסל הושלם</p>
-          <Button type="button" size="sm" className="h-8 shrink-0" onClick={p.onArchive}><Archive className="h-4 w-4" />העבר למלאי</Button>
+          <Button type="button" size="sm" className="h-8 shrink-0" onClick={p.onArchive}><Archive className="h-4 w-4" />{p.isEvent ? "ניקוי פריטים שנקנו" : "העבר למלאי"}</Button>
         </div>
       )}
 
@@ -212,6 +214,7 @@ export function ListScreen(p: Props) {
           onAdd={p.onAdd}
           onOpen={setSelected}
           onImportant={setImportant}
+          onUrgent={setUrgent}
           onExit={() => setFullScreen(false)}
         />
       )}
