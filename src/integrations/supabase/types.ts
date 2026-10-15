@@ -187,6 +187,7 @@ export type Database = {
           family_id: string
           id: string
           is_important: boolean
+          is_urgent: boolean
           name: string
           notes: string
           out_of_stock: boolean
@@ -206,6 +207,7 @@ export type Database = {
           family_id: string
           id?: string
           is_important?: boolean
+          is_urgent?: boolean
           name: string
           notes?: string
           out_of_stock?: boolean
@@ -225,6 +227,7 @@ export type Database = {
           family_id?: string
           id?: string
           is_important?: boolean
+          is_urgent?: boolean
           name?: string
           notes?: string
           out_of_stock?: boolean
@@ -538,6 +541,10 @@ export type Database = {
       receive_online_order: { Args: { _order_id: string }; Returns: number }
       record_family_purchase: {
         Args: { _category: string; _family_id: string; _name: string }
+        Returns: undefined
+      }
+      rename_event: {
+        Args: { _event_id: string; _name: string }
         Returns: undefined
       }
       save_home_shortcuts: { Args: { _ids: string[] }; Returns: undefined }
