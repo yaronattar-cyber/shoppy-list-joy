@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { newFamilyCode } from "@/lib/family";
+import { toast } from "sonner";
 
 // רשימת אירוע = "משפחה" מסוג event עם קוד משלה, משותפת לכמה משפחות דרך event_members
 export type EventList = { id: string; name: string; owner_family_id: string | null };
@@ -62,6 +63,7 @@ export function useEvents(familyId: string | null) {
     const ch = supabase
       .channel(`events-${familyId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "event_members" }, () => void pull())
+      .on("postgres_changes", { event: "*", schema: "public", table: "families" }, () => void pull())
       .subscribe();
     return () => { void supabase.removeChannel(ch); };
   }, [familyId, pull]);
@@ -77,22 +79,37 @@ export function useEvents(familyId: string | null) {
     if (!familyId || !name.trim()) return null;
     const id = newFamilyCode();
     const ev = { id, name: name.trim(), owner_family_id: familyId };
-    await supabase.from("families").insert({ ...ev, kind: "event" });
-    await supabase.from("event_members").insert({ event_id: id, family_id: familyId });
+    const { error } = await supabase.from("families").insert({ ...ev, kind: "event" });
+    if (error) { toast.error("יצירת האירוע נכשלה"); return null; }
+    const { error: memberError } = await supabase.from("event_members").insert({ event_id: id, family_id: familyId });
+    if (memberError) { await supabase.from("families").delete().eq("id", id).eq("kind", "event"); toast.error("יצירת האירוע נכשלה"); return null; }
     setEvents((e) => [...e, ev]);
     select(id);
+    void pull();
     return id;
-  }, [familyId, select]);
+  }, [familyId, select, pull]);
+
+  const rename = useCallback(async (ev: EventList, name: string) => {
+    if (!familyId || !name.trim()) return false;
+    const { error } = await supabase.rpc("rename_event", { _event_id: ev.id, _name: name.trim() });
+    if (error) { toast.error("עדכון שם האירוע נכשל"); return false; }
+    setEvents((current) => current.map((event) => event.id === ev.id ? { ...event, name: name.trim() } : event));
+    await pull();
+    return true;
+  }, [familyId, pull]);
 
   // היוצר סוגר את האירוע לכולם; משפחה מוזמנת רק עוזבת
   const close = useCallback(async (ev: EventList) => {
     if (!familyId) return;
+    const { error } = ev.owner_family_id === familyId
+      ? await supabase.from("families").delete().eq("id", ev.id).eq("kind", "event")
+      : await supabase.from("event_members").delete().eq("event_id", ev.id).eq("family_id", familyId);
+    if (error) { toast.error("מחיקת האירוע נכשלה"); return; }
     setEvents((e) => e.filter((x) => x.id !== ev.id));
     select(null);
-    if (ev.owner_family_id === familyId) await supabase.from("families").delete().eq("id", ev.id).eq("kind", "event");
-    else await supabase.from("event_members").delete().eq("event_id", ev.id).eq("family_id", familyId);
-  }, [familyId, select]);
+    await pull();
+  }, [familyId, select, pull]);
 
   const active = events.find((e) => e.id === activeId) ?? null;
-  return { events, active, activeId: active?.id ?? null, select, create, close, joinedName, clearJoined: () => setJoinedName(null) };
+  return { events, active, activeId: active?.id ?? null, select, create, rename, close, joinedName, clearJoined: () => setJoinedName(null) };
 }

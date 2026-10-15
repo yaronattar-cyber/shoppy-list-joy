@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/drawer";
 import { setWakeLock, wakeLockSupported } from "@/lib/shopping-tools";
 import { CATEGORIES } from "@/lib/categories";
-import type { ShoppingItem } from "@/lib/shopping-list";
+import { importantFirst, type ShoppingItem } from "@/lib/shopping-list";
 
 type Props = {
   items: ShoppingItem[];
@@ -28,6 +28,7 @@ type Props = {
   onExit: () => void;
   onOpen: (item: ShoppingItem) => void;
   onImportant: (item: ShoppingItem, checked: boolean) => void;
+  onUrgent: (item: ShoppingItem, checked: boolean) => void;
 };
 
 // קיבוץ לפי קטגוריה — "כללי" בסוף
@@ -53,7 +54,7 @@ function alternativesFor(item: ShoppingItem, items: ShoppingItem[]): string[] {
   return preset?.options?.filter((o) => o !== item.name) ?? [];
 }
 
-export function FullScreenShopping({ items, onToggle, onOutOfStock, onAdd, onExit, onOpen, onImportant }: Props) {
+export function FullScreenShopping({ items, onToggle, onOutOfStock, onAdd, onExit, onOpen, onImportant, onUrgent }: Props) {
   const [awake, setAwake] = useState(false);
   const [canWake, setCanWake] = useState(false);
   const [helpFor, setHelpFor] = useState<ShoppingItem | null>(null);
@@ -86,9 +87,9 @@ export function FullScreenShopping({ items, onToggle, onOutOfStock, onAdd, onExi
   };
 
   // לא נקנו למעלה, שנקנו למטה
-  const priority = useMemo(() => items.filter((i) => i.isImportant), [items]);
-  const todo = useMemo(() => items.filter((i) => !i.completed && !i.isImportant), [items]);
-  const done = useMemo(() => items.filter((i) => i.completed && !i.isImportant), [items]);
+  const priority = useMemo(() => importantFirst(items.filter((i) => !i.completed && (i.isImportant || i.isUrgent))), [items]);
+  const todo = useMemo(() => importantFirst(items.filter((i) => !i.completed && !i.isImportant && !i.isUrgent)), [items]);
+  const done = useMemo(() => items.filter((i) => i.completed), [items]);
   const todoGroups = useMemo(() => groupByCategory(todo), [todo]);
   const alts = useMemo(
     () => (helpFor ? alternativesFor(helpFor, items) : []),
@@ -121,7 +122,7 @@ export function FullScreenShopping({ items, onToggle, onOutOfStock, onAdd, onExi
       {/* הרשימה המקובצת */}
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6">
         {priority.length > 0 && <ul aria-label="פריטים חשובים" className="mt-4 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
-          {priority.map((item) => <ShoppingItemRow key={item.id} item={item} onToggle={onToggle} onOutOfStock={onOutOfStock} onOpen={onOpen} onImportant={onImportant} onAlternatives={setHelpFor} />)}
+          {priority.map((item) => <ShoppingItemRow key={item.id} item={item} onToggle={onToggle} onOutOfStock={onOutOfStock} onOpen={onOpen} onImportant={onImportant} onUrgent={onUrgent} onAlternatives={setHelpFor} />)}
         </ul>}
         {todoGroups.map(([cat, rows]) => (
           <section key={cat} className="mt-4">
@@ -130,7 +131,7 @@ export function FullScreenShopping({ items, onToggle, onOutOfStock, onAdd, onExi
             </h2>
             <ul className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
               {rows.map((item) => (
-                <ShoppingItemRow key={item.id} item={item} onToggle={onToggle} onOutOfStock={onOutOfStock} onOpen={onOpen} onImportant={onImportant} onAlternatives={setHelpFor} />
+                <ShoppingItemRow key={item.id} item={item} onToggle={onToggle} onOutOfStock={onOutOfStock} onOpen={onOpen} onImportant={onImportant} onUrgent={onUrgent} onAlternatives={setHelpFor} />
               ))}
             </ul>
           </section>
@@ -142,7 +143,7 @@ export function FullScreenShopping({ items, onToggle, onOutOfStock, onAdd, onExi
             <h2 className="mb-1 px-1 text-sm font-semibold text-muted-foreground">נקנו ({done.length})</h2>
             <ul className="overflow-hidden rounded-lg border border-border bg-card/60 shadow-sm">
               {done.map((item) => (
-                <ShoppingItemRow key={item.id} item={item} onToggle={onToggle} onOutOfStock={onOutOfStock} onOpen={onOpen} onImportant={onImportant} />
+                <ShoppingItemRow key={item.id} item={item} onToggle={onToggle} onOutOfStock={onOutOfStock} onOpen={onOpen} onImportant={onImportant} onUrgent={onUrgent} />
               ))}
             </ul>
           </section>

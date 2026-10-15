@@ -176,6 +176,13 @@
       "when": 1791950435319,
       "tag": "0024_atomic_recipe_cooking",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792035824916,
+      "tag": "0025_urgent_items_event_rename_store_sync",
+      "breakpoints": true
     }
   ]
 }

@@ -12,7 +12,7 @@ type Props = {
   item: ShoppingItem | null;
   stores?: { id: string; name: string }[];
   onClose: () => void;
-  onSave: (id: string, details: { name: string; quantity: number; unit: string; notes: string; category: string; storeId?: string | null; isImportant?: boolean }) => void;
+  onSave: (id: string, details: { name: string; quantity: number; unit: string; notes: string; category: string; storeId?: string | null; isImportant?: boolean; isUrgent?: boolean }) => void;
   onDelete: (id: string) => void;
   onOutOfStock?: (id: string) => void;
 };
@@ -22,6 +22,7 @@ const field = "h-11 w-full rounded-md border border-input bg-card px-3 text-base
 export function ItemEditDrawer({ item, stores = [], onClose, onSave, onDelete, onOutOfStock }: Props) {
   const [name, setName] = useState("");
   const [isImportant, setIsImportant] = useState(false);
+  const [isUrgent, setIsUrgent] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [unit, setUnit] = useState("");
   const [notes, setNotes] = useState("");
@@ -33,6 +34,7 @@ export function ItemEditDrawer({ item, stores = [], onClose, onSave, onDelete, o
     if (!item) return;
     setName(item.name);
     setIsImportant(!!item.isImportant);
+    setIsUrgent(!!item.isUrgent);
     setQuantity(item.quantity);
     setUnit(item.unit);
     setNotes(item.notes);
@@ -50,6 +52,9 @@ export function ItemEditDrawer({ item, stores = [], onClose, onSave, onDelete, o
         <div className="space-y-4 overflow-y-auto px-4 pb-2">
           <label className="flex items-center gap-2 text-sm font-medium text-foreground">
             <Checkbox checked={isImportant} onCheckedChange={(checked) => setIsImportant(checked === true)} />חשוב
+          </label>
+          <label className="flex items-center gap-2 text-sm font-medium text-destructive">
+            <Checkbox checked={isUrgent} onCheckedChange={(checked) => setIsUrgent(checked === true)} />דחוף
           </label>
           <label className="block space-y-1.5 text-sm font-medium text-foreground">שם המוצר
             <textarea rows={2} className="w-full resize-none rounded-md border border-input bg-card px-3 py-2 text-base text-foreground outline-none focus:ring-2 focus:ring-ring" value={name} onChange={(e) => setName(e.target.value)} />
@@ -96,7 +101,7 @@ export function ItemEditDrawer({ item, stores = [], onClose, onSave, onDelete, o
         <DrawerFooter className="grid grid-cols-[auto_minmax(0,1fr)] gap-3">
           <Button type="button" variant="ghost" className="text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => { if (item) onDelete(item.id); onClose(); }}><Trash2 />מחיקה</Button>
           <DrawerClose asChild>
-            <Button type="button" size="lg" onClick={() => { if (item && name.trim() && quantity > 0) onSave(item.id, { name: name.trim(), quantity, unit, notes: notes.trim(), category, storeId: storeId || null, isImportant }); }}>שמירת שינויים</Button>
+            <Button type="button" size="lg" onClick={() => { if (item && name.trim() && quantity > 0) onSave(item.id, { name: name.trim(), quantity, unit, notes: notes.trim(), category, storeId: storeId || null, isImportant, isUrgent }); }}>שמירת שינויים</Button>
           </DrawerClose>
         </DrawerFooter>
       </DrawerContent>
