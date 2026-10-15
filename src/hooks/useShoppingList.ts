@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { resolveName } from "@/lib/categories";
 import { formatQuantity, parseQuantity } from "@/lib/quantity";
-import type { ShoppingItem } from "@/lib/shopping-list";
+import { crossStoreDuplicates, type ShoppingItem } from "@/lib/shopping-list";
 import { fetchFamilyHistory, loadHistory, mergeHistory, recordFamilyPurchase, recordPurchase, type HistoryEntry } from "@/lib/product-history";
 
 type Row = {
@@ -13,6 +13,7 @@ type Row = {
   completed: boolean;
   out_of_stock: boolean;
   is_important?: boolean;
+  is_urgent?: boolean;
   quantity: number;
   unit: string;
   notes: string;
@@ -35,6 +36,7 @@ const toItem = (row: Row): ShoppingItem => ({
   completed: row.completed,
   outOfStock: !!row.out_of_stock,
   isImportant: !!row.is_important,
+  isUrgent: !!row.is_urgent,
   quantity: Number(row.quantity) || 1,
   unit: row.unit ?? "",
   notes: row.notes ?? "",
@@ -55,6 +57,7 @@ const patchToItem = (p: Patch): Partial<ShoppingItem> => {
   if (p.completed !== undefined) out.completed = p.completed;
   if (p.out_of_stock !== undefined) out.outOfStock = p.out_of_stock;
   if (p.is_important !== undefined) out.isImportant = p.is_important;
+  if (p.is_urgent !== undefined) out.isUrgent = p.is_urgent;
   if (p.quantity !== undefined) out.quantity = p.quantity;
   if (p.unit !== undefined) out.unit = p.unit;
   if (p.notes !== undefined) out.notes = p.notes;
@@ -132,7 +135,7 @@ async function sendOp(op: Op): Promise<{ error: { message: string } | null }> {
 }
 
 // רשימת הקניות של המשפחה — ענן + מטמון מקומי, עובדת גם ללא קליטה
-export function useShoppingList(familyId: string | null, userName?: string, storeId: string | null = null) {
+export function useShoppingList(familyId: string | null, userName?: string, storeId: string | null = null, isEvent = false) {
   const [rows, setRows] = useState<ShoppingItem[]>([]);
   const userNameRef = useRef(userName);
   userNameRef.current = userName;
@@ -204,7 +207,8 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
     try {
       let queue = readJson<Op[]>(queueKey(familyId), []);
       while (queue.length) {
-        const op = queue[0]!;
+        const op = queue[0];
+        if (!op) break;
         let { error } = await sendOp(op);
         if (error && isNetworkError(error.message)) break;
         // 42501: לרוב החברות במשפחה טרם נרשמה למשתמש הנוכחי — מצטרפים (RPC מוגן) ומנסים שוב פעם אחת
@@ -341,13 +345,14 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
   const makeRow = useCallback(
     (name: string, quantity: number, unit: string): Row => ({
       id: crypto.randomUUID(),
-      family_id: familyId!,
+      family_id: familyId ?? "",
       name,
       quantity,
       unit,
       completed: false,
       out_of_stock: false,
       is_important: false,
+      is_urgent: false,
       notes: "",
       category: "",
       archived: false,
@@ -413,6 +418,18 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
 
   const update = useCallback((id: string, patch: Patch) => enqueue({ type: "update", ids: [id], patch }), [enqueue]);
 
+  const copyItems = useCallback((source: ShoppingItem[]) => {
+    if (!familyId || !source.length) return 0;
+    enqueue({ type: "insert", rows: source.map((item) => ({ ...makeRow(item.name, item.quantity, item.unit), store_id: null, notes: item.notes, category: item.category, is_important: !!item.isImportant, is_urgent: !!item.isUrgent })) });
+    return source.length;
+  }, [familyId, enqueue, makeRow]);
+
+  const duplicatesFor = useCallback((source: ShoppingItem[]) => isEvent ? [] : rows.filter((item) => source.some((s) => crossStoreDuplicates([item], s).length) && !source.some((s) => s.id === item.id)), [rows, isEvent]);
+  const restoreRows = useCallback((source: ShoppingItem[]) => {
+    if (!source.length) return;
+    enqueue({ type: "insert", rows: source.map((i) => ({ id: i.id, family_id: i.familyId, name: i.name, completed: i.completed, archived: i.archived, out_of_stock: i.outOfStock, is_important: !!i.isImportant, is_urgent: !!i.isUrgent, quantity: i.quantity, unit: i.unit, notes: i.notes, category: i.category, added_by: i.addedBy, created_at: i.createdAt, store_id: i.storeId ?? null, expiry_date: i.expiryDate ?? null, stock_status: i.stockStatus ?? "full", photo_url: i.photoUrl ?? null })) });
+  }, [enqueue]);
+
   // הקשה: רגיל → נקנה; ממצב נקנה/חסר → חזרה לרגיל
   const toggleItem = useCallback(
     (id: string) => {
@@ -420,12 +437,14 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
       if (!item) return;
       const next = !(item.completed || item.outOfStock);
       if (next) {
+        const duplicates = duplicatesFor([item]);
+        if (duplicates.length) enqueue({ type: "delete", ids: duplicates.map((i) => i.id) });
         setProductHistory((h) => mergeHistory(h, recordPurchase(item.name, item.category)));
         if (familyId) void recordFamilyPurchase(familyId, item.name, item.category);
       }
       update(id, { completed: next, out_of_stock: false });
     },
-    [rows, update, familyId],
+    [rows, update, familyId, duplicatesFor, enqueue],
   );
 
   // לחיצה ארוכה — „חסר במלאי” (או ביטולו)
@@ -455,11 +474,11 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
   );
 
   const updateDetails = useCallback(
-    (id: string, details: Pick<Row, "name" | "quantity" | "unit" | "notes" | "category"> & { storeId?: string | null; isImportant?: boolean }) => {
+    (id: string, details: Pick<Row, "name" | "quantity" | "unit" | "notes" | "category"> & { storeId?: string | null; isImportant?: boolean; isUrgent?: boolean }) => {
       if (!details.name.trim() || !(details.quantity > 0)) return;
-      const { storeId, isImportant, ...rest } = details;
+      const { storeId, isImportant, isUrgent, ...rest } = details;
       // storeId מועבר רק כשנבחרה חנות בחלונית העריכה
-      update(id, { ...rest, name: rest.name.trim(), ...(storeId !== undefined ? { store_id: storeId } : {}), ...(isImportant !== undefined ? { is_important: isImportant } : {}) });
+      update(id, { ...rest, name: rest.name.trim(), ...(storeId !== undefined ? { store_id: storeId } : {}), ...(isImportant !== undefined ? { is_important: isImportant } : {}), ...(isUrgent !== undefined ? { is_urgent: isUrgent } : {}) });
     },
     [update],
   );
@@ -480,17 +499,12 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
   const removeItem = useCallback(
     async (id: string) => {
       const prev = rows.find((i) => i.id === id);
-      enqueue({ type: "delete", ids: [id] });
       if (!prev) return;
-      const row: Row = {
-        id: prev.id, family_id: prev.familyId, name: prev.name, completed: prev.completed,
-        out_of_stock: prev.outOfStock, is_important: !!prev.isImportant, quantity: prev.quantity, unit: prev.unit, notes: prev.notes,
-        category: prev.category, archived: prev.archived, added_by: prev.addedBy, created_at: prev.createdAt,
-        store_id: prev.storeId ?? null, expiry_date: prev.expiryDate ?? null, stock_status: prev.stockStatus ?? "full",
-      };
-      undoToast(`„${prev.name}” נמחק`, () => enqueue({ type: "insert", rows: [row] }));
+      const removed = [prev, ...duplicatesFor([prev])];
+      enqueue({ type: "delete", ids: removed.map((i) => i.id) });
+      undoToast(`„${prev.name}” נמחק`, () => restoreRows(removed));
     },
-    [rows, enqueue],
+    [rows, enqueue, duplicatesFor, restoreRows],
   );
 
   // „סמן הכל” — לפי מזהים כדי לעבוד גם ללא קליטה
@@ -498,6 +512,8 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
     async (completed: boolean) => {
       const ids = items.map((i) => i.id);
       if (!ids.length) return;
+      const duplicates = completed ? duplicatesFor(items) : [];
+      if (duplicates.length) enqueue({ type: "delete", ids: duplicates.map((i) => i.id) });
       // קיבוץ לפי המצב הקודם לשחזור מדויק
       const groups = new Map<string, string[]>();
       for (const i of items) {
@@ -505,22 +521,31 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
         groups.set(k, [...(groups.get(k) ?? []), i.id]);
       }
       enqueue({ type: "update", ids, patch: { completed, out_of_stock: false } });
-      undoToast(completed ? "כל הפריטים סומנו" : "הסימון בוטל לכל הפריטים", () =>
+      undoToast(completed ? "כל הפריטים סומנו" : "הסימון בוטל לכל הפריטים", () => {
         groups.forEach((gIds, k) =>
           enqueue({ type: "update", ids: gIds, patch: { completed: k[0] === "1", out_of_stock: k[1] === "1" } }),
-        ),
-      );
+        );
+        restoreRows(duplicates);
+      });
     },
-    [items, enqueue],
+    [items, enqueue, duplicatesFor, restoreRows],
   );
 
   // העברת פריטים שנקנו למלאי
   const archiveCompleted = useCallback(async () => {
-    const ids = items.filter((i) => i.completed).map((i) => i.id);
+    const completed = items.filter((i) => i.completed);
+    const ids = completed.map((i) => i.id);
     if (!ids.length) return;
+    if (isEvent) {
+      enqueue({ type: "delete", ids });
+      undoToast(`${ids.length} פריטים נוקו מהאירוע`, () => restoreRows(completed));
+      return;
+    }
+    const duplicates = duplicatesFor(completed);
+    if (duplicates.length) enqueue({ type: "delete", ids: duplicates.map((i) => i.id) });
     enqueue({ type: "update", ids, patch: { archived: true } });
-    undoToast(`${ids.length} פריטים הועברו למלאי`, () => enqueue({ type: "update", ids, patch: { archived: false } }));
-  }, [items, enqueue]);
+    undoToast(`${ids.length} פריטים הועברו למלאי`, () => { enqueue({ type: "update", ids, patch: { archived: false } }); restoreRows(duplicates); });
+  }, [items, enqueue, isEvent, duplicatesFor, restoreRows]);
 
   const restoreFromInventory = useCallback(
     async (ids: string[]) => {
@@ -548,6 +573,7 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
     markOutOfStock,
     addItem,
     addMany,
+    copyItems,
     addPreparedMeal,
     toggleItem,
     renameItem,

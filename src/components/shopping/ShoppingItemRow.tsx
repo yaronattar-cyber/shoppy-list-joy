@@ -16,13 +16,14 @@ type Props = {
   storeLabel?: string | undefined;
   storeTone?: number | undefined;
   onImportant?: (item: ShoppingItem, checked: boolean) => void;
+  onUrgent?: (item: ShoppingItem, checked: boolean) => void;
   onAlternatives?: (item: ShoppingItem) => void;
 };
 
 const LONG_PRESS_MS = 550;
 
 // הקשה = נקנה / איפוס (מיידי); לחיצה ארוכה = חסר במלאי
-export const ShoppingItemRow = memo(function ShoppingItemRow({ item, onToggle, onOutOfStock, onOpen, storeLabel, storeTone, onImportant, onAlternatives }: Props) {
+export const ShoppingItemRow = memo(function ShoppingItemRow({ item, onToggle, onOutOfStock, onOpen, storeLabel, storeTone, onImportant, onUrgent, onAlternatives }: Props) {
   const quantity = formatQuantity(item.quantity, item.unit) || "×1";
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressed = useRef(false);
@@ -71,6 +72,7 @@ export const ShoppingItemRow = memo(function ShoppingItemRow({ item, onToggle, o
           {/* שם + תגיות בשורה אחת: השם נחתך עם ... ולא יורד שורה */}
           <span className="flex min-w-0 items-center gap-1">
             <span className={`min-w-0 flex-1 truncate text-sm font-semibold leading-5 ${item.isImportant ? "text-important" : "text-foreground"} ${item.completed ? `line-through ${item.isImportant ? "" : "opacity-50"}` : ""}`}>{item.name}</span>
+            {item.isUrgent && <span className="flex shrink-0 items-center gap-0.5 text-xs font-semibold text-important"><AlertTriangle className="h-3 w-3" />דחוף</span>}
             {storeLabel && <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${storeTone ? "" : "bg-muted text-muted-foreground"}`} style={storeTone ? { backgroundColor: `var(--store-${storeTone})`, color: `var(--store-${storeTone}-fg)` } : undefined}>{storeLabel}</span>}
             {showAdder && <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">{ROLE_EMOJI[role] ?? "🙂"} {role ? `${role} · ` : ""}{item.addedBy}</span>}
           </span>
@@ -84,9 +86,9 @@ export const ShoppingItemRow = memo(function ShoppingItemRow({ item, onToggle, o
         </span>
       </Button>
       {missing && onAlternatives && <Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-destructive" aria-label={`חלופות ל־${item.name}`} onClick={() => onAlternatives(item)}><HelpCircle className="h-4 w-4" /></Button>}
-      {onImportant && <DropdownMenu dir="rtl">
+      {(onImportant || onUrgent) && <DropdownMenu dir="rtl">
         <DropdownMenuTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground" aria-label={`אפשרויות ${item.name}`} title="אפשרויות פריט"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-        <DropdownMenuContent align="end"><DropdownMenuCheckboxItem checked={!!item.isImportant} onCheckedChange={(checked) => onImportant(item, checked)} className="pl-2 pr-8 [&>span]:left-auto [&>span]:right-2">חשוב</DropdownMenuCheckboxItem></DropdownMenuContent>
+        <DropdownMenuContent align="end">{onImportant && <DropdownMenuCheckboxItem checked={!!item.isImportant} onCheckedChange={(checked) => onImportant(item, checked)} className="pl-2 pr-8 [&>span]:left-auto [&>span]:right-2">חשוב</DropdownMenuCheckboxItem>}{onUrgent && <DropdownMenuCheckboxItem checked={!!item.isUrgent} onCheckedChange={(checked) => onUrgent(item, checked)} className="pl-2 pr-8 text-important [&>span]:left-auto [&>span]:right-2">דחוף</DropdownMenuCheckboxItem>}</DropdownMenuContent>
       </DropdownMenu>}
     </li>
   );
