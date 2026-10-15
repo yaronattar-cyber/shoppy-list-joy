@@ -10,4 +10,5 @@
 - [x] Add important items with Cloud schema/offline persistence, top priority across shopping and Home, red titles and unified recent container; build and browser flows verified (live authenticated Cloud sync not tested).
 - [x] Recipes book: Cloud tables, list/filter/detail/add UI tab
 - [ ] Store "purchase" item: checked items appear in online shopping with qty/price — blocked: needs clarification
-- [ ] Recipe layout, three controls, multi-image Gemini analysis and missing-stock/cooking verification.
+- [x] Recipe layout, three controls, multi-image selection, scaling and transactional cooking; real recipe save/cook and responsive layout verified; build passed.
+- [ ] Verify Gemini unified recipe result — blocked: AI Gateway returned 402 (insufficient credits); no retries performed.
