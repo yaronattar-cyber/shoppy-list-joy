@@ -1,6 +1,9 @@
+// @refresh reset
+// Custom hooks in .ts modules have no refresh signatures; remount on live updates to avoid stale hook queues.
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Home, ListChecks, Package, Users, ShoppingBag, BookOpen } from "lucide-react";
+import { Home, ListChecks, Package, Users, ShoppingBag, BookOpen, PartyPopper, Plus, X } from "lucide-react";
+import { missingEventItems } from "@/lib/shopping-list";
 import { RecipesScreen } from "@/components/shopping/RecipesScreen";
 import { OnlineWishlist } from "@/components/shopping/OnlineWishlist";
 import { useOnlineWishlist } from "@/hooks/useOnlineWishlist";
@@ -55,6 +58,7 @@ function Index() {
   const wish = useOnlineWishlist();
   const shortcuts = useHomeShortcuts();
   const [listTab, setListTab] = useState<"shopping" | "online">("shopping");
+  const [eventDraft, setEventDraft] = useState<string | null>(null);
   const [screen, setScreen] = useState<Screen>("home");
   const [restored, setRestored] = useState(false);
   const [startScreen, setStartScreen] = useState<Screen>("home");
@@ -81,7 +85,7 @@ function Index() {
   const pendingOrders = useOnlineOrders(family.familyId, "*");
   const events = useEvents(family.familyId);
   // רשימת אירוע משותפת פועלת כרשימה עצמאית עם קוד משלה
-  const eventList = useShoppingList(events.activeId, family.userName ?? undefined, null);
+  const eventList = useShoppingList(events.activeId, family.userName ?? undefined, null, true);
   const shown = events.active ? eventList : list;
   const fam = useFamilyMembers(family.familyId, family.userName);
   const roleMap = Object.fromEntries(fam.members.map((m) => [m.name, m.role]));
@@ -236,6 +240,21 @@ function Index() {
           <OnlineWishlist embedded items={wish.items} onToggle={wish.toggle} onRename={wish.rename} onRemove={wish.remove} onRemoveStore={wish.removeStore} />
         </div>
       )}
+      {screen === "list" && listTab === "shopping" && <section aria-label="אירועים מיוחדים" className="mx-auto max-w-2xl px-4 pt-2 sm:px-6">
+        <div className="flex items-center gap-2">
+          <PartyPopper className="h-4 w-4 text-primary" />
+          <h2 className="flex-1 text-sm font-semibold">אירועים מיוחדים</h2>
+          <Button type="button" variant="ghost" size="icon" className="h-8 w-8" aria-label="יצירת אירוע מיוחד" onClick={() => setEventDraft("")}><Plus className="h-4 w-4" /></Button>
+        </div>
+        <div className="flex flex-wrap gap-1 pb-1">
+          {events.events.map((ev) => <Button key={ev.id} type="button" size="sm" variant={events.activeId === ev.id ? "default" : "outline"} className="h-8 text-xs" onClick={() => events.select(ev.id)}>{ev.name}</Button>)}
+        </div>
+        {eventDraft !== null && <form className="flex gap-2 pb-2" onSubmit={async (e) => { e.preventDefault(); if (await events.create(eventDraft)) setEventDraft(null); }}>
+          <input aria-label="שם אירוע חדש" placeholder="על האש, יום הולדת, אירוח..." maxLength={100} value={eventDraft} onChange={(e) => setEventDraft(e.target.value)} className="h-9 min-w-0 flex-1 rounded-md border border-input bg-card px-2 text-sm" />
+          <Button type="submit" size="sm" disabled={!eventDraft.trim()}>צור</Button>
+          <Button type="button" variant="ghost" size="icon" aria-label="ביטול יצירת אירוע" onClick={() => setEventDraft(null)}><X className="h-4 w-4" /></Button>
+        </form>}
+      </section>}
       {screen === "list" && listTab === "shopping" && events.active && (
         <EventBar
           familyId={family.familyId}
@@ -244,6 +263,12 @@ function Index() {
           joinedName={events.joinedName}
           onClearJoined={events.clearJoined}
           onClose={(ev) => void events.close(ev)}
+          onRename={events.rename}
+          onExport={() => {
+            const missing = missingEventItems(eventList.items, list.inventory, list.allActive);
+            const count = list.copyItems(missing);
+            toast(count ? `${count} פריטים חסרים הועתקו לרשימה הכללית` : "כל פריטי האירוע כבר זמינים במלאי או ברשימת הקניות");
+          }}
         />
       )}
       {screen === "list" && listTab === "shopping" && (
@@ -335,6 +360,7 @@ function Index() {
           targets={targets}
           onAddTo={addTo}
           isGeneral={!events.active && !stores.active}
+          isEvent={!!events.active}
         />
       )}
       {screen === "inventory" && (
