@@ -436,13 +436,13 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
       const item = rows.find((i) => i.id === id);
       if (!item) return;
       const next = !(item.completed || item.outOfStock);
+      update(id, { completed: next, out_of_stock: false });
       if (next) {
         const duplicates = duplicatesFor([item]);
         if (duplicates.length) enqueue({ type: "delete", ids: duplicates.map((i) => i.id) });
         setProductHistory((h) => mergeHistory(h, recordPurchase(item.name, item.category)));
         if (familyId) void recordFamilyPurchase(familyId, item.name, item.category);
       }
-      update(id, { completed: next, out_of_stock: false });
     },
     [rows, update, familyId, duplicatesFor, enqueue],
   );
@@ -513,6 +513,7 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
       const ids = items.map((i) => i.id);
       if (!ids.length) return;
       const duplicates = completed ? duplicatesFor(items) : [];
+      enqueue({ type: "update", ids, patch: { completed, out_of_stock: false } });
       if (duplicates.length) enqueue({ type: "delete", ids: duplicates.map((i) => i.id) });
       // קיבוץ לפי המצב הקודם לשחזור מדויק
       const groups = new Map<string, string[]>();
@@ -520,7 +521,6 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
         const k = `${i.completed ? 1 : 0}${i.outOfStock ? 1 : 0}`;
         groups.set(k, [...(groups.get(k) ?? []), i.id]);
       }
-      enqueue({ type: "update", ids, patch: { completed, out_of_stock: false } });
       undoToast(completed ? "כל הפריטים סומנו" : "הסימון בוטל לכל הפריטים", () => {
         groups.forEach((gIds, k) =>
           enqueue({ type: "update", ids: gIds, patch: { completed: k[0] === "1", out_of_stock: k[1] === "1" } }),
@@ -542,8 +542,8 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
       return;
     }
     const duplicates = duplicatesFor(completed);
-    if (duplicates.length) enqueue({ type: "delete", ids: duplicates.map((i) => i.id) });
     enqueue({ type: "update", ids, patch: { archived: true } });
+    if (duplicates.length) enqueue({ type: "delete", ids: duplicates.map((i) => i.id) });
     undoToast(`${ids.length} פריטים הועברו למלאי`, () => { enqueue({ type: "update", ids, patch: { archived: false } }); restoreRows(duplicates); });
   }, [items, enqueue, isEvent, duplicatesFor, restoreRows]);
 
