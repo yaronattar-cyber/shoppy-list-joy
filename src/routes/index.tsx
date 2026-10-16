@@ -1,3 +1,5 @@
+// @refresh reset
+// Custom hooks in .ts modules have no refresh signatures; remount on live updates to avoid stale hook queues.
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Home, ListChecks, Package, Users, ShoppingBag, BookOpen, PartyPopper, Plus, X } from "lucide-react";
