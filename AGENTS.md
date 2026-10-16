@@ -16,3 +16,5 @@
 - Own Home shortcut preferences once in the main screen; persist ordered pinned IDs by authenticated user separately from List tab order so family members cannot overwrite one another's choices.
 - Recipe scans combine selected images in one authenticated Gemini gateway request using request-local gateway helpers; this keeps extraction consistent and credentials server-only.
 - Cooking uses a family-scoped, RLS-enforced transactional RPC with exact name/unit matches and sequential stock consumption, preventing partial deductions and duplicate-row overcounting.
+- Cross-store purchase/clear deletion matches trimmed case-insensitive product names only within the same household and different non-null stores; mirror it in the offline queue and an RLS-enforced database trigger so devices agree while event-family scopes remain isolated.
+- Event renaming uses an owner-family-authorized RPC; exporting copies quantity deficits into household rows without mutating event rows, preserving shared event tracking.
