@@ -3,8 +3,8 @@ import { RecipesDrawer } from "./RecipesDrawer";
 import { MealPhotoPicker, MealThumb } from "./MealPhoto";
 import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { STOCK_STATUS, addCustomCategory, inventoryCategoryOf, useInvCategories } from "@/lib/inventory-categories";
-import { Bot, Check, CookingPot, Package, Plus, ScanBarcode, Trash2, Truck, X } from "lucide-react";
+import { INV_LOCATIONS, byExpiry, expiryLevel, locationOf, STOCK_STATUS, addCustomCategory, inventoryCategoryOf, useInvCategories } from "@/lib/inventory-categories";
+import { Bot, Check, Minus, CookingPot, Package, Plus, ScanBarcode, Trash2, Truck, X } from "lucide-react";
 import { toast } from "sonner";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { PhotoProductButton } from "./PhotoProductButton";
@@ -60,7 +60,15 @@ export function InventoryScreen({ items, familyId = "", onSetPhoto, onRestore, o
   const [editing, setEditing] = useState<ShoppingItem | null>(null);
   const [draft, setDraft] = useState({ expiryDate: "", stockStatus: "full", quantity: 1, unit: "", category: "other" });
   const cats = useInvCategories();
-  const groups = useMemo(() => cats.map((c) => ({ ...c, items: items.filter((i) => inventoryCategoryOf(i.name, i.category) === c.id) })).filter((g) => g.items.length || g.id === "prepared-meal" || g.id.startsWith("custom-")), [items, cats]);
+  const [loc, setLoc] = useState("all");
+  const groups = useMemo(() => cats.filter((c) => loc === "all" || locationOf(c.id) === loc).map((c) => ({ ...c, items: items.filter((i) => inventoryCategoryOf(i.name, i.category) === c.id).sort(byExpiry) })).filter((g) => g.items.length || (loc === "all" && (g.id === "prepared-meal" || g.id.startsWith("custom-")))), [items, cats, loc]);
+  // כמות מהירה; בהגעה ל-0 מציעים להוסיף לרשימת הקניות בחנות ברירת המחדל
+  const adjust = (item: ShoppingItem, d: number) => {
+    const quantity = Math.max(0, item.quantity + d);
+    onUpdate(item.id, { expiryDate: item.expiryDate ?? null, stockStatus: item.stockStatus ?? "full", quantity, unit: item.unit, category: item.category });
+    if (quantity === 0) toast(`${item.name} נגמר`, { duration: 8000, action: { label: "הוסף לרשימת הקניות", onClick: () => { onAddMissing([item.name]); toast.success(`${item.name} נוסף לרשימת הקניות`); } } });
+  };
+  const BADGE = { red: "bg-destructive/15 text-destructive", yellow: "bg-amber-500/15 text-amber-700", green: "bg-primary/10 text-primary" } as const;
   const openItem = (i: ShoppingItem) => { setEditing(i); setDraft({ expiryDate: i.expiryDate ?? "", stockStatus: i.stockStatus ?? "full", quantity: i.quantity, unit: i.unit, category: inventoryCategoryOf(i.name, i.category) }); };
   const [pending, setPending] = useState<string[] | null>(null);
   const [addingMeal, setAddingMeal] = useState(false);
@@ -227,6 +235,9 @@ export function InventoryScreen({ items, familyId = "", onSetPhoto, onRestore, o
       )}
 
 
+      <div role="tablist" aria-label="סינון לפי מיקום" className="mt-4 flex gap-1.5 overflow-x-auto [scrollbar-width:none]">
+        {INV_LOCATIONS.map((l) => <button key={l.id} type="button" role="tab" aria-selected={loc === l.id} onClick={() => setLoc(l.id)} className={cn("h-8 shrink-0 rounded-full border px-3 text-xs font-semibold transition-colors", loc === l.id ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground hover:bg-accent")}>{l.label}</button>)}
+      </div>
       {/* כל קטגוריות המלאי בתוך כרטיס אחד מאוחד עם רקע ירוק־לבן רך */}
       <div className="mt-4 overflow-hidden rounded-2xl border border-primary/10 bg-store-header shadow-soft">
         {groups.map((g) => {
@@ -252,9 +263,13 @@ export function InventoryScreen({ items, familyId = "", onSetPhoto, onRestore, o
                       <li key={item.id} data-inv-item={item.id} className={cn("grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-3 rounded-xl px-2.5 py-2 transition-colors hover:bg-white/70", highlightId === item.id && "animate-pulse bg-primary/15 ring-1 ring-inset ring-primary")}>
                         <button type="button" onClick={() => openItem(item)} className="min-w-0 text-right">
                           <span className="flex items-center gap-2">{g.id === "prepared-meal" && <MealThumb path={item.photoUrl} className="h-9 w-9" />}<span className={`h-2.5 w-2.5 shrink-0 rounded-full ${st.dot}`} title={st.label} /><span className="break-words text-base font-semibold leading-6 text-foreground">{item.name}</span></span>
-                          <span className="block text-xs text-muted-foreground">{st.label}{dl !== null && <span className={dl <= 2 ? " font-semibold text-destructive" : ""}> · {dl < 0 ? "פג תוקף" : dl === 0 ? "פג היום" : `תפוגה בעוד ${dl} ימים`}</span>}</span>
+                          <span className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">{st.label}{dl !== null && <span className={cn("rounded-full px-1.5 py-0.5 font-semibold", BADGE[expiryLevel(dl)!])}>{dl < 0 ? "⚠ פג תוקף" : dl === 0 ? "⚠ פג היום" : `תפוגה בעוד ${dl} ימים`}</span>}</span>
                         </button>
-                        <span className="text-sm font-medium text-muted-foreground">{formatQuantity(item.quantity, item.unit) || "×1"}</span>
+                        <span className="flex items-center gap-0.5">
+                          <Button type="button" size="icon" variant="outline" aria-label={`הפחתת ${item.name}`} disabled={item.quantity <= 0} onClick={() => adjust(item, -1)} className="h-7 w-7 rounded-full"><Minus className="h-3.5 w-3.5" /></Button>
+                          <span className="min-w-8 text-center text-sm font-medium text-muted-foreground">{formatQuantity(item.quantity, item.unit) || "0"}</span>
+                          <Button type="button" size="icon" variant="outline" aria-label={`הוספת ${item.name}`} onClick={() => adjust(item, 1)} className="h-7 w-7 rounded-full"><Plus className="h-3.5 w-3.5" /></Button>
+                        </span>
                         <Button type="button" size="icon" variant="ghost" aria-label={`מחיקת ${item.name}`} onClick={() => setPending([item.id])} className="h-9 w-9 text-muted-foreground hover:text-destructive">
                           <Trash2 className="h-4 w-4" />
                         </Button>
