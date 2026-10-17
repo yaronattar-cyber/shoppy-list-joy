@@ -73,3 +73,25 @@ export function useInvCategories(): InvCategory[] {
   }, []);
   return cats;
 }
+
+// מיקומי אחסון לסינון מהיר במסך המלאי, נגזרים מהקטגוריה
+export const INV_LOCATIONS = [
+  { id: "all", label: "הכל" },
+  { id: "fridge", label: "מקרר" },
+  { id: "pantry", label: "מזווה" },
+  { id: "freezer", label: "מקפיא" },
+  { id: "cleaning", label: "חומרי ניקוי" },
+  { id: "other", label: "אחר" },
+] as const;
+const LOC: Record<string, string> = { "prepared-meal": "fridge", dairy: "fridge", produce: "fridge", meat: "fridge", vegetarian: "fridge", bakery: "pantry", canned: "pantry", pantry: "pantry", oils: "pantry", spices: "pantry", drinks: "pantry", snacks: "pantry", frozen: "freezer", cleaning: "cleaning" };
+export const locationOf = (categoryId: string) => LOC[categoryId] ?? "other";
+
+// צבע תג תפוגה: עד 3 ימים/פג — אדום, 4–7 — צהוב, אחרת — ירוק
+export function expiryLevel(daysLeft: number | null): "red" | "yellow" | "green" | null {
+  if (daysLeft === null) return null;
+  return daysLeft <= 3 ? "red" : daysLeft <= 7 ? "yellow" : "green";
+}
+
+// מיון: תפוגה מוקדמת ראשונה, פריטים ללא תאריך בסוף
+export const byExpiry = <T extends { expiryDate?: string | null }>(a: T, b: T) =>
+  (a.expiryDate ?? "9999").localeCompare(b.expiryDate ?? "9999");
