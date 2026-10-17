@@ -4,7 +4,7 @@ import { MealPhotoPicker, MealThumb } from "./MealPhoto";
 import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { INV_LOCATIONS, byExpiry, expiryLevel, locationOf, STOCK_STATUS, addCustomCategory, inventoryCategoryOf, useInvCategories } from "@/lib/inventory-categories";
-import { Bot, Check, CookingPot, Package, Plus, ScanBarcode, Trash2, Truck, X } from "lucide-react";
+import { Bot, Check, Minus, CookingPot, Package, Plus, ScanBarcode, Trash2, Truck, X } from "lucide-react";
 import { toast } from "sonner";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { PhotoProductButton } from "./PhotoProductButton";
