@@ -23,7 +23,7 @@ export const storeTone = (stores: { id: string }[], id: string | null | undefine
 };
 
 // לשוניות: רשימה כללית, חנויות ואירועים — לחיצה עוברת לרשימה המתאימה
-export function StoreChips({ stores: rawStores, activeId, items, onSelect, events: rawEvents = [], activeEventId = null, onSelectEvent }: Props) {
+export function StoreChips({ stores: rawStores, activeId, items, onSelect, events: rawEvents = [], activeEventId = null, onSelectEvent, onCreateEvent }: Props) {
   const tabOrder = useTabOrder();
   const [sorting, setSorting] = useState(false);
   const tabs = tabOrder.sort([...rawStores.map((s) => ({ ...s, kind: "store" as const })), ...rawEvents.map((e) => ({ ...e, kind: "event" as const }))]);
