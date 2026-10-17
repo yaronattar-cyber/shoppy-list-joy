@@ -22,6 +22,7 @@ import { useShoppingList } from "@/hooks/useShoppingList";
 import { useSpeech } from "@/hooks/useSpeech";
 import { useStores } from "@/hooks/useStores";
 import { useOnlineOrders } from "@/hooks/useOnlineOrders";
+import { NoteScanButton } from "@/components/shopping/NoteScanButton";
 import { StoreChips } from "@/components/shopping/StoreChips";
 import { StoreSelector } from "@/components/shopping/StoreSelector";
 import { EventBar } from "@/components/shopping/EventBar";
@@ -233,6 +234,7 @@ function Index() {
         <div role="tablist" aria-label="סוג רשימת קניות" className="mx-auto flex max-w-2xl gap-2 px-3 pt-3 sm:px-6">
           <Button role="tab" aria-selected={listTab === "shopping"} variant={listTab === "shopping" ? "default" : "ghost"} size="sm" onClick={() => setListTab("shopping")}><ListChecks className="h-4 w-4" />רשימת קניות</Button>
           <Button role="tab" aria-selected={listTab === "online"} variant={listTab === "online" ? "default" : "ghost"} size="sm" onClick={() => setListTab("online")}><ShoppingBag className="h-4 w-4" />קניות אונליין ({wish.items.length})</Button>
+          <NoteScanButton targetName={events.active?.name ?? stores.active?.name ?? "הרשימה"} onAddMany={shown.addMany} />
         </div>
       )}
       {screen === "list" && listTab === "online" && (
@@ -240,15 +242,7 @@ function Index() {
           <OnlineWishlist embedded items={wish.items} onToggle={wish.toggle} onRename={wish.rename} onRemove={wish.remove} onRemoveStore={wish.removeStore} />
         </div>
       )}
-      {screen === "list" && listTab === "shopping" && <section aria-label="אירועים מיוחדים" className="mx-auto max-w-2xl px-4 pt-2 sm:px-6">
-        <div className="flex items-center gap-2">
-          <PartyPopper className="h-4 w-4 text-primary" />
-          <h2 className="flex-1 text-sm font-semibold">אירועים מיוחדים</h2>
-          <Button type="button" variant="ghost" size="icon" className="h-8 w-8" aria-label="יצירת אירוע מיוחד" onClick={() => setEventDraft("")}><Plus className="h-4 w-4" /></Button>
-        </div>
-        <div className="flex flex-wrap gap-1 pb-1">
-          {events.events.map((ev) => <Button key={ev.id} type="button" size="sm" variant={events.activeId === ev.id ? "default" : "outline"} className="h-8 text-xs" onClick={() => events.select(ev.id)}>{ev.name}</Button>)}
-        </div>
+      {screen === "list" && listTab === "shopping" && eventDraft !== null && <section aria-label="אירוע חדש" className="mx-auto max-w-2xl px-4 pt-2 sm:px-6">
         {eventDraft !== null && <form className="flex gap-2 pb-2" onSubmit={async (e) => { e.preventDefault(); if (await events.create(eventDraft)) setEventDraft(null); }}>
           <input aria-label="שם אירוע חדש" placeholder="על האש, יום הולדת, אירוח..." maxLength={100} value={eventDraft} onChange={(e) => setEventDraft(e.target.value)} className="h-9 min-w-0 flex-1 rounded-md border border-input bg-card px-2 text-sm" />
           <Button type="submit" size="sm" disabled={!eventDraft.trim()}>צור</Button>
@@ -295,6 +289,7 @@ function Index() {
           events={events.events}
           activeEventId={events.activeId}
           onSelectEvent={events.select}
+          onCreateEvent={() => setEventDraft("")}
         />
           }
         />
