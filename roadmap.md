@@ -13,3 +13,5 @@
 - [ ] Store "purchase" item: checked items appear in online shopping with qty/price — blocked: needs clarification
 - [x] Recipe layout, three controls, multi-image selection, scaling and transactional cooking; real recipe save/cook and responsive layout verified; build passed.
 - [ ] Verify Gemini unified recipe result — blocked: AI Gateway returned 402 (insufficient credits); no retries performed.
+- [ ] Connect recipes/notes/receipts to private Gemini key with Hebrew quota errors; verify real scans.
+- [ ] Receipt confirmation, private image storage, atomic matched-item last prices/expenses, and monthly spending summary; verify save/readback and tests.
