@@ -65,6 +65,50 @@ export type Database = {
           },
         ]
       }
+      expenses: {
+        Row: {
+          created_at: string
+          currency: string
+          family_id: string
+          id: string
+          purchase_date: string
+          receipt_items: Json
+          receipt_url: string
+          store_name: string
+          total_amount: number
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          family_id: string
+          id?: string
+          purchase_date: string
+          receipt_items?: Json
+          receipt_url: string
+          store_name: string
+          total_amount: number
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          family_id?: string
+          id?: string
+          purchase_date?: string
+          receipt_items?: Json
+          receipt_url?: string
+          store_name?: string
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       families: {
         Row: {
           created_at: string
@@ -188,6 +232,8 @@ export type Database = {
           id: string
           is_important: boolean
           is_urgent: boolean
+          last_price: number | null
+          last_price_currency: string | null
           name: string
           notes: string
           out_of_stock: boolean
@@ -208,6 +254,8 @@ export type Database = {
           id?: string
           is_important?: boolean
           is_urgent?: boolean
+          last_price?: number | null
+          last_price_currency?: string | null
           name: string
           notes?: string
           out_of_stock?: boolean
@@ -228,6 +276,8 @@ export type Database = {
           id?: string
           is_important?: boolean
           is_urgent?: boolean
+          last_price?: number | null
+          last_price_currency?: string | null
           name?: string
           notes?: string
           out_of_stock?: boolean
@@ -549,6 +599,19 @@ export type Database = {
       }
       save_home_shortcuts: { Args: { _ids: string[] }; Returns: undefined }
       save_list_tab_order: { Args: { _ids: string[] }; Returns: undefined }
+      save_receipt: {
+        Args: {
+          _currency: string
+          _date: string
+          _family: string
+          _id: string
+          _lines: Json
+          _path: string
+          _store: string
+          _total: number
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

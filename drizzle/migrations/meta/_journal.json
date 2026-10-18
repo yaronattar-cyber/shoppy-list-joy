@@ -183,6 +183,13 @@
       "when": 1792035824916,
       "tag": "0025_urgent_items_event_rename_store_sync",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1792295708017,
+      "tag": "0026_receipt_expenses_last_prices",
+      "breakpoints": true
     }
   ]
 }
