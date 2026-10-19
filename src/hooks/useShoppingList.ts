@@ -25,6 +25,8 @@ type Row = {
   expiry_date?: string | null;
   stock_status?: string;
   photo_url?: string | null;
+  last_price?: number | null;
+  last_price_currency?: string | null;
 };
 
 type Patch = Partial<Omit<Row, "id" | "family_id" | "created_at" | "added_by">>;
@@ -48,6 +50,8 @@ const toItem = (row: Row): ShoppingItem => ({
   expiryDate: row.expiry_date ?? null,
   stockStatus: (row.stock_status as ShoppingItem["stockStatus"]) ?? "full",
   photoUrl: row.photo_url ?? null,
+  lastPrice: row.last_price == null ? null : Number(row.last_price),
+  lastPriceCurrency: row.last_price_currency ?? null,
 });
 
 // המרת שדות DB לשדות פריט מקומי
@@ -66,6 +70,8 @@ const patchToItem = (p: Patch): Partial<ShoppingItem> => {
   if (p.expiry_date !== undefined) out.expiryDate = p.expiry_date;
   if (p.stock_status !== undefined) out.stockStatus = p.stock_status as ShoppingItem["stockStatus"];
   if (p.photo_url !== undefined) out.photoUrl = p.photo_url;
+  if (p.last_price !== undefined) out.lastPrice = p.last_price;
+  if (p.last_price_currency !== undefined) out.lastPriceCurrency = p.last_price_currency;
   return out;
 };
 
