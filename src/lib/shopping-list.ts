@@ -21,6 +21,8 @@ export type ShoppingItem = {
   stockStatus?: "full" | "half" | "low" | undefined;
   assignedTo?: string; // שיוך אופציונלי: מי אחראי על קניית הפריט
   photoUrl?: string | null; // נתיב תמונת מנה באחסון
+  lastPrice?: number | null;
+  lastPriceCurrency?: string | null;
 };
 
 // דחופים וחשובים בראש; בתוך כל קבוצה החדשים ביותר קודמים.

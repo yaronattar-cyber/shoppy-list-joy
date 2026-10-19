@@ -23,6 +23,7 @@ import { useSpeech } from "@/hooks/useSpeech";
 import { useStores } from "@/hooks/useStores";
 import { useOnlineOrders } from "@/hooks/useOnlineOrders";
 import { NoteScanButton } from "@/components/shopping/NoteScanButton";
+import { ReceiptScanner } from "@/components/shopping/ReceiptScanner";
 import { StoreChips } from "@/components/shopping/StoreChips";
 import { StoreSelector } from "@/components/shopping/StoreSelector";
 import { EventBar } from "@/components/shopping/EventBar";
@@ -242,6 +243,7 @@ function Index() {
           <OnlineWishlist embedded items={wish.items} onToggle={wish.toggle} onRename={wish.rename} onRemove={wish.remove} onRemoveStore={wish.removeStore} />
         </div>
       )}
+      {screen === "list" && family.familyId && <ReceiptScanner familyId={family.familyId} items={list.items} storeId={stores.activeId} onSaved={list.refresh} />}
       {screen === "list" && listTab === "shopping" && eventDraft !== null && <section aria-label="אירוע חדש" className="mx-auto max-w-2xl px-4 pt-2 sm:px-6">
         {eventDraft !== null && <form className="flex gap-2 pb-2" onSubmit={async (e) => { e.preventDefault(); if (await events.create(eventDraft)) setEventDraft(null); }}>
           <input aria-label="שם אירוע חדש" placeholder="על האש, יום הולדת, אירוח..." maxLength={100} value={eventDraft} onChange={(e) => setEventDraft(e.target.value)} className="h-9 min-w-0 flex-1 rounded-md border border-input bg-card px-2 text-sm" />
