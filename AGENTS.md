@@ -14,7 +14,8 @@
 - Online order snapshots persist in dedicated order tables and move into inventory atomically when received, so family devices stay consistent.
 - Own the visual-search wishlist once in the main screen container and share it with Home and List so both views update immediately.
 - Own Home shortcut preferences once in the main screen; persist ordered pinned IDs by authenticated user separately from List tab order so family members cannot overwrite one another's choices.
-- Recipe scans combine selected images in one authenticated Gemini gateway request using request-local gateway helpers; this keeps extraction consistent and credentials server-only.
+- Recipes, notes and receipt scans use authenticated native Gemini streaming with a server-held provider key; multi-image recipes stay in one request to keep extraction consistent.
+- Receipt confirmation stores private family-scoped images and atomically saves expenses and matched unit prices through an RLS-enforced RPC; content-addressed paths prevent duplicate receipt charges.
 - Cooking uses a family-scoped, RLS-enforced transactional RPC with exact name/unit matches and sequential stock consumption, preventing partial deductions and duplicate-row overcounting.
 - Cross-store purchase/clear deletion matches trimmed case-insensitive product names only within the same household and different non-null stores; mirror it in the offline queue and an RLS-enforced database trigger so devices agree while event-family scopes remain isolated.
 - Event renaming uses an owner-family-authorized RPC; exporting copies quantity deficits into household rows without mutating event rows, preserving shared event tracking.
