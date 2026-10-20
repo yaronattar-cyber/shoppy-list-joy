@@ -15,3 +15,4 @@
 - [ ] Verify Gemini unified recipe result — blocked: AI Gateway returned 402 (insufficient credits); no retries performed.
 - [x] Connect recipes/notes/receipts to private Gemini key with Hebrew quota errors; native Gemini receipt extraction and four rule tests passed.
 - [ ] Receipt confirmation, private image storage, atomic matched-item last prices/expenses, and monthly summary implemented; authenticated save/readback verification blocked: session mint failed, requesting user has no matching auth account.
+- [ ] Step 10A: restock recommendations from household stock/history, receipt-based comparable basket costs, and recipe quantity deficits without duplicates; tests and live checks.
