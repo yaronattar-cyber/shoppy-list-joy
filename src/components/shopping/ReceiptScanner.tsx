@@ -43,9 +43,10 @@ export function ReceiptScanner({ familyId, items, storeId, onSaved }: Props) {
   };
   useEffect(() => {
     setTotals({}); void refresh();
+    const { data: auth } = supabase.auth.onAuthStateChange(() => { window.setTimeout(() => void refresh(), 0); });
     const focus = () => void refresh();
     window.addEventListener("focus", focus);
-    return () => window.removeEventListener("focus", focus);
+    return () => { auth.subscription.unsubscribe(); window.removeEventListener("focus", focus); };
   }, [familyId, month]);
   const pick = async (file?: File) => {
     if (!file || busy) return;
