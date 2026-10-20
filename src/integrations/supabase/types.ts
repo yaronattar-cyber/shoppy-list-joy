@@ -220,6 +220,50 @@ export type Database = {
           },
         ]
       }
+      inventory_usage_events: {
+        Row: {
+          category: string
+          created_at: string
+          expiry_date: string | null
+          family_id: string
+          id: string
+          name: string
+          quantity: number
+          remaining: number
+          unit: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          expiry_date?: string | null
+          family_id: string
+          id?: string
+          name: string
+          quantity: number
+          remaining: number
+          unit: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          expiry_date?: string | null
+          family_id?: string
+          id?: string
+          name?: string
+          quantity?: number
+          remaining?: number
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_usage_events_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       items: {
         Row: {
           added_by: string
@@ -422,6 +466,67 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      receipt_unit_prices: {
+        Row: {
+          currency: string
+          expense_id: string
+          family_id: string
+          id: string
+          name: string
+          purchase_date: string
+          store_id: string | null
+          store_name: string
+          unit: string
+          unit_price: number
+        }
+        Insert: {
+          currency: string
+          expense_id: string
+          family_id: string
+          id?: string
+          name: string
+          purchase_date: string
+          store_id?: string | null
+          store_name: string
+          unit: string
+          unit_price: number
+        }
+        Update: {
+          currency?: string
+          expense_id?: string
+          family_id?: string
+          id?: string
+          name?: string
+          purchase_date?: string
+          store_id?: string | null
+          store_name?: string
+          unit?: string
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipt_unit_prices_expense_id_fkey"
+            columns: ["expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipt_unit_prices_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "receipt_unit_prices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       recipe_ingredients: {
         Row: {
