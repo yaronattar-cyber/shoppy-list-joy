@@ -5,7 +5,7 @@ import { compareBasket, restockRecommendations, type UnitPrice, type UsageEvent,
 import type { HistoryEntry } from "@/lib/product-history";
 import type { ShoppingItem } from "@/lib/shopping-list";
 
-type Props = { inventory: ShoppingItem[]; active: ShoppingItem[]; basket: ShoppingItem[]; history: HistoryEntry[]; usage: UsageEvent[]; prices: UnitPrice[]; stores: { id: string; name: string }[]; onAdd: (item: Recommendation) => void; loading?: boolean; error?: boolean };
+type Props = { inventory: ShoppingItem[]; active: ShoppingItem[]; basket: ShoppingItem[]; history: HistoryEntry[]; usage: UsageEvent[]; prices: UnitPrice[]; stores: { id: string; name: string }[]; onAdd: (item: Recommendation) => void; loading?: boolean | undefined; error?: boolean | undefined };
 const money = (value: number, currency: string) => new Intl.NumberFormat("he-IL", { style: "currency", currency }).format(value);
 export function SmartPurchaseInsights(p: Props) {
   const suggestions = useMemo(() => restockRecommendations(p.inventory, p.active, p.history, p.usage, new Date()), [p.inventory, p.active, p.history, p.usage]);
