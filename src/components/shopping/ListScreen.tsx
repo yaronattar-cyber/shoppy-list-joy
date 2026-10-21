@@ -1,5 +1,7 @@
 import { PhotoProductButton } from "./PhotoProductButton";
 import { FullScreenShopping } from "./FullScreenShopping";
+import { SmartPurchaseInsights } from "./SmartPurchaseInsights";
+import type { Recommendation, UnitPrice, UsageEvent } from "@/lib/smart-purchases";
 import { useEffect, useMemo, useState } from "react";
 import { Archive, CheckCheck, ChevronDown, ClipboardList, Eye, Globe2, Layers, Maximize2, PackageCheck, PartyPopper, Plus, Send, Share2, ShoppingCart, SlidersHorizontal, Sun, Wand2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -41,6 +43,13 @@ type Props = {
   onAddTo?: (name: string, target: AddTarget) => string | null;
   isGeneral?: boolean;
   isEvent?: boolean;
+  inventory?: ShoppingItem[];
+  householdActive?: ShoppingItem[];
+  usage?: UsageEvent[];
+  prices?: UnitPrice[];
+  insightsLoading?: boolean;
+  insightsError?: boolean;
+  onAddRecommendation?: (item: Recommendation) => void;
 };
 
 // שורת רשימה דחוסה: הוראות ממוקדות לרשימה זו בלבד (שורת הפריט המשותפת אינה נערכת)
@@ -140,6 +149,7 @@ export function ListScreen(p: Props) {
       </div>
 
       <LongPressHint />
+      {!p.isEvent && p.onAddRecommendation && <SmartPurchaseInsights inventory={p.inventory ?? []} active={p.householdActive ?? []} basket={p.items} history={p.productHistory} usage={p.usage ?? []} prices={p.prices ?? []} stores={p.stores ?? []} onAdd={p.onAddRecommendation} loading={p.insightsLoading} error={p.insightsError} />}
 
       {onlineOnly && <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground"><Globe2 className="h-3.5 w-3.5" />סמנו מוצר לאחר שהוספתם אותו לסל באתר.</p>}
 

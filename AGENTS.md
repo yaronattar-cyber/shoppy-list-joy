@@ -20,3 +20,4 @@
 - Cross-store purchase/clear deletion matches trimmed case-insensitive product names only within the same household and different non-null stores; mirror it in the offline queue and an RLS-enforced database trigger so devices agree while event-family scopes remain isolated.
 - Event renaming uses an owner-family-authorized RPC; exporting copies quantity deficits into household rows without mutating event rows, preserving shared event tracking.
 - Keep `@refresh reset` on the main route while its custom hooks live in uninstrumented `.ts` modules; remounting on live edits prevents stale hook slots when their signatures change.
+- Smart purchase calculations are pure tested helpers; household RLS triggers preserve depletion and matched receipt unit/store snapshots, and structured deficit additions use the existing offline queue to preserve quantities and avoid repeated purchases.

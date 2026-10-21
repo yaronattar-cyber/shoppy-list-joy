@@ -8,7 +8,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { supabase } from "@/integrations/supabase/client";
 import { useRecipes, type Ingredient, type NewRecipe, type Recipe } from "@/hooks/useRecipes";
-import { missingIngredientIndexes } from "@/lib/recipe-stock";
+import { missingIngredientIndexes, scaledAmount, type RecipeIngredient } from "@/lib/recipe-stock";
+import { localDay, usableStock } from "@/lib/smart-purchases";
+import type { ShoppingItem } from "@/lib/shopping-list";
 import { recipeFromImage } from "@/lib/ai/recipe-from-image.functions";
 
 const CATEGORIES = ["בשרי", "צמחוני", "טבעוני", "קינוחים", "אחר"];
@@ -22,15 +24,9 @@ export function cookedAgo(iso: string | null) {
 }
 const card = "rounded-xl border border-border bg-store-header shadow-soft";
 
-type InvRow = { id: string; name: string; quantity: number; unit: string };
 const round = (n: number) => Math.round(n * 100) / 100;
 const scaleIng = (i: Ingredient, ratio: number) => (i.amount != null ? round(i.amount * ratio) : null);
 
-async function loadInventory(familyId: string): Promise<InvRow[]> {
-  const { data, error } = await supabase.from("items").select("id,name,quantity,unit").eq("family_id", familyId).eq("archived", true);
-  if (error) { console.error(error); return []; }
-  return data ?? [];
-}
 
 // הקטנת תמונה לפני שליחה ל-AI (עד ~1.5MB)
 async function compressImage(file: File): Promise<string> {
@@ -55,7 +51,7 @@ function decodeShare(code: string): NewRecipe | null {
   } catch { return null; }
 }
 
-export function RecipesScreen({ familyId, onAddItems }: { familyId: string; onAddItems: (names: string[]) => void }) {
+export function RecipesScreen({ familyId, inventory, onAddItems }: { familyId: string; inventory: ShoppingItem[]; onAddItems: (ingredients: RecipeIngredient[]) => number }) {
   const { recipes, loading, addRecipe, deleteRecipe, refresh } = useRecipes(familyId);
   const [filter, setFilter] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -78,7 +74,7 @@ export function RecipesScreen({ familyId, onAddItems }: { familyId: string; onAd
     openForm(r);
   };
 
-  if (open) return <Drawer open onOpenChange={(value) => { if (!value) setOpenId(null); }}><DrawerContent dir="rtl" className="mx-auto max-h-[88dvh] max-w-2xl overflow-y-auto bg-card"><DrawerHeader className="sr-only"><DrawerTitle>{open.title}</DrawerTitle><DrawerDescription>פרטי מתכון</DrawerDescription></DrawerHeader><RecipeDetail key={open.id} recipe={open} familyId={familyId} onAddItems={onAddItems} onCooked={async () => { await refresh(); return true; }} onBack={() => setOpenId(null)} onDelete={() => { void deleteRecipe(open.id); setOpenId(null); }} /></DrawerContent></Drawer>;
+  if (open) return <Drawer open onOpenChange={(value) => { if (!value) setOpenId(null); }}><DrawerContent dir="rtl" className="mx-auto max-h-[88dvh] max-w-2xl overflow-y-auto bg-card"><DrawerHeader className="sr-only"><DrawerTitle>{open.title}</DrawerTitle><DrawerDescription>פרטי מתכון</DrawerDescription></DrawerHeader><RecipeDetail key={open.id} recipe={open} familyId={familyId} inventory={inventory} onAddItems={onAddItems} onCooked={async () => { await refresh(); return true; }} onBack={() => setOpenId(null)} onDelete={() => { void deleteRecipe(open.id); setOpenId(null); }} /></DrawerContent></Drawer>;
 
   return (
     <section dir="rtl" className="mx-auto max-w-2xl px-3 pb-28 pt-4 sm:px-6">
@@ -169,7 +165,7 @@ function PhotoRecipeDrawer({ open, onOpenChange, onResult, onManual, onImport }:
   </Drawer>;
 }
 
-function RecipeDetail({ recipe, familyId, onBack, onDelete, onAddItems, onCooked }: { recipe: Recipe; familyId: string; onBack: () => void; onDelete: () => void; onAddItems: (names: string[]) => void; onCooked: () => Promise<boolean> }) {
+function RecipeDetail({ recipe, familyId, inventory, onBack, onDelete, onAddItems, onCooked }: { recipe: Recipe; familyId: string; inventory: ShoppingItem[]; onBack: () => void; onDelete: () => void; onAddItems: (ingredients: RecipeIngredient[]) => number; onCooked: () => Promise<boolean> }) {
   const base = recipe.servings && recipe.servings > 0 ? recipe.servings : null;
   const [servings, setServings] = useState(base ?? 1);
   const ratio = base ? servings / base : 1;
@@ -179,23 +175,18 @@ function RecipeDetail({ recipe, familyId, onBack, onDelete, onAddItems, onCooked
   const [leftover, setLeftover] = useState<string | null>(null);
 
   // בחירה מראש של מצרכים חסרים/לא מספיקים במלאי לפי כמות מותאמת
-  const selectMissing = async () => {
-    const inv = await loadInventory(familyId);
+  const selectMissing = () => {
+    const inv = usableStock(inventory, localDay(new Date()));
     const next = missingIngredientIndexes(recipe.ingredients, inv, ratio);
     setChecked(next);
     return next;
   };
   useEffect(() => {
-    let current = true;
-    void loadInventory(familyId).then((inv) => { if (current) setChecked(missingIngredientIndexes(recipe.ingredients, inv, ratio)); });
-    return () => { current = false; };
-  }, [familyId, recipe.ingredients, ratio]);
+    setChecked(missingIngredientIndexes(recipe.ingredients, usableStock(inventory, localDay(new Date())), ratio));
+  }, [inventory, recipe.ingredients, ratio]);
   const addSelected = async () => {
-    const sel = checked;
-    const names = recipe.ingredients.filter((_, i) => sel.has(i)).map((i) => i.item_name);
-    if (!names.length) { toast.success("כל המצרכים קיימים במלאי"); return; }
-    onAddItems(names);
-    toast.success(`${names.length} מצרכים נוספו לרשימת הקניות`);
+    const count = onAddItems(recipe.ingredients.map((i) => ({ ...i, amount: scaledAmount(i, ratio) })));
+    toast.success(count ? `${count} רכיבים חסרים נוספו לרשימת הקניות` : "כל הרכיבים זמינים במלאי או כבר ברשימת הקניות");
   };
 
   const cooked = async () => {

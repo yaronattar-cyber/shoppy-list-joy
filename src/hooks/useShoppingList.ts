@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { resolveName } from "@/lib/categories";
 import { formatQuantity, parseQuantity } from "@/lib/quantity";
 import { crossStoreDuplicates, type ShoppingItem } from "@/lib/shopping-list";
+import { missingRecipeIngredients, type RecipeIngredient } from "@/lib/recipe-stock";
+import { localDay, usableStock } from "@/lib/smart-purchases";
 import { fetchFamilyHistory, loadHistory, mergeHistory, recordFamilyPurchase, recordPurchase, type HistoryEntry } from "@/lib/product-history";
 
 type Row = {
@@ -143,6 +145,8 @@ async function sendOp(op: Op): Promise<{ error: { message: string } | null }> {
 // רשימת הקניות של המשפחה — ענן + מטמון מקומי, עובדת גם ללא קליטה
 export function useShoppingList(familyId: string | null, userName?: string, storeId: string | null = null, isEvent = false) {
   const [rows, setRows] = useState<ShoppingItem[]>([]);
+  const needsRowsRef = useRef(rows);
+  needsRowsRef.current = rows;
   const userNameRef = useRef(userName);
   userNameRef.current = userName;
   const [loading, setLoading] = useState(true);
@@ -430,6 +434,20 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
     return source.length;
   }, [familyId, enqueue, makeRow]);
 
+  // Structured deficits preserve units, category and the default store through the offline queue.
+  const addPurchaseNeeds = useCallback((ingredients: RecipeIngredient[], targetStore: string | null, subtractInventory = true) => {
+    if (!familyId || isEvent) return 0;
+    const current = needsRowsRef.current;
+    const stock = subtractInventory ? usableStock(current.filter((i) => i.archived), localDay(new Date())) : [];
+    const available = [...stock, ...current.filter((i) => !i.archived)];
+    const missing = missingRecipeIngredients(ingredients, available, 1);
+    const inserts = missing.map((i) => ({ ...makeRow(i.item_name, i.amount ?? 1, i.unit), store_id: targetStore, category: current.find((row) => row.name.trim().toLowerCase() === i.item_name.trim().toLowerCase())?.category ?? "" }));
+    if (!inserts.length) return 0;
+    needsRowsRef.current = applyOps(current, [{ type: "insert", rows: inserts }]);
+    enqueue({ type: "insert", rows: inserts });
+    return inserts.length;
+  }, [familyId, isEvent, makeRow, enqueue]);
+
   const duplicatesFor = useCallback((source: ShoppingItem[]) => isEvent ? [] : rows.filter((item) => source.some((s) => crossStoreDuplicates([item], s).length) && !source.some((s) => s.id === item.id)), [rows, isEvent]);
   const restoreRows = useCallback((source: ShoppingItem[]) => {
     if (!source.length) return;
@@ -580,6 +598,7 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
     addItem,
     addMany,
     copyItems,
+    addPurchaseNeeds,
     addPreparedMeal,
     toggleItem,
     renameItem,

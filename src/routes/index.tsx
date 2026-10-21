@@ -19,6 +19,7 @@ import { MergeFamilyDialog } from "@/components/shopping/MergeFamilyDialog";
 import { Onboarding } from "@/components/shopping/Onboarding";
 import { useFamily } from "@/hooks/useFamily";
 import { useShoppingList } from "@/hooks/useShoppingList";
+import { useSmartPurchaseHistory } from "@/hooks/useSmartPurchaseHistory";
 import { useSpeech } from "@/hooks/useSpeech";
 import { useStores } from "@/hooks/useStores";
 import { useOnlineOrders } from "@/hooks/useOnlineOrders";
@@ -83,6 +84,7 @@ function Index() {
   const family = useFamily();
   const stores = useStores(family.familyId);
   const list = useShoppingList(family.familyId, family.userName ?? undefined, stores.activeId);
+  const purchaseHistory = useSmartPurchaseHistory(family.familyId);
   const onlineOrders = useOnlineOrders(family.familyId, stores.active?.isOnlineOnly ? stores.active.id : null);
   const pendingOrders = useOnlineOrders(family.familyId, "*");
   const events = useEvents(family.familyId);
@@ -358,6 +360,17 @@ function Index() {
           onAddTo={addTo}
           isGeneral={!events.active && !stores.active}
           isEvent={!!events.active}
+          inventory={list.inventory}
+          householdActive={list.allActive}
+          usage={purchaseHistory.usage}
+          prices={purchaseHistory.prices}
+          insightsLoading={purchaseHistory.loading}
+          insightsError={purchaseHistory.error}
+          onAddRecommendation={(item) => {
+            const home = stores.stores.find((x) => x.is_default)?.id ?? null;
+            const count = list.addPurchaseNeeds([{ item_name: item.name, amount: item.quantity, unit: item.unit }], home, false);
+            toast.success(count ? `${item.name} נוסף לרשימת הקניות` : "המוצר כבר ברשימת הקניות");
+          }}
         />
       )}
       {screen === "inventory" && (
@@ -379,7 +392,7 @@ function Index() {
           onOnlineDelivered={wish.remove}
         />
       )}
-      {screen === "recipes" && <RecipesScreen familyId={family.familyId} onAddItems={(names) => { const home = stores.stores.find((x) => x.is_default)?.id ?? null; names.forEach((n) => list.addItem(n, home)); }} />}
+      {screen === "recipes" && <RecipesScreen familyId={family.familyId} inventory={list.inventory} onAddItems={(ingredients) => list.addPurchaseNeeds(ingredients, stores.stores.find((x) => x.is_default)?.id ?? null)} />}
       {screen === "family" && (
         <FamilyScreen
           familyId={family.familyId}
