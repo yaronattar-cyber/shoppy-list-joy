@@ -14,3 +14,20 @@ export function missingIngredientIndexes(ingredients: RecipeIngredient[], stock:
   });
   return missing;
 }
+
+// Consume shared stock sequentially, then combine repeated ingredient deficits.
+export function missingRecipeIngredients(ingredients: RecipeIngredient[], stock: StockRow[], ratio: number): RecipeIngredient[] {
+  const available = new Map<string, number>();
+  const key = (name: string, unit: string) => `${normalizeStockName(name)}\u0000${normalizeStockName(unit)}`;
+  for (const row of stock) available.set(key(row.name, row.unit), (available.get(key(row.name, row.unit)) ?? 0) + Math.max(0, row.quantity));
+  const missing = new Map<string, RecipeIngredient>();
+  for (const ingredient of ingredients) {
+    const k = key(ingredient.item_name, ingredient.unit);
+    const need = Math.max(0, scaledAmount(ingredient, ratio) ?? 1);
+    const have = available.get(k) ?? 0;
+    available.set(k, Math.max(0, have - need));
+    const deficit = Math.round(Math.max(0, need - have) * 100) / 100;
+    if (deficit > 0) missing.set(k, { ...ingredient, amount: Math.round(((missing.get(k)?.amount ?? 0) + deficit) * 100) / 100 });
+  }
+  return [...missing.values()];
+}
