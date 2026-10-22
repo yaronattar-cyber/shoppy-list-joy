@@ -262,6 +262,8 @@ function Index() {
           onClearJoined={events.clearJoined}
           onClose={(ev) => void events.close(ev)}
           onRename={events.rename}
+          onSaveDetails={events.updateDetails}
+          members={fam.members}
           onExport={() => {
             const missing = missingEventItems(eventList.items, list.inventory, list.allActive);
             const count = list.copyItems(missing);
@@ -404,6 +406,10 @@ function Index() {
           onBack={() => setScreen("home")}
           members={fam.members}
           onSetRole={(n, r) => void fam.setRole(n, r)}
+          isAdmin={fam.isAdmin}
+          currentUserId={fam.currentUserId}
+          onSetAdmin={(n, a) => void fam.setAdmin(n, a)}
+          onRemoveMember={(n) => void fam.remove(n)}
           startScreen={startScreen}
           onSetStart={(v) => chooseStart(v as Screen)}
         />

@@ -1,5 +1,9 @@
 import { useState } from "react";
-import { LogOut, PartyPopper, Pencil, Share2, Trash2, X, Copy } from "lucide-react";
+import { LogOut, PartyPopper, Pencil, Share2, Trash2, X, Copy, CalendarDays } from "lucide-react";
+import { EventDetailsForm } from "./EventDetailsForm";
+import { eventIcs, googleCalendarLink } from "@/lib/event-calendar";
+import type { EventDetails } from "@/hooks/useEvents";
+import type { Member } from "@/hooks/useFamilyMembers";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { eventWhatsapp, type EventList } from "@/hooks/useEvents";
@@ -13,13 +17,15 @@ type Props = {
   onClose: (ev: EventList) => void;
   onRename: (ev: EventList, name: string) => Promise<boolean>;
   onExport: () => void;
+  members: Member[];
+  onSaveDetails: (ev: EventList, title: string, details: EventDetails) => Promise<boolean>;
 };
 
 // באנר אירוע פעיל: שיתוף בוואטסאפ וסגירה/עזיבה (הבחירה והיצירה בתפריט "חנויות ואירועים")
 export function EventBar(p: Props) {
   const [confirm, setConfirm] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [name, setName] = useState("");
+  const [calendarOpen, setCalendarOpen] = useState(false);
   // הגנה: אל תציג כלום אם אין אירוע פעיל (למשל בזמן טעינה)
   if (!p.active) return null;
   const isOwner = p.active.owner_family_id === p.familyId;
@@ -41,16 +47,23 @@ export function EventBar(p: Props) {
         <Button asChild variant="ghost" size="icon" aria-label="שיתוף בוואטסאפ">
           <a href={eventWhatsapp(p.active, p.userName)} target="_blank" rel="noreferrer"><Share2 className="h-4 w-4" /></a>
         </Button>
-        {isOwner && <Button type="button" variant="ghost" size="icon" aria-label="עריכת שם האירוע" onClick={() => { setName(p.active.name); setEditing(true); }}><Pencil className="h-4 w-4" /></Button>}
+        {isOwner && <Button type="button" variant="ghost" size="icon" aria-label="עריכת האירוע" onClick={() => setEditing(true)}><Pencil className="h-4 w-4" /></Button>}
         <Button type="button" variant="ghost" size="icon" aria-label={isOwner ? "סגירת האירוע" : "עזיבת האירוע"} onClick={() => setConfirm(true)} className="text-destructive">
           {isOwner ? <Trash2 className="h-4 w-4" /> : <LogOut className="h-4 w-4" />}
         </Button>
       </div>
-      {editing && <form className="mt-2 flex gap-2" onSubmit={async (e) => { e.preventDefault(); if (await p.onRename(p.active, name)) setEditing(false); }}>
-        <input aria-label="שם האירוע" maxLength={100} value={name} onChange={(e) => setName(e.target.value)} className="h-9 min-w-0 flex-1 rounded-md border border-input bg-card px-2 text-sm" />
-        <Button type="submit" size="sm" disabled={!name.trim()}>שמירה</Button>
-        <Button type="button" variant="ghost" size="icon" aria-label="ביטול עריכת אירוע" onClick={() => setEditing(false)}><X className="h-4 w-4" /></Button>
-      </form>}
+      {editing && <EventDetailsForm key={p.active.id} event={p.active} members={p.members} onSave={(title, details) => p.onSaveDetails(p.active, title, details)} onCancel={() => setEditing(false)} />}
+      {!editing && <div className="mt-2 space-y-1 text-sm text-muted-foreground">
+        {(p.active.event_date || p.active.location) && <p>{p.active.event_date} {p.active.event_time?.slice(0, 5)} {p.active.location && `· ${p.active.location}`}</p>}
+        {p.active.notes && <p className="whitespace-pre-wrap break-words">{p.active.notes}</p>}
+        {!!p.active.assigned_members?.length && <p>משתתפים: {p.members.filter((m) => m.userId && p.active.assigned_members?.includes(m.userId)).map((m) => m.name).join(", ")}</p>}
+        {p.active.event_tasks?.map((task, i) => <p key={i} className={task.completed ? "line-through" : ""}>{task.completed ? "✓" : "○"} {task.title} {task.assignee && `· ${p.members.find((m) => m.userId === task.assignee)?.name ?? "בן/בת משפחה"}`}</p>)}
+      </div>}
+      <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => setCalendarOpen(!calendarOpen)}><CalendarDays className="h-4 w-4" />סנכרן ליומן</Button>
+      {calendarOpen && <div className="mt-2 flex flex-wrap gap-2">{googleCalendarLink(p.active) ? <>
+        <Button asChild variant="outline" size="sm"><a href={googleCalendarLink(p.active) ?? ""} target="_blank" rel="noopener noreferrer">Google Calendar</a></Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => { const content = eventIcs(p.active); if (!content) return; const url = URL.createObjectURL(new Blob([content], { type: "text/calendar;charset=utf-8" })); const a = document.createElement("a"); a.href = url; a.download = `event-${p.active.id}.ics`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }}>יומן המכשיר</Button>
+      </> : <p className="text-sm text-muted-foreground">יש לשמור תאריך לאירוע לפני הייצוא ליומן</p>}</div>}
       <Button type="button" variant="outline" size="sm" className="my-2 w-full" onClick={p.onExport}><Copy className="h-4 w-4" />יצוא לרשימת הקניות הכללית</Button>
 
       <AlertDialog open={confirm} onOpenChange={setConfirm}>

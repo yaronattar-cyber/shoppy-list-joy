@@ -28,10 +28,11 @@ export const ShoppingItemRow = memo(function ShoppingItemRow({ item, onToggle, o
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressed = useRef(false);
   const missing = item.outOfStock && !item.completed;
-  const role = useMemberRole(item.addedBy);
+  const actor = item.modifiedBy || item.addedBy;
+  const role = useMemberRole(actor);
   // תגית „הוסיף” רק כשמישהו אחר הוסיף ויש יותר מחבר משפחה אחד
   const memberCount = Object.keys(useContext(MembersContext)).length;
-  const showAdder = !!item.addedBy && memberCount > 1 && item.addedBy.trim() !== (loadUserName() ?? "").trim();
+  const showAdder = !!actor && memberCount > 1 && actor.trim() !== (loadUserName() ?? "").trim();
 
   useEffect(() => () => { if (pressTimer.current) clearTimeout(pressTimer.current); }, []);
 
@@ -74,7 +75,7 @@ export const ShoppingItemRow = memo(function ShoppingItemRow({ item, onToggle, o
             <span className={`min-w-0 flex-1 truncate text-sm font-semibold leading-5 ${item.isImportant ? "text-important" : "text-foreground"} ${item.completed ? `line-through ${item.isImportant ? "" : "opacity-50"}` : ""}`}>{item.name}</span>
             {item.isUrgent && <span className="flex shrink-0 items-center gap-0.5 text-xs font-semibold text-important"><AlertTriangle className="h-3 w-3" />דחוף</span>}
             {storeLabel && <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${storeTone ? "" : "bg-muted text-muted-foreground"}`} style={storeTone ? { backgroundColor: `var(--store-${storeTone})`, color: `var(--store-${storeTone}-fg)` } : undefined}>{storeLabel}</span>}
-            {showAdder && <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">{ROLE_EMOJI[role] ?? "🙂"} {role ? `${role} · ` : ""}{item.addedBy}</span>}
+            {showAdder && <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">{ROLE_EMOJI[role] ?? "🙂"} {item.modifiedBy ? "עדכון: " : ""}{role ? `${role} · ` : ""}{actor}</span>}
           </span>
           {item.completed && <span className="flex items-center gap-1 text-xs font-medium text-primary"><Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden />נקנה</span>}
           {missing && <span className="flex items-center gap-1 text-xs font-medium text-destructive"><AlertTriangle className="h-3.5 w-3.5" aria-hidden />חסר במלאי</span>}

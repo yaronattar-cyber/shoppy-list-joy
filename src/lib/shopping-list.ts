@@ -14,6 +14,10 @@ export type ShoppingItem = {
   category: string;
   archived: boolean;
   addedBy: string;
+  addedByUserId?: string | null;
+  modifiedBy?: string;
+  modifiedByUserId?: string | null;
+  modifiedAt?: string | null;
   createdAt: string; // ISO
   familyId: string;
   storeId?: string | null; // חנות שהפריט שייך אליה

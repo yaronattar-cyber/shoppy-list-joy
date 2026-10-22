@@ -4,7 +4,9 @@ import { newFamilyCode } from "@/lib/family";
 import { toast } from "sonner";
 
 // רשימת אירוע = "משפחה" מסוג event עם קוד משלה, משותפת לכמה משפחות דרך event_members
-export type EventList = { id: string; name: string; owner_family_id: string | null };
+export type EventTask = { title: string; assignee: string; completed: boolean };
+export type EventDetails = { event_date: string | null; event_time: string | null; location: string; notes: string; assigned_members: string[]; event_tasks: EventTask[] };
+export type EventList = { id: string; name: string; owner_family_id: string | null } & Partial<EventDetails>;
 
 const cacheKey = (f: string) => `events-cache-${f}`;
 const activeKey = (f: string) => `events-active-${f}`;
@@ -31,7 +33,7 @@ export function useEvents(familyId: string | null) {
 
   const pull = useCallback(async () => {
     if (!familyId) return;
-    const { data } = await supabase.from("event_members").select("event_id, families!event_members_event_id_fkey(id,name,owner_family_id)").eq("family_id", familyId);
+    const { data } = await supabase.from("event_members").select("event_id, families!event_members_event_id_fkey(id,name,owner_family_id,event_date,event_time,location,notes,assigned_members,event_tasks)").eq("family_id", familyId);
     if (!data) return;
     const list = data.map((r) => r.families as unknown as EventList).filter(Boolean);
     setEvents(list);
@@ -98,6 +100,13 @@ export function useEvents(familyId: string | null) {
     return true;
   }, [familyId, pull]);
 
+  const updateDetails = useCallback(async (ev: EventList, title: string, details: EventDetails) => {
+    const { error } = await supabase.rpc("update_event_details", { _event: ev.id, _title: title.trim(), _date: details.event_date, _time: details.event_time, _location: details.location, _notes: details.notes, _members: details.assigned_members, _tasks: details.event_tasks });
+    if (error) { toast.error("שמירת האירוע נכשלה"); return false; }
+    await pull();
+    return true;
+  }, [pull]);
+
   // היוצר סוגר את האירוע לכולם; משפחה מוזמנת רק עוזבת
   const close = useCallback(async (ev: EventList) => {
     if (!familyId) return;
@@ -111,5 +120,5 @@ export function useEvents(familyId: string | null) {
   }, [familyId, select, pull]);
 
   const active = events.find((e) => e.id === activeId) ?? null;
-  return { events, active, activeId: active?.id ?? null, select, create, rename, close, joinedName, clearJoined: () => setJoinedName(null) };
+  return { events, active, activeId: active?.id ?? null, select, create, rename, updateDetails, close, joinedName, clearJoined: () => setJoinedName(null) };
 }
