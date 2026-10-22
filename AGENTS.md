@@ -21,3 +21,7 @@
 - Event renaming uses an owner-family-authorized RPC; exporting copies quantity deficits into household rows without mutating event rows, preserving shared event tracking.
 - Keep `@refresh reset` on the main route while its custom hooks live in uninstrumented `.ts` modules; remounting on live edits prevents stale hook slots when their signatures change.
 - Smart purchase calculations are pure tested helpers; household RLS triggers preserve depletion and matched receipt unit/store snapshots, and structured deficit additions use the existing offline queue to preserve quantities and avoid repeated purchases.
+
+- Household administration uses family-scoped user_roles and authenticated RPCs; removed identities cannot rejoin via cached invitation codes.
+- Item actor IDs are stamped by database triggers; display-name badges reuse the shared row, and event metadata/tasks remain on isolated event-family records with owner-family RPC authorization.
+- Calendar synchronization is user-initiated Google Calendar event prefill or an ICS download, not connected-account background access.

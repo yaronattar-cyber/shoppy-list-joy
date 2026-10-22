@@ -29,6 +29,10 @@ type Row = {
   photo_url?: string | null;
   last_price?: number | null;
   last_price_currency?: string | null;
+  added_by_user_id?: string | null;
+  modified_by_user_id?: string | null;
+  modified_by?: string;
+  modified_at?: string | null;
 };
 
 type Patch = Partial<Omit<Row, "id" | "family_id" | "created_at" | "added_by">>;
@@ -47,6 +51,10 @@ const toItem = (row: Row): ShoppingItem => ({
   category: row.category ?? "",
   archived: row.archived,
   addedBy: row.added_by,
+  addedByUserId: row.added_by_user_id,
+  modifiedBy: row.modified_by,
+  modifiedByUserId: row.modified_by_user_id,
+  modifiedAt: row.modified_at,
   createdAt: row.created_at,
   storeId: row.store_id ?? null,
   expiryDate: row.expiry_date ?? null,
@@ -74,6 +82,9 @@ const patchToItem = (p: Patch): Partial<ShoppingItem> => {
   if (p.photo_url !== undefined) out.photoUrl = p.photo_url;
   if (p.last_price !== undefined) out.lastPrice = p.last_price;
   if (p.last_price_currency !== undefined) out.lastPriceCurrency = p.last_price_currency;
+  if (p.modified_by !== undefined) out.modifiedBy = p.modified_by;
+  if (p.modified_by_user_id !== undefined) out.modifiedByUserId = p.modified_by_user_id;
+  if (p.modified_at !== undefined) out.modifiedAt = p.modified_at;
   return out;
 };
 
@@ -263,6 +274,7 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
   const enqueue = useCallback(
     (op: Op) => {
       if (!familyId) return;
+      if (op.type === "update") op = { ...op, patch: { ...op.patch, modified_by: userNameRef.current ?? "", modified_at: new Date().toISOString() } };
       setRows((r) => applyOps(r, [op]));
       const queue = [...readJson<Op[]>(queueKey(familyId), []), op];
       writeJson(queueKey(familyId), queue);

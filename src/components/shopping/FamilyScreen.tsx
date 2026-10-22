@@ -30,6 +30,10 @@ type Props = {
   onBack: () => void;
   members: Member[];
   onSetRole: (name: string, role: string) => void;
+  isAdmin?: boolean;
+  currentUserId?: string | null;
+  onSetAdmin?: (name: string, admin: boolean) => void;
+  onRemoveMember?: (name: string) => void;
   startScreen?: string;
   onSetStart?: (screen: string) => void;
 };
@@ -74,14 +78,16 @@ export function FamilyScreen(p: Props) {
             return (
               <li key={m.name}>
                 <p className="flex items-center gap-2 font-semibold text-foreground">
-                  <span className="text-xl">{ROLE_EMOJI[m.role] ?? "🙂"}</span>{m.name}{m.name === p.userName && <span className="text-xs text-muted-foreground">(אני)</span>}
-                  <span className={cn("h-2 w-2 rounded-full", online ? "bg-primary" : "bg-muted-foreground/40")} title={online ? "פעיל לאחרונה" : "לא פעיל"} />
+                  <span className="text-xl">{ROLE_EMOJI[m.role] ?? "🙂"}</span>{m.name}{m.isAdmin && <span className="text-xs text-primary">מנהל/ת</span>}{m.name === p.userName && <span className="text-xs text-muted-foreground">(אני)</span>}
+                  <span className={cn("h-2 w-2 rounded-full", online ? "bg-primary" : "bg-muted-foreground/40")} title={online ? "פעיל לאחרונה" : "לא פעיל"} /><span className="text-xs font-normal text-muted-foreground">{online ? "פעיל לאחרונה" : "לא פעיל"}</span>
                 </p>
-                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {p.isAdmin ? <div className="mt-1.5 flex flex-wrap gap-1.5">
                   {ROLES.map((r) => (
                     <Button key={r} type="button" size="sm" variant={m.role === r ? "default" : "outline"} className="h-8 rounded-full px-3" onClick={() => p.onSetRole(m.name, m.role === r ? "" : r)}>{ROLE_EMOJI[r]} {r}</Button>
                   ))}
-                </div>
+                  {m.userId && <Button size="sm" variant="outline" onClick={() => p.onSetAdmin?.(m.name, !m.isAdmin)}>{m.isAdmin ? "הסר ניהול" : "מינוי למנהל/ת"}</Button>}
+                  {m.userId !== p.currentUserId && <Button size="sm" variant="ghost" className="text-destructive" onClick={() => { if (window.confirm(`להסיר את ${m.name} מהמשפחה?`)) p.onRemoveMember?.(m.name); }}>הסר חבר/ה</Button>}
+                </div> : <p className="mt-1 text-xs text-muted-foreground">{m.role || "בן/בת משפחה"}</p>}
               </li>
             );
           })}
@@ -90,7 +96,7 @@ export function FamilyScreen(p: Props) {
 
       <NotifyToggle />
 
-      <div className={box}>
+      {p.isAdmin && <div className={box}>
         <p className="text-sm text-muted-foreground">קוד הקבוצה</p>
         <p className="mt-1 font-mono text-3xl font-bold text-foreground" dir="ltr">{p.familyId}</p>
         <div className="mt-4 flex flex-wrap gap-2">
@@ -113,7 +119,7 @@ export function FamilyScreen(p: Props) {
             {copied ? "הועתק ✓" : "העתקת קישור"}
           </Button>
         </div>
-      </div>
+      </div>}
 
       <form
         className={box}
@@ -143,7 +149,7 @@ export function FamilyScreen(p: Props) {
             id="fam-code"
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            placeholder="קוד בן 6 תווים"
+            placeholder="קוד ההזמנה"
             dir="ltr"
             className={input}
           />
