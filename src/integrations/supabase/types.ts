@@ -111,24 +111,42 @@ export type Database = {
       }
       families: {
         Row: {
+          assigned_members: string[]
           created_at: string
+          event_date: string | null
+          event_tasks: Json
+          event_time: string | null
           id: string
           kind: string
+          location: string
           name: string
+          notes: string
           owner_family_id: string | null
         }
         Insert: {
+          assigned_members?: string[]
           created_at?: string
+          event_date?: string | null
+          event_tasks?: Json
+          event_time?: string | null
           id: string
           kind?: string
+          location?: string
           name?: string
+          notes?: string
           owner_family_id?: string | null
         }
         Update: {
+          assigned_members?: string[]
           created_at?: string
+          event_date?: string | null
+          event_tasks?: Json
+          event_time?: string | null
           id?: string
           kind?: string
+          location?: string
           name?: string
+          notes?: string
           owner_family_id?: string | null
         }
         Relationships: []
@@ -139,18 +157,21 @@ export type Database = {
           last_seen: string
           name: string
           role: string
+          user_id: string | null
         }
         Insert: {
           family_id: string
           last_seen?: string
           name: string
           role?: string
+          user_id?: string | null
         }
         Update: {
           family_id?: string
           last_seen?: string
           name?: string
           role?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -220,6 +241,29 @@ export type Database = {
           },
         ]
       }
+      household_removed_members: {
+        Row: {
+          family_id: string
+          user_id: string
+        }
+        Insert: {
+          family_id: string
+          user_id: string
+        }
+        Update: {
+          family_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "household_removed_members_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inventory_usage_events: {
         Row: {
           category: string
@@ -267,6 +311,7 @@ export type Database = {
       items: {
         Row: {
           added_by: string
+          added_by_user_id: string | null
           archived: boolean
           category: string
           completed: boolean
@@ -278,6 +323,9 @@ export type Database = {
           is_urgent: boolean
           last_price: number | null
           last_price_currency: string | null
+          modified_at: string | null
+          modified_by: string
+          modified_by_user_id: string | null
           name: string
           notes: string
           out_of_stock: boolean
@@ -289,6 +337,7 @@ export type Database = {
         }
         Insert: {
           added_by?: string
+          added_by_user_id?: string | null
           archived?: boolean
           category?: string
           completed?: boolean
@@ -300,6 +349,9 @@ export type Database = {
           is_urgent?: boolean
           last_price?: number | null
           last_price_currency?: string | null
+          modified_at?: string | null
+          modified_by?: string
+          modified_by_user_id?: string | null
           name: string
           notes?: string
           out_of_stock?: boolean
@@ -311,6 +363,7 @@ export type Database = {
         }
         Update: {
           added_by?: string
+          added_by_user_id?: string | null
           archived?: boolean
           category?: string
           completed?: boolean
@@ -322,6 +375,9 @@ export type Database = {
           is_urgent?: boolean
           last_price?: number | null
           last_price_currency?: string | null
+          modified_at?: string | null
+          modified_by?: string
+          modified_by_user_id?: string | null
           name?: string
           notes?: string
           out_of_stock?: boolean
@@ -651,6 +707,32 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          family_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          family_id: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          family_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_tab_order: {
         Row: {
           home_tab_ids: string[]
@@ -684,11 +766,21 @@ export type Database = {
       }
       create_online_order: { Args: { _store_id: string }; Returns: string }
       is_family_member: { Args: { _fid: string }; Returns: boolean }
+      is_household_admin: { Args: { _family: string }; Returns: boolean }
       join_event: {
         Args: { _event_id: string; _family_id: string }
         Returns: string
       }
       join_family: { Args: { _id: string; _name: string }; Returns: undefined }
+      manage_household_member: {
+        Args: {
+          _action: string
+          _family: string
+          _name: string
+          _value?: string
+        }
+        Returns: undefined
+      }
       merge_family_items: {
         Args: { _from: string; _to: string }
         Returns: number
@@ -696,6 +788,10 @@ export type Database = {
       receive_online_order: { Args: { _order_id: string }; Returns: number }
       record_family_purchase: {
         Args: { _category: string; _family_id: string; _name: string }
+        Returns: undefined
+      }
+      register_household_member: {
+        Args: { _family: string; _name: string }
         Returns: undefined
       }
       rename_event: {
@@ -716,6 +812,19 @@ export type Database = {
           _total: number
         }
         Returns: string
+      }
+      update_event_details: {
+        Args: {
+          _date: string
+          _event: string
+          _location: string
+          _members: string[]
+          _notes: string
+          _tasks: Json
+          _time: string
+          _title: string
+        }
+        Returns: undefined
       }
     }
     Enums: {

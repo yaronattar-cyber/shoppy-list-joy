@@ -204,6 +204,13 @@
       "when": 1792640422222,
       "tag": "0028_protect_smart_history_writes",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1792640843880,
+      "tag": "0029_household_admin_event_details_attribution",
+      "breakpoints": true
     }
   ]
 }
