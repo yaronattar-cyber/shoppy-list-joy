@@ -197,6 +197,13 @@
       "when": 1792466564580,
       "tag": "0027_smart_purchase_history",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1792640422222,
+      "tag": "0028_protect_smart_history_writes",
+      "breakpoints": true
     }
   ]
 }
