@@ -24,6 +24,14 @@ import { cn } from "@/lib/utils";
 import { formatQuantity } from "@/lib/quantity";
 import { formatDateTime, type ShoppingItem } from "@/lib/shopping-list";
 import type { OnlineOrder } from "@/hooks/useOnlineOrders";
+import { ROLE_EMOJI, useMemberRole } from "@/hooks/useFamilyMembers";
+
+function InventoryMemberBadge({ item }: { item: ShoppingItem }) {
+  const actor = item.modifiedBy || item.addedBy;
+  const role = useMemberRole(actor);
+  if (!actor) return null;
+  return <span className="text-xs text-muted-foreground">{ROLE_EMOJI[role] ?? "🙂"} {item.modifiedBy ? "עדכון: " : ""}{actor}</span>;
+}
 
 type Props = {
   items: ShoppingItem[];
@@ -264,6 +272,7 @@ export function InventoryScreen({ items, familyId = "", onSetPhoto, onRestore, o
                         <button type="button" onClick={() => openItem(item)} className="min-w-0 text-right">
                           <span className="flex items-center gap-2">{g.id === "prepared-meal" && <MealThumb path={item.photoUrl} className="h-9 w-9" />}<span className={`h-2.5 w-2.5 shrink-0 rounded-full ${st.dot}`} title={st.label} /><span className="break-words text-base font-semibold leading-6 text-foreground">{item.name}</span></span>
                           <span className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">{st.label}{dl !== null && <span className={cn("rounded-full px-1.5 py-0.5 font-semibold", BADGE[expiryLevel(dl)!])}>{dl < 0 ? "⚠ פג תוקף" : dl === 0 ? "⚠ פג היום" : `תפוגה בעוד ${dl} ימים`}</span>}</span>
+                          <InventoryMemberBadge item={item} />
                         </button>
                         <span className="flex items-center gap-0.5">
                           <Button type="button" size="icon" variant="outline" aria-label={`הפחתת ${item.name}`} disabled={item.quantity <= 0} onClick={() => adjust(item, -1)} className="h-7 w-7 rounded-full"><Minus className="h-3.5 w-3.5" /></Button>
