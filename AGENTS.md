@@ -19,7 +19,7 @@
 - Cooking uses a family-scoped, RLS-enforced transactional RPC with exact name/unit matches and sequential stock consumption, preventing partial deductions and duplicate-row overcounting.
 - Cross-store purchase/clear deletion matches trimmed case-insensitive product names only within the same household and different non-null stores; mirror it in the offline queue and an RLS-enforced database trigger so devices agree while event-family scopes remain isolated.
 - Event renaming uses an owner-family-authorized RPC; exporting copies quantity deficits into household rows without mutating event rows, preserving shared event tracking.
-- Keep `@refresh reset` on the main route while its custom hooks live in uninstrumented `.ts` modules; remounting on live edits prevents stale hook slots when their signatures change.
+- Keep the shopping screen in its own `ShoppingApp.tsx` component with `@refresh reset`; TanStack split route transforms lose the force-reset flag, so the actual component boundary must remount when uninstrumented `.ts` hooks change.
 - Smart purchase calculations are pure tested helpers; household RLS triggers preserve depletion and matched receipt unit/store snapshots, and structured deficit additions use the existing offline queue to preserve quantities and avoid repeated purchases.
 
 - Household administration uses family-scoped user_roles and authenticated RPCs; removed identities cannot rejoin via cached invitation codes.
