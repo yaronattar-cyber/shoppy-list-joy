@@ -101,7 +101,8 @@ export function useEvents(familyId: string | null) {
   }, [familyId, pull]);
 
   const updateDetails = useCallback(async (ev: EventList, title: string, details: EventDetails) => {
-    const { error } = await supabase.rpc("update_event_details", { _event: ev.id, _title: title.trim(), _date: details.event_date, _time: details.event_time, _location: details.location, _notes: details.notes, _members: details.assigned_members, _tasks: details.event_tasks });
+    // PostgreSQL accepts null dates/times; generated RPC argument types omit nullability.
+    const { error } = await supabase.rpc("update_event_details", { _event: ev.id, _title: title.trim(), _date: details.event_date as string, _time: details.event_time as string, _location: details.location, _notes: details.notes, _members: details.assigned_members, _tasks: details.event_tasks });
     if (error) { toast.error("שמירת האירוע נכשלה"); return false; }
     await pull();
     return true;
