@@ -3,7 +3,7 @@ import { ChefHat, Camera, Check, ImagePlus, Loader2, ShoppingBag, X } from "luci
 import { Button } from "@/components/ui/button";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { analyzeDish, type DishAnalysis } from "@/lib/ai/analyze-dish.functions";
+import { recipeFromImage, type ExtractedRecipe } from "@/lib/ai/recipe-from-image.functions";
 import { identifyProduct, type ProductIdentification } from "@/lib/ai/identify-product.functions";
 import type { ShoppingItem } from "@/lib/shopping-list";
 
@@ -11,6 +11,9 @@ export type ScanMode = "recipe" | "shopping";
 
 type Props = {
   cameraRequest?: number;
+  onSaveRecipe?: (recipe: ExtractedRecipe) => Promise<boolean>;
+  onAddMissing?: (recipe: ExtractedRecipe) => number;
+  onAddProduct?: (product: ProductIdentification) => boolean;
   // יתחבר ללוגיקת ה-AI בשלב הבא
   onAnalyze?: (mode: ScanMode, imageDataUrl: string) => void;
   inventory?: ShoppingItem[];
@@ -54,7 +57,7 @@ async function toDataUrl(file: File): Promise<string> {
   const c = document.createElement("canvas");
   c.width = Math.round(w * scale);
   c.height = Math.round(h * scale);
-  c.getContext("2d")!.drawImage(src, 0, 0, c.width, c.height);
+  c.getContext("2d")?.drawImage(src, 0, 0, c.width, c.height);
   if (url) URL.revokeObjectURL(url);
   if ("close" in src && typeof src.close === "function") src.close();
   return c.toDataURL("image/jpeg", 0.75);
@@ -65,18 +68,18 @@ async function toThumb(src: string): Promise<string> {
   const im = new Image(); im.src = src; await im.decode();
   const sc = Math.min(1, 120 / Math.max(im.width, im.height));
   const c = document.createElement("canvas"); c.width = Math.round(im.width * sc); c.height = Math.round(im.height * sc);
-  c.getContext("2d")!.drawImage(im, 0, 0, c.width, c.height);
+  c.getContext("2d")?.drawImage(im, 0, 0, c.width, c.height);
   return c.toDataURL("image/jpeg", 0.7);
 }
 
 // שני כפתורי AI חזותיים: בישול / קנייה — עם חלונית צילום משותפת
-export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList, onSaveOnline, cameraRequest = 0 }: Props) {
+export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList, onSaveOnline, onSaveRecipe, onAddMissing, onAddProduct, cameraRequest = 0 }: Props) {
   const identifyFn = useServerFn(identifyProduct);
   const [product, setProduct] = useState<ProductIdentification | null>(null);
   const [picked, setPicked] = useState<string[]>([]);
   const [choice, setChoice] = useState<string | null>(null);
-  const analyzeFn = useServerFn(analyzeDish);
-  const [result, setResult] = useState<DishAnalysis | null>(null);
+  const analyzeFn = useServerFn(recipeFromImage);
+  const [result, setResult] = useState<ExtractedRecipe | null>(null);
   const [mode, setMode] = useState<ScanMode | null>(null);
   const [img, setImg] = useState("");
   const [busy, setBusy] = useState(false);
@@ -108,7 +111,7 @@ export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList, on
     const v = videoRef.current; if (!v || !v.videoWidth) return;
     const sc = Math.min(1, 1024 / Math.max(v.videoWidth, v.videoHeight));
     const c = document.createElement("canvas"); c.width = Math.round(v.videoWidth * sc); c.height = Math.round(v.videoHeight * sc);
-    c.getContext("2d")!.drawImage(v, 0, 0, c.width, c.height);
+    c.getContext("2d")?.drawImage(v, 0, 0, c.width, c.height);
     setImg(c.toDataURL("image/jpeg", 0.75)); stopCam();
   };
 
@@ -121,20 +124,24 @@ export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList, on
       try {
         const r = await identifyFn({ data: { image: img } });
         if (r.error || !r.result) toast.error(r.error ?? "הזיהוי נכשל");
-        else { setProduct(r.result); setPicked([]); }
+        else {
+          setProduct(r.result); setPicked([]);
+          if (onAddProduct?.(r.result)) toast.success(`${r.result.productTitle} נוסף לרשימת הקניות`);
+          else toast.error("לא הצלחנו להוסיף את המוצר לרשימה");
+        }
       } catch { toast.error("הזיהוי נכשל, נסו שוב"); }
       finally { setBusy(false); }
       return;
     }
     try {
-      const r = await analyzeFn({ data: { image: img } });
+      const r = await analyzeFn({ data: { images: [img], mode: "dish" } });
       if (r.error || !r.result) toast.error(r.error ?? "הניתוח נכשל");
       else setResult(r.result);
     } catch { toast.error("הניתוח נכשל, נסו שוב"); }
     finally { setBusy(false); }
   };
 
-  const marked = result?.ingredients.map((g) => ({ ...g, ok: inStock(g.name, inventory) })) ?? [];
+  const marked = result?.ingredients.map((g) => ({ ...g, ok: inStock(g.item_name, inventory) })) ?? [];
   const missing = marked.filter((g) => !g.ok);
 
   const onFile = async (f?: File) => {
@@ -194,7 +201,7 @@ export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList, on
                     <img src={img} alt="" className="h-12 w-12 shrink-0 rounded-xl border border-border object-cover" />
                     <div className="min-w-0">
                       <h3 className="truncate text-base font-bold text-foreground">{product.productTitle}</h3>
-                      <p className="text-xs text-muted-foreground">{product.category} · המחירים הערכה בלבד</p>
+                      <p className="text-xs text-muted-foreground">{product.brand} · {product.packageSize} · נוסף לרשימת הקניות</p>
                     </div>
                   </div>
                   <ul className="grid gap-1.5">
@@ -218,7 +225,8 @@ export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList, on
                     })}
                   </ul>
                   {choice && (() => {
-                    const m = MARKETS.find((x) => x.id === choice)!;
+                    const m = MARKETS.find((x) => x.id === choice);
+                    if (!m) return null;
                     const save = async (ordered: boolean) => {
                       const thumb = await toThumb(img);
                       onSaveOnline?.([{ title: product.productTitle, store: m.name, price: product.priceEstimates[m.id], url: m.url(product.searchKeywords || product.productTitle), image: thumb, ordered }]);
@@ -241,14 +249,14 @@ export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList, on
                 </div>
               ) : result ? (
                 <div className="max-h-[70dvh] space-y-4 overflow-y-auto">
-                  <h3 className="text-xl font-bold text-foreground">{result.dishName}</h3>
+                  <h3 className="text-xl font-bold text-foreground">{result.title}</h3>
                   <section>
                     <h4 className="mb-2 text-sm font-semibold text-muted-foreground">רכיבים</h4>
                     <ul className="space-y-1.5">
                       {marked.map((g, i) => (
                         <li key={i} className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm ${g.ok ? "border-primary/30 bg-accent text-primary" : "border-destructive/30 bg-destructive/10 text-destructive"}`}>
-                          <span className="font-medium">{g.ok ? "✓" : "✗"} {g.name}</span>
-                          <span className="shrink-0 text-xs opacity-80">{g.quantity} · {g.ok ? "במלאי" : "חסר"}</span>
+                          <span className="font-medium">{g.ok ? "✓" : "✗"} {g.item_name}</span>
+                          <span className="shrink-0 text-xs opacity-80">{g.amount ?? ""} {g.unit} · {g.ok ? "במלאי" : "חסר"}</span>
                         </li>
                       ))}
                     </ul>
@@ -259,9 +267,10 @@ export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList, on
                       {result.instructions.map((st, i) => <li key={i}>{st}</li>)}
                     </ol>
                   </section>
-                  <Button type="button" className="h-12 w-full text-base font-bold" disabled={!missing.length} onClick={() => { onCreateRecipeList?.(result.dishName, missing.map((g) => g.name)); close(); }}>
+                  <Button type="button" className="h-12 w-full text-base font-bold" disabled={busy} onClick={() => { const count = onAddMissing?.(result) ?? 0; toast.success(count ? `${count} רכיבים חסרים נוספו לרשימת הקניות` : "כל הרכיבים זמינים במלאי או ברשימת הקניות"); }}>
                     {missing.length ? `הוסף רכיבים חסרים לרשימת קניות (${missing.length})` : "כל הרכיבים במלאי 🎉"}
                   </Button>
+                  <Button type="button" className="h-11 w-full" disabled={busy} onClick={async () => { setBusy(true); try { if (await onSaveRecipe?.(result)) { toast.success("המתכון נשמר בספר המתכונים"); close(); } else toast.error("שמירת המתכון נכשלה"); } catch { toast.error("שמירת המתכון נכשלה"); } finally { setBusy(false); } }}>שמור כמתכון חדש</Button>
                   <Button type="button" variant="outline" className="h-11 w-full" onClick={() => { setResult(null); setImg(""); }}>סריקה חדשה</Button>
                 </div>
               ) : img ? (

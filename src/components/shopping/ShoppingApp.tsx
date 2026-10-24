@@ -27,6 +27,8 @@ import { ReceiptScanner } from "@/components/shopping/ReceiptScanner";
 import { StoreChips } from "@/components/shopping/StoreChips";
 import { StoreSelector } from "@/components/shopping/StoreSelector";
 import { EventBar } from "@/components/shopping/EventBar";
+import { useRecipes } from "@/hooks/useRecipes";
+import { inventoryCategoryOf } from "@/lib/inventory-categories";
 import { useEvents } from "@/hooks/useEvents";
 import { MembersContext, useFamilyMembers } from "@/hooks/useFamilyMembers";
 import { requestBadgePermission, useAppBadge } from "@/hooks/useAppBadge";
@@ -68,6 +70,7 @@ function ShoppingSession() {
   const family = useFamily();
   const stores = useStores(family.familyId);
   const list = useShoppingList(family.familyId, family.userName ?? undefined, stores.activeId);
+  const recipes = useRecipes(family.familyId);
   const purchaseHistory = useSmartPurchaseHistory(family.familyId);
   const onlineOrders = useOnlineOrders(family.familyId, stores.active?.isOnlineOnly ? stores.active.id : null);
   const pendingOrders = useOnlineOrders(family.familyId, "*");
@@ -286,6 +289,9 @@ function ShoppingSession() {
       )}
       {screen === "home" && (
         <AddScreen
+          onSaveRecipe={(r) => recipes.addRecipe({ ...r, description: "", instructions: r.instructions.join("\n") })}
+          onAddMissing={(r) => list.addPurchaseNeeds(r.ingredients, stores.stores.find((st) => st.is_default)?.id ?? null)}
+          onAddProduct={(p) => !!list.addItem(p.productTitle, stores.stores.find((st) => st.is_default)?.id ?? null, inventoryCategoryOf(p.productTitle, p.category))}
           wish={wish}
           shortcutIds={shortcuts.ids}
           onSortShortcuts={shortcuts.save}
