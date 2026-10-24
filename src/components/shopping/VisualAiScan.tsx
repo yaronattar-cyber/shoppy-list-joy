@@ -5,6 +5,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { recipeFromImage, type ExtractedRecipe } from "@/lib/ai/recipe-from-image.functions";
 import { identifyProduct, type ProductIdentification } from "@/lib/ai/identify-product.functions";
+import { missingIngredientIndexes } from "@/lib/recipe-stock";
+import { localDay, usableStock } from "@/lib/smart-purchases";
 import type { ShoppingItem } from "@/lib/shopping-list";
 
 export type ScanMode = "recipe" | "shopping";
@@ -141,7 +143,8 @@ export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList, on
     finally { setBusy(false); }
   };
 
-  const marked = result?.ingredients.map((g) => ({ ...g, ok: inStock(g.item_name, inventory) })) ?? [];
+  const missingIndexes = result ? missingIngredientIndexes(result.ingredients, usableStock(inventory, localDay(new Date())), 1) : new Set<number>();
+  const marked = result?.ingredients.map((g, index) => ({ ...g, ok: !missingIndexes.has(index) })) ?? [];
   const missing = marked.filter((g) => !g.ok);
 
   const onFile = async (f?: File) => {
@@ -268,7 +271,7 @@ export function VisualAiScan({ onAnalyze, inventory = [], onCreateRecipeList, on
                     </ol>
                   </section>
                   <Button type="button" className="h-12 w-full text-base font-bold" disabled={busy} onClick={() => { const count = onAddMissing?.(result) ?? 0; toast.success(count ? `${count} רכיבים חסרים נוספו לרשימת הקניות` : "כל הרכיבים זמינים במלאי או ברשימת הקניות"); }}>
-                    {missing.length ? `הוסף רכיבים חסרים לרשימת קניות (${missing.length})` : "כל הרכיבים במלאי 🎉"}
+                    הוסף רכיבים חסרים לרשימת קניות
                   </Button>
                   <Button type="button" className="h-11 w-full" disabled={busy} onClick={async () => { setBusy(true); try { if (await onSaveRecipe?.(result)) { toast.success("המתכון נשמר בספר המתכונים"); close(); } else toast.error("שמירת המתכון נכשלה"); } catch { toast.error("שמירת המתכון נכשלה"); } finally { setBusy(false); } }}>שמור כמתכון חדש</Button>
                   <Button type="button" variant="outline" className="h-11 w-full" onClick={() => { setResult(null); setImg(""); }}>סריקה חדשה</Button>

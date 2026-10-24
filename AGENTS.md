@@ -25,3 +25,5 @@
 - Household administration uses family-scoped user_roles and authenticated RPCs; removed identities cannot rejoin via cached invitation codes.
 - Item actor IDs are stamped by database triggers; display-name badges reuse the shared row, and event metadata/tasks remain on isolated event-family records with owner-family RPC authorization.
 - Calendar synchronization is user-initiated Google Calendar event prefill or an ICS download, not connected-account background access.
+
+- Home food scans reuse recipeFromImage and the normalized ingredient schema; product scans reuse native Gemini and enqueue categorized items into the explicit default store.
