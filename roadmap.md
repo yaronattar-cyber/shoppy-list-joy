@@ -17,3 +17,5 @@
 - [ ] Receipt confirmation, private image storage, atomic matched-item last prices/expenses, and monthly summary implemented; authenticated save/readback verification blocked: session mint failed, requesting user has no matching auth account.
 - [x] Step 10A: household restock recommendations, receipt-based comparable basket costs and recipe quantity deficits; 23 tests, anonymous authenticated UI/Cloud readback, repeat-click no extra quantity and 17/20 ILS (15%) historical comparison verified; build passed.
 - [x] Step 10B: household admin/member management and server-side permission checks, realtime shopping/inventory actor badges, event details/member/task persistence and Google/ICS export; two authenticated anonymous device contexts, admin promotion/removal, denied non-admin RPC, last-admin protection, mobile view and eight tests verified; build passed. Calendar export is user-confirmed, not automatic two-way sync.
+
+- [ ] Step 10C: nullable recipe units, Gemini food scan/save/default-list deficits, and product scan with category/default store; verify tests and real image flows.
