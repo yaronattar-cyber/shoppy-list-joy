@@ -6,7 +6,7 @@ export class VisionError extends Error {
 }
 
 // Native Google REST streaming; callers supply the server-only key from their handler.
-export async function geminiVision<T>(key: string, prompt: string, images: string[], schema: z.ZodType<T>): Promise<T> {
+export async function geminiVision<S extends z.ZodType>(key: string, prompt: string, images: string[], schema: S): Promise<z.output<S>> {
   const parts = images.map((image) => {
     const match = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(image);
     if (!match?.[1] || !match[2]) throw new VisionError(400);

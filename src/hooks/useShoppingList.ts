@@ -387,12 +387,14 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
 
   const addItem = useCallback(
     // targetStore: שיוך לחנות אחרת מהפעילה (undefined = החנות הפעילה)
-    (rawName: string, targetStore?: string | null) => {
-      const parsed = parseQuantity(rawName);
+    (rawName: string, targetStore?: string | null, category?: string) => {
+      // Vision titles include package sizes; keep them as product details, not purchase quantities.
+      const parsed = category === undefined ? parseQuantity(rawName) : { name: rawName.trim(), quantity: 1, unit: "" };
       const name = resolveName(parsed.name);
       if (!name || !familyId) return null;
       const row = makeRow(name, parsed.quantity, parsed.unit);
       if (targetStore !== undefined) row.store_id = targetStore;
+      if (category !== undefined) row.category = category;
       enqueue({ type: "insert", rows: [row] });
       const q = formatQuantity(parsed.quantity, parsed.unit);
       return q ? `${q} ${name}` : name;

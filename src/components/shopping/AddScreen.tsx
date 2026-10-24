@@ -12,6 +12,8 @@ import { ShoppingItemRow } from "./ShoppingItemRow";
 import { ItemEditDrawer } from "./ItemEditDrawer";
 
 import { TargetPicker, type AddTarget } from "./TargetPicker";
+import type { ExtractedRecipe } from "@/lib/ai/recipe-from-image.functions";
+import type { ProductIdentification } from "@/lib/ai/identify-product.functions";
 import { VisualAiScan } from "./VisualAiScan";
 import { OnlineWishlist } from "./OnlineWishlist";
 import type { useOnlineWishlist } from "@/hooks/useOnlineWishlist";
@@ -19,6 +21,9 @@ import { Drawer, DrawerClose, DrawerContent, DrawerHeader, DrawerTitle } from "@
 export type { AddTarget };
 
 type Props = {
+  onSaveRecipe: (recipe: ExtractedRecipe) => Promise<boolean>;
+  onAddMissing: (recipe: ExtractedRecipe) => number;
+  onAddProduct: (product: ProductIdentification) => boolean;
   userName: string;
   count: number;
   items: ShoppingItem[];
@@ -48,7 +53,7 @@ const greeting = () => {
 };
 
 // מסך הבית: כותרת קומפקטית, שורת הוספה ופריטים אחרונים
-export function AddScreen({ userName, items = [], history = [], productHistory = [], targets, onAddTo, onToggle, onOutOfStock, onUpdate, onRemove, stores, onGoShopping, inventory = [], onCreateRecipeList, wish, shortcutIds, onSortShortcuts, onOpenShortcut }: Props) {
+export function AddScreen({ onSaveRecipe, onAddMissing, onAddProduct, userName, items = [], history = [], productHistory = [], targets, onAddTo, onToggle, onOutOfStock, onUpdate, onRemove, stores, onGoShopping, inventory = [], onCreateRecipeList, wish, shortcutIds, onSortShortcuts, onOpenShortcut }: Props) {
   const [selected, setSelected] = useState<ShoppingItem | null>(null);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [cameraRequest, setCameraRequest] = useState(0);
@@ -120,7 +125,7 @@ export function AddScreen({ userName, items = [], history = [], productHistory =
 
       <CategoryBar onAdd={fill} />
       <HomeShortcuts targets={targets} ids={shortcutIds} onSort={onSortShortcuts} onSelect={onOpenShortcut} />
-      <VisualAiScan cameraRequest={cameraRequest} inventory={inventory} onCreateRecipeList={onCreateRecipeList} onSaveOnline={wish.add} />
+      <VisualAiScan onSaveRecipe={onSaveRecipe} onAddMissing={onAddMissing} onAddProduct={onAddProduct} cameraRequest={cameraRequest} inventory={inventory} onCreateRecipeList={onCreateRecipeList} onSaveOnline={wish.add} />
       <InventoryAssistant open={assistantOpen} onOpenChange={setAssistantOpen} items={inventory} />
       <Drawer open={onlineOpen} onOpenChange={setOnlineOpen}>
         <DrawerContent dir="rtl" className="mx-auto max-w-2xl bg-card">
