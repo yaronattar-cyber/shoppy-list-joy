@@ -5,15 +5,8 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { consumeAiQuota } from "./rate-limit.server";
 
 import { VISION_QUOTA_MESSAGE } from "./vision-errors";
+import { recipeVisionSchema as schema } from "./vision-schemas";
 
-const schema = z.object({
-  title: z.string(),
-  category: z.string(),
-  prep_time_minutes: z.number().nullable(),
-  servings: z.number().nullable(),
-  ingredients: z.array(z.object({ item_name: z.string(), amount: z.number().nullable(), unit: z.string() })),
-  instructions: z.array(z.string()),
-});
 export type ExtractedRecipe = z.infer<typeof schema>;
 
 export const recipeFromImage = createServerFn({ method: "POST" })
