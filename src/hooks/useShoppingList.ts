@@ -388,7 +388,8 @@ export function useShoppingList(familyId: string | null, userName?: string, stor
   const addItem = useCallback(
     // targetStore: שיוך לחנות אחרת מהפעילה (undefined = החנות הפעילה)
     (rawName: string, targetStore?: string | null, category?: string) => {
-      const parsed = parseQuantity(rawName);
+      // Vision titles include package sizes; keep them as product details, not purchase quantities.
+      const parsed = category === undefined ? parseQuantity(rawName) : { name: rawName.trim(), quantity: 1, unit: "" };
       const name = resolveName(parsed.name);
       if (!name || !familyId) return null;
       const row = makeRow(name, parsed.quantity, parsed.unit);
