@@ -1,5 +1,5 @@
 // @refresh reset
-// Custom hooks in .ts modules have no refresh signatures; remount on live updates to avoid stale hook queues.
+// Explicit key reset: the Vite OXC refresh transform does not honor @refresh reset.
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Home, ListChecks, Package, Users, ShoppingBag, BookOpen, PartyPopper, Plus, X } from "lucide-react";
 import { missingEventItems } from "@/lib/shopping-list";
@@ -35,7 +35,13 @@ import { requestBadgePermission, useAppBadge } from "@/hooks/useAppBadge";
 const ORDER = ["home", "list", "inventory", "recipes"] as const;
 type Screen = (typeof ORDER)[number] | "family";
 
+const refreshGeneration = import.meta.hot ? Date.now() : 0;
+
 export function ShoppingApp() {
+  return <ShoppingSession key={refreshGeneration} />;
+}
+
+function ShoppingSession() {
   const wish = useOnlineWishlist();
   const shortcuts = useHomeShortcuts();
   const [listTab, setListTab] = useState<"shopping" | "online">("shopping");
